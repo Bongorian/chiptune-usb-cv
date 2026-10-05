@@ -29,6 +29,7 @@ USB MIDI、TRS MIDI、2系統のCV／ゲート入力と、OLED・3ボタンに�
 | `routed/` | 配線済みKiCadプロジェクト、シンボル、フットプリント |
 | `hardware/` | 回路・配置生成用の未配線プロジェクト |
 | `firmware/` | GPIO定義と音源バス書き込みヘルパー |
+| `mechanical/` | 3Dプリント用ケース、STL・STEP、寸法図・組み立て手順 |
 | `docs/` | 回路仕様、操作設計、配線ルール |
 | `scripts/` | 設計生成、配置、配線、検証、製造データ出力用スクリプト |
 | `outputs/jlc-one/` | JLCPCB向け提出ファイルと組み立て資料 |
@@ -62,6 +63,13 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 音源ICとDIPソケット、OLEDモジュール、任意のSWDヘッダーは手実装します。
 組み立て手順と製造条件は [`outputs/jlc-one/README.txt`](outputs/jlc-one/README.txt) を参照してください。
 発注時は部品在庫と実装プレビューのピン1・極性・向きを確認してください。
+
+## 3Dプリント用ケース
+
+[ケースの設計・印刷・組み立て資料](mechanical/README.md)にSTL、STEP、寸法図を収録しています。
+印刷用データは[ケースZIP](mechanical/exports/Chiptune_Enclosure_3DPrint.zip)から取得できます。
+上下2分割、底面のM2インサート固定、音源ICとOLEDの開口、3ボタンの押し子を備えます。
+ケース本体は89.8 × 58.8 × 23.0 mmです。OLEDは別モジュールを基板上の5 mmスペーサーで取り付けます。
 
 ## 開発状況
 

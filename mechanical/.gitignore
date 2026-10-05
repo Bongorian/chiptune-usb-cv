@@ -1,0 +1,6 @@
+__pycache__/
+*.log
+research/
+exports/reference/
+*.blend1
+previews/assembled-test.png

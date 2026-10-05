@@ -1,0 +1,125 @@
+{
+  "case_halves_overlap_mm3": 0,
+  "pcb_case_overlap_mm3": 0,
+  "component_case_collisions": [],
+  "additional_transparent_parts": 0,
+  "open_apertures_mm": [
+    {
+      "name": "sound_window",
+      "w": 73.0,
+      "d": 12.0,
+      "r": 6.0
+    },
+    {
+      "name": "oled_window",
+      "w": 26.0,
+      "d": 17.0,
+      "r": 1.5
+    }
+  ],
+  "cap_case_overlap_mm3": [
+    0,
+    0,
+    0
+  ],
+  "cap_pressed_case_overlap_mm3": [
+    0,
+    0,
+    0
+  ],
+  "cap_neighbor_collisions": [],
+  "dip_clearance_to_lid_underside_mm": 1.4,
+  "oled_clearance_to_bezel_underside_mm": 3.3,
+  "oled_spacer_height_mm": 5.0,
+  "pcb_tail_to_floor_clearance_mm": 1.0,
+  "button_max_up_gap_mm": 0.15,
+  "button_total_motion_to_cover_stop_mm": 0.45,
+  "pcb_corner_hole_centers_mm": [
+    [
+      3.0,
+      51.0
+    ],
+    [
+      82.0,
+      51.0
+    ],
+    [
+      82.0,
+      3.0
+    ],
+    [
+      3.0,
+      3.0
+    ]
+  ],
+  "oled_active_area_center_mm": [
+    42.5,
+    25.158
+  ],
+  "case_outer_dimensions_mm": [
+    89.8,
+    58.8,
+    23.0
+  ],
+  "insert_count": 4,
+  "notes": [
+    "XY datums extracted from the KiCad PCB; height envelopes are documented assumptions.",
+    "Actual insert fit, socket height, cable shoulder diameter and switch travel require a prototype."
+  ],
+  "print_meshes": {
+    "base": {
+      "watertight": true,
+      "winding_consistent": true,
+      "volume_mm3": 14983.539,
+      "dimensions_mm": [
+        89.8,
+        58.8,
+        11.4
+      ],
+      "connected_components": 1,
+      "triangles": 15708
+    },
+    "lid": {
+      "watertight": true,
+      "winding_consistent": true,
+      "volume_mm3": 15158.831,
+      "dimensions_mm": [
+        89.8,
+        58.8,
+        15.4
+      ],
+      "connected_components": 1,
+      "triangles": 19196
+    },
+    "button_cap": {
+      "watertight": true,
+      "winding_consistent": true,
+      "volume_mm3": 354.98,
+      "dimensions_mm": [
+        7.4,
+        7.399,
+        14.95
+      ],
+      "connected_components": 1,
+      "triangles": 3156
+    },
+    "fit_coupon": {
+      "watertight": true,
+      "winding_consistent": true,
+      "volume_mm3": 4083.97,
+      "dimensions_mm": [
+        58.0,
+        16.0,
+        5.0
+      ],
+      "connected_components": 1,
+      "triangles": 5720
+    }
+  },
+  "pass": true,
+  "inputs_sha256": {
+    "parameters.json": "6c004773447e72a1c1f742d231e88a503bfe0c3b1583e019730c56ebdb5ad56d",
+    "board_features.json": "df385dbf9be3169ce4ad233c110ba5a58a66280942788f435116dc7af5b4a563",
+    "build_enclosure.py": "66190deb73f6a391f1ab78b3ef45bbe1bd67dc6841a99373cace2970cdb23c81"
+  }
+}

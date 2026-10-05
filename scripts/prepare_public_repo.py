@@ -2,6 +2,7 @@
 """Build a curated public snapshot without personal attachments or web caches."""
 import hashlib
 import json
+import re
 import shutil
 import zipfile
 from pathlib import Path
@@ -34,6 +35,18 @@ for name in ['routing-traces-all.png', 'routing-traces-front.png', 'routing-trac
     copy_file(ROOT / 'outputs/review' / name)
 copy_file(ROOT / 'variants/jlc-one-before-basic-review/routed/Chiptune_USB_CV.kicad_pcb')
 
+# Enclosure deliverables: exclude vendor drawings, temporary logs and render meshes.
+mechanical = ROOT / 'mechanical'
+for path in mechanical.iterdir():
+    if path.is_file() and (path.suffix in {'.py', '.json', '.md', '.txt'} or path.name == '.gitignore'):
+        copy_file(path)
+for path in (mechanical / 'exports').iterdir():
+    if path.is_file() and (path.suffix in {'.stl', '.step', '.blend', '.zip'} or path.name == 'SHA256SUMS.txt'):
+        copy_file(path)
+for name in ['assembled.png', 'top.png', 'exploded.png', 'base_inside.png',
+             'mechanical_drawing.svg', 'mechanical_drawing.png', 'mechanical_drawing.pdf']:
+    copy_file(mechanical / 'previews' / name)
+
 # Only portable public part attributes, not complete scraped responses or signed URLs.
 catalog = json.loads((ROOT / 'research/catalog.json').read_text())
 for path in (ROOT / 'research').glob('catalog-C*.json'):
@@ -55,8 +68,8 @@ notes.write_text(notes.read_text().replace('MMBT3904-7-F C94514', 'MMBT3904(RANG
 for path in DEST.rglob('*'):
     if path.is_file() and path.suffix in {'.json', '.txt', '.csv', '.py', '.cpp', '.html'}:
         original = path.read_text()
-        cleaned = original.replace(str(ROOT) + '/', '').replace('[local attachment]/', '[local attachment]/')
-        cleaned = cleaned.replace('[user screenshot]/', '[user screenshot]/')
+        cleaned = re.sub(r'/home/[^/]+/\.codex/attachments/', '[local attachment]/', original.replace(str(ROOT) + '/', ''))
+        cleaned = re.sub(r'/Users/[^/]+/Pictures/Screenshots/', '[user screenshot]/', cleaned)
         if cleaned != original:
             path.write_text(cleaned)
 
