@@ -1,0 +1,5430 @@
+[
+  {
+    "ref": "U1",
+    "value": "RP2040",
+    "fp": "Chiptune:Board_U1",
+    "nets": {
+      "19": "GND",
+      "26": "RUN",
+      "46": "USB_MCU_D_N",
+      "47": "USB_MCU_D_P",
+      "56": "FLASH_CS",
+      "52": "FLASH_CLK",
+      "53": "FLASH_D0",
+      "55": "FLASH_D1",
+      "54": "FLASH_D2",
+      "51": "FLASH_D3",
+      "20": "XIN",
+      "21": "XOUT",
+      "24": "SWCLK",
+      "25": "SWDIO",
+      "48": "+3V2",
+      "43": "+3V2_A",
+      "1": "+3V2",
+      "10": "+3V2",
+      "22": "+3V2",
+      "33": "+3V2",
+      "42": "+3V2",
+      "49": "+3V2",
+      "57": "GND",
+      "44": "+3V2",
+      "45": "+1V1",
+      "23": "+1V1",
+      "50": "+1V1",
+      "2": "D7",
+      "3": "D6",
+      "4": "D5",
+      "5": "D4",
+      "6": "D3",
+      "7": "D2",
+      "8": "D1",
+      "9": "D0",
+      "11": "WR_N",
+      "12": "SAA_CS_N",
+      "13": "SN1_CS_N",
+      "14": "SN2_CS_N",
+      "15": "SAA_A0",
+      "16": "MIDI_RX",
+      "17": "SAA_CLK_RAW",
+      "18": "GATE1_N",
+      "27": "SN_CLK_RAW",
+      "28": "GATE2_N",
+      "29": "UI_SDA",
+      "30": "UI_SCL",
+      "31": "UI_MINUS",
+      "32": "UI_OK",
+      "34": "UI_PLUS",
+      "35": null,
+      "36": null,
+      "37": "SAA_DTACK_N",
+      "38": "CC1_ADC",
+      "39": "CC2_ADC",
+      "40": "STATUS_LED",
+      "41": "SOUND_ENABLE"
+    },
+    "group": 1,
+    "x": 32.0,
+    "y": 31.0,
+    "rot": -90.0,
+    "lcsc": "C2040",
+    "pins": [
+      [
+        "19",
+        "TESTEN",
+        "input"
+      ],
+      [
+        "26",
+        "RUN",
+        "input"
+      ],
+      [
+        "46",
+        "USB_DM",
+        "bidirectional"
+      ],
+      [
+        "47",
+        "USB_DP",
+        "bidirectional"
+      ],
+      [
+        "56",
+        "~{QSPI_SS}",
+        "output"
+      ],
+      [
+        "52",
+        "QSPI_SCLK",
+        "output"
+      ],
+      [
+        "53",
+        "QSPI_SD0",
+        "bidirectional"
+      ],
+      [
+        "55",
+        "QSPI_SD1",
+        "bidirectional"
+      ],
+      [
+        "54",
+        "QSPI_SD2",
+        "bidirectional"
+      ],
+      [
+        "51",
+        "QSPI_SD3",
+        "bidirectional"
+      ],
+      [
+        "20",
+        "XIN",
+        "input"
+      ],
+      [
+        "21",
+        "XOUT",
+        "output"
+      ],
+      [
+        "24",
+        "SWCLK",
+        "input"
+      ],
+      [
+        "25",
+        "SWDIO",
+        "bidirectional"
+      ],
+      [
+        "48",
+        "USB_VDD",
+        "power_in"
+      ],
+      [
+        "43",
+        "ADC_AVDD",
+        "power_in"
+      ],
+      [
+        "1",
+        "IOVDD",
+        "power_in"
+      ],
+      [
+        "10",
+        "IOVDD",
+        "passive"
+      ],
+      [
+        "22",
+        "IOVDD",
+        "passive"
+      ],
+      [
+        "33",
+        "IOVDD",
+        "passive"
+      ],
+      [
+        "42",
+        "IOVDD",
+        "passive"
+      ],
+      [
+        "49",
+        "IOVDD",
+        "passive"
+      ],
+      [
+        "57",
+        "GND",
+        "power_in"
+      ],
+      [
+        "44",
+        "VREG_VIN",
+        "power_in"
+      ],
+      [
+        "45",
+        "VREG_VOUT",
+        "power_out"
+      ],
+      [
+        "23",
+        "DVDD",
+        "power_in"
+      ],
+      [
+        "50",
+        "DVDD",
+        "passive"
+      ],
+      [
+        "2",
+        "GPIO0",
+        "bidirectional"
+      ],
+      [
+        "3",
+        "GPIO1",
+        "bidirectional"
+      ],
+      [
+        "4",
+        "GPIO2",
+        "bidirectional"
+      ],
+      [
+        "5",
+        "GPIO3",
+        "bidirectional"
+      ],
+      [
+        "6",
+        "GPIO4",
+        "bidirectional"
+      ],
+      [
+        "7",
+        "GPIO5",
+        "bidirectional"
+      ],
+      [
+        "8",
+        "GPIO6",
+        "bidirectional"
+      ],
+      [
+        "9",
+        "GPIO7",
+        "bidirectional"
+      ],
+      [
+        "11",
+        "GPIO8",
+        "bidirectional"
+      ],
+      [
+        "12",
+        "GPIO9",
+        "bidirectional"
+      ],
+      [
+        "13",
+        "GPIO10",
+        "bidirectional"
+      ],
+      [
+        "14",
+        "GPIO11",
+        "bidirectional"
+      ],
+      [
+        "15",
+        "GPIO12",
+        "bidirectional"
+      ],
+      [
+        "16",
+        "GPIO13",
+        "bidirectional"
+      ],
+      [
+        "17",
+        "GPIO14",
+        "bidirectional"
+      ],
+      [
+        "18",
+        "GPIO15",
+        "bidirectional"
+      ],
+      [
+        "27",
+        "GPIO16",
+        "bidirectional"
+      ],
+      [
+        "28",
+        "GPIO17",
+        "bidirectional"
+      ],
+      [
+        "29",
+        "GPIO18",
+        "bidirectional"
+      ],
+      [
+        "30",
+        "GPIO19",
+        "bidirectional"
+      ],
+      [
+        "31",
+        "GPIO20",
+        "bidirectional"
+      ],
+      [
+        "32",
+        "GPIO21",
+        "bidirectional"
+      ],
+      [
+        "34",
+        "GPIO22",
+        "bidirectional"
+      ],
+      [
+        "35",
+        "GPIO23",
+        "bidirectional"
+      ],
+      [
+        "36",
+        "GPIO24",
+        "bidirectional"
+      ],
+      [
+        "37",
+        "GPIO25",
+        "bidirectional"
+      ],
+      [
+        "38",
+        "GPIO26/ADC0",
+        "bidirectional"
+      ],
+      [
+        "39",
+        "GPIO27/ADC1",
+        "bidirectional"
+      ],
+      [
+        "40",
+        "GPIO28/ADC2",
+        "bidirectional"
+      ],
+      [
+        "41",
+        "GPIO29/ADC3",
+        "bidirectional"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "fa086abe-83ff-5ff1-98ba-c72c50741b2e"
+  },
+  {
+    "ref": "U2",
+    "value": "W25Q16JVSSIQ",
+    "fp": "Chiptune:Board_U2",
+    "nets": {
+      "1": "FLASH_CS",
+      "2": "FLASH_D1",
+      "3": "FLASH_D2",
+      "4": "GND",
+      "5": "FLASH_D0",
+      "6": "FLASH_CLK",
+      "7": "FLASH_D3",
+      "8": "+3V2"
+    },
+    "group": 1,
+    "x": 42.5,
+    "y": 28.25,
+    "rot": 180.0,
+    "lcsc": "C131025",
+    "pins": [
+      [
+        "1",
+        "CS_N",
+        "input"
+      ],
+      [
+        "2",
+        "IO1",
+        "bidirectional"
+      ],
+      [
+        "3",
+        "IO2",
+        "bidirectional"
+      ],
+      [
+        "4",
+        "GND",
+        "power_in"
+      ],
+      [
+        "5",
+        "IO0",
+        "bidirectional"
+      ],
+      [
+        "6",
+        "CLK",
+        "input"
+      ],
+      [
+        "7",
+        "IO3",
+        "bidirectional"
+      ],
+      [
+        "8",
+        "VCC",
+        "power_in"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "a375a869-9849-56e6-8ed7-0040f1a9b4e8"
+  },
+  {
+    "ref": "Y1",
+    "value": "ABM8-272-T3 12MHz",
+    "fp": "Chiptune:Board_Y1",
+    "nets": {
+      "1": "XIN",
+      "2": "GND",
+      "3": "XTAL_OUT",
+      "4": "GND"
+    },
+    "group": 1,
+    "x": 23.5,
+    "y": 31.0,
+    "rot": -90.0,
+    "lcsc": "C20625731",
+    "pins": [
+      [
+        "1",
+        "XIN",
+        "passive"
+      ],
+      [
+        "2",
+        "CASE",
+        "passive"
+      ],
+      [
+        "3",
+        "XOUT",
+        "passive"
+      ],
+      [
+        "4",
+        "CASE",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "d71117e4-c771-5619-97da-7dc59208339e"
+  },
+  {
+    "ref": "R1",
+    "value": "1k",
+    "fp": "Chiptune:Board_R1",
+    "nets": {
+      "1": "XOUT",
+      "2": "XTAL_OUT"
+    },
+    "group": 1,
+    "x": 26.5,
+    "y": 31.5,
+    "rot": -90.0,
+    "lcsc": "C21190",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "c4a558f3-dd9c-5e87-96ae-92fe1f5e4400"
+  },
+  {
+    "ref": "C1",
+    "value": "15p C0G",
+    "fp": "Chiptune:Board_C1",
+    "nets": {
+      "1": "XTAL_OUT",
+      "2": "GND",
+      "1": "XTAL_OUT"
+    },
+    "group": 1,
+    "x": 25.0,
+    "y": 34.5,
+    "rot": 0.0,
+    "lcsc": "C1644",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "18abb0ff-0a0b-5fac-9f4b-124940bf6a71"
+  },
+  {
+    "ref": "C2",
+    "value": "15p C0G",
+    "fp": "Chiptune:Board_C2",
+    "nets": {
+      "1": "XIN",
+      "2": "GND",
+      "1": "XIN"
+    },
+    "group": 1,
+    "x": 23.25,
+    "y": 27.25,
+    "rot": 90.0,
+    "lcsc": "C1644",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "f67f1238-3b62-5aad-94bd-f87e842924e8"
+  },
+  {
+    "ref": "R2",
+    "value": "10k",
+    "fp": "Chiptune:Board_R2",
+    "nets": {
+      "1": "FLASH_CS",
+      "2": "+3V2"
+    },
+    "group": 1,
+    "x": 46.0,
+    "y": 32.5,
+    "rot": 0.0,
+    "lcsc": "C25804",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "17129ed7-1449-5e00-8804-944f700a73dd"
+  },
+  {
+    "ref": "R3",
+    "value": "10k",
+    "fp": "Chiptune:Board_R3",
+    "nets": {
+      "1": "RUN",
+      "2": "+3V2"
+    },
+    "group": 1,
+    "x": 32.0,
+    "y": 36.0,
+    "rot": 0.0,
+    "lcsc": "C25804",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "9b81b07d-a2d8-5e3b-ad53-5205dde8353a"
+  },
+  {
+    "ref": "C3",
+    "value": "100n",
+    "fp": "Chiptune:Board_C3",
+    "nets": {
+      "1": "+3V2",
+      "2": "GND"
+    },
+    "group": 1,
+    "x": 34.0,
+    "y": 25.5,
+    "rot": 0.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "98814b18-96d4-598c-9a7b-29a6638f114e"
+  },
+  {
+    "ref": "C4",
+    "value": "100n",
+    "fp": "Chiptune:Board_C4",
+    "nets": {
+      "1": "+3V2",
+      "2": "GND"
+    },
+    "group": 1,
+    "x": 38.25,
+    "y": 38.0,
+    "rot": 90.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "c308d931-b089-596f-91df-ca71f9372833"
+  },
+  {
+    "ref": "C5",
+    "value": "100n",
+    "fp": "Chiptune:Board_C5",
+    "nets": {
+      "1": "+3V2",
+      "2": "GND"
+    },
+    "group": 1,
+    "x": 35.5,
+    "y": 37.75,
+    "rot": 0.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "ce7465ec-6641-5d66-adc7-e864c8059a22"
+  },
+  {
+    "ref": "C6",
+    "value": "100n",
+    "fp": "Chiptune:Board_C6",
+    "nets": {
+      "1": "+3V2",
+      "2": "GND"
+    },
+    "group": 1,
+    "x": 32.0,
+    "y": 37.75,
+    "rot": 0.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "3993830b-5106-5e77-b551-7b0c61caf0f0"
+  },
+  {
+    "ref": "C7",
+    "value": "100n",
+    "fp": "Chiptune:Board_C7",
+    "nets": {
+      "1": "+3V2",
+      "2": "GND"
+    },
+    "group": 1,
+    "x": 36.5,
+    "y": 25.25,
+    "rot": 90.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "918545d5-faa1-535c-a690-6d5fae961a98"
+  },
+  {
+    "ref": "C8",
+    "value": "100n",
+    "fp": "Chiptune:Board_C8",
+    "nets": {
+      "1": "+3V2",
+      "2": "GND"
+    },
+    "group": 1,
+    "x": 28.5,
+    "y": 37.75,
+    "rot": 0.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "cd630d55-e381-552f-b1f4-c5a094858915"
+  },
+  {
+    "ref": "C9",
+    "value": "100n",
+    "fp": "Chiptune:Board_C9",
+    "nets": {
+      "1": "+3V2",
+      "2": "GND"
+    },
+    "group": 1,
+    "x": 31.0,
+    "y": 23.75,
+    "rot": 0.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "6b86af8c-587f-573c-b139-0e35907064fd"
+  },
+  {
+    "ref": "C10",
+    "value": "100n",
+    "fp": "Chiptune:Board_C10",
+    "nets": {
+      "1": "+3V2",
+      "2": "GND"
+    },
+    "group": 1,
+    "x": 42.5,
+    "y": 32.5,
+    "rot": 0.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "ddadcddf-21c8-53ab-a472-33014cfd9049"
+  },
+  {
+    "ref": "C11",
+    "value": "100n",
+    "fp": "Chiptune:Board_C11",
+    "nets": {
+      "1": "+3V2_A",
+      "2": "GND"
+    },
+    "group": 1,
+    "x": 38.0,
+    "y": 35.5,
+    "rot": 0.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "a2c876a8-2541-53bf-944b-e379c2d117e7"
+  },
+  {
+    "ref": "C12",
+    "value": "100n",
+    "fp": "Chiptune:Board_C12",
+    "nets": {
+      "1": "+1V1",
+      "2": "GND"
+    },
+    "group": 1,
+    "x": 35.5,
+    "y": 39.75,
+    "rot": 0.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "79a59369-4ddf-5302-9fe1-b10e0ec0fc2c"
+  },
+  {
+    "ref": "C13",
+    "value": "100n",
+    "fp": "Chiptune:Board_C13",
+    "nets": {
+      "1": "+1V1",
+      "2": "GND"
+    },
+    "group": 1,
+    "x": 32.0,
+    "y": 39.75,
+    "rot": 0.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "93819e2f-43d8-5c2a-a039-803d1e60c739"
+  },
+  {
+    "ref": "C14",
+    "value": "1u",
+    "fp": "Chiptune:Board_C14",
+    "nets": {
+      "1": "+3V2",
+      "2": "GND"
+    },
+    "group": 1,
+    "x": 34.5,
+    "y": 21.25,
+    "rot": 0.0,
+    "lcsc": "C15849",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "bc099085-0aa2-5358-bcef-6a73898bafa2"
+  },
+  {
+    "ref": "C15",
+    "value": "1u",
+    "fp": "Chiptune:Board_C15",
+    "nets": {
+      "1": "+1V1",
+      "2": "GND"
+    },
+    "group": 1,
+    "x": 28.5,
+    "y": 39.75,
+    "rot": 0.0,
+    "lcsc": "C15849",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "d36f5b81-d5f5-51ea-bae4-d585e854c318"
+  },
+  {
+    "ref": "R4",
+    "value": "10R",
+    "fp": "Chiptune:Board_R4",
+    "nets": {
+      "1": "+3V2",
+      "2": "+3V2_A"
+    },
+    "group": 1,
+    "x": 41.5,
+    "y": 35.5,
+    "rot": 0.0,
+    "lcsc": "C22859",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "f5021bc3-7fdc-5bd3-886f-2f475aafb264"
+  },
+  {
+    "ref": "R5",
+    "value": "1k",
+    "fp": "Chiptune:Board_R5",
+    "nets": {
+      "1": "FLASH_CS",
+      "2": "BOOT_GND"
+    },
+    "group": 1,
+    "x": 46.0,
+    "y": 23.5,
+    "rot": 0.0,
+    "lcsc": "C21190",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "575725fa-cf04-5772-bc61-33e8e3fc7f60"
+  },
+  {
+    "ref": "J4",
+    "value": "SWD",
+    "fp": "Chiptune:Board_J4",
+    "nets": {
+      "1": "+3V2",
+      "2": "SWDIO",
+      "3": "SWCLK",
+      "4": "GND"
+    },
+    "group": 1,
+    "x": 8.0,
+    "y": 50.0,
+    "rot": 90.0,
+    "lcsc": "",
+    "pins": [
+      [
+        "1",
+        "3V3",
+        "passive"
+      ],
+      [
+        "2",
+        "SWDIO",
+        "passive"
+      ],
+      [
+        "3",
+        "SWCLK",
+        "passive"
+      ],
+      [
+        "4",
+        "GND",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "Hand solder, optional",
+    "uuid": "71d6e20a-79c5-53e3-81fe-b9b809f1c7bb"
+  },
+  {
+    "ref": "U3",
+    "value": "TPS61023DRLR",
+    "fp": "Chiptune:Board_U3",
+    "nets": {
+      "1": "BOOST_FB",
+      "2": "SOUND_ENABLE",
+      "3": "USB_VBUS",
+      "4": "GND",
+      "5": "BOOST_SW",
+      "6": "+5V"
+    },
+    "group": 2,
+    "x": 27.25,
+    "y": 20.5,
+    "rot": 180.0,
+    "lcsc": "C919459",
+    "pins": [
+      [
+        "1",
+        "FB",
+        "input"
+      ],
+      [
+        "2",
+        "EN",
+        "input"
+      ],
+      [
+        "3",
+        "VIN",
+        "power_in"
+      ],
+      [
+        "4",
+        "GND",
+        "power_in"
+      ],
+      [
+        "5",
+        "SW",
+        "passive"
+      ],
+      [
+        "6",
+        "VOUT",
+        "power_out"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "c1c564ca-70b5-56b8-9bd1-3c944095e028"
+  },
+  {
+    "ref": "R6",
+    "value": "100k",
+    "fp": "Chiptune:Board_R6",
+    "nets": {
+      "1": "SOUND_ENABLE",
+      "2": "GND"
+    },
+    "group": 2,
+    "x": 34.75,
+    "y": 17.0,
+    "rot": 0.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "54948588-de66-51fd-b243-857befb473f8"
+  },
+  {
+    "ref": "L1",
+    "value": "SLO0520H1R0MTT 1uH",
+    "fp": "Chiptune:Board_L1",
+    "nets": {
+      "1": "USB_VBUS",
+      "2": "BOOST_SW"
+    },
+    "group": 2,
+    "x": 22.5,
+    "y": 20.5,
+    "rot": 0.0,
+    "lcsc": "C325980",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "1uH; Isat 8A typ, Irms 5A typ; manufacturer drawing verified",
+    "uuid": "6a59659c-eb2e-5759-9d7a-b3bf07cd0c16"
+  },
+  {
+    "ref": "C16",
+    "value": "1u",
+    "fp": "Chiptune:Board_C16",
+    "nets": {
+      "1": "USB_VBUS",
+      "2": "GND"
+    },
+    "group": 2,
+    "x": 17.5,
+    "y": 22.5,
+    "rot": 90.0,
+    "lcsc": "C15849",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "9757a56f-bf55-5a09-a035-8dd85d67aef2"
+  },
+  {
+    "ref": "C18",
+    "value": "22u 25V",
+    "fp": "Chiptune:Board_C18",
+    "nets": {
+      "1": "+5V",
+      "2": "GND"
+    },
+    "group": 2,
+    "x": 27.25,
+    "y": 23.5,
+    "rot": -90.0,
+    "lcsc": "C45783",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "c0b1039a-316c-54ae-a4bc-5064c65135ad"
+  },
+  {
+    "ref": "C19",
+    "value": "22u 25V",
+    "fp": "Chiptune:Board_C19",
+    "nets": {
+      "1": "+5V",
+      "2": "GND"
+    },
+    "group": 2,
+    "x": 33.5,
+    "y": 15.0,
+    "rot": 0.0,
+    "lcsc": "C45783",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "eb27f18a-6311-58d4-955e-695e44d20ddb"
+  },
+  {
+    "ref": "R7",
+    "value": "22k",
+    "fp": "Chiptune:Board_R7",
+    "nets": {
+      "1": "+5V",
+      "2": "BOOST_FB"
+    },
+    "group": 2,
+    "x": 27.25,
+    "y": 17.5,
+    "rot": -90.0,
+    "lcsc": "C31850",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "c72855e6-8e1c-59b0-8e55-da69b7585931"
+  },
+  {
+    "ref": "R8",
+    "value": "3k",
+    "fp": "Chiptune:Board_R8",
+    "nets": {
+      "1": "BOOST_FB",
+      "2": "GND"
+    },
+    "group": 2,
+    "x": 30.75,
+    "y": 22.0,
+    "rot": 0.0,
+    "lcsc": "C4211",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "c4c72194-7039-5d98-9333-84c58dc55f4a"
+  },
+  {
+    "ref": "U5",
+    "value": "AP2120N-3.2TRG1",
+    "fp": "Chiptune:Board_U5",
+    "nets": {
+      "1": "GND",
+      "2": "+3V2",
+      "3": "USB_VBUS"
+    },
+    "group": 2,
+    "x": 22.0,
+    "y": 49.0,
+    "rot": 0.0,
+    "lcsc": "C6500828",
+    "pins": [
+      [
+        "1",
+        "GND",
+        "power_in"
+      ],
+      [
+        "2",
+        "VOUT",
+        "power_out"
+      ],
+      [
+        "3",
+        "VIN",
+        "power_in"
+      ]
+    ],
+    "side": "F",
+    "notes": "3.2V +/-2%; OLED maximum 3.3V",
+    "uuid": "945ca5cd-f19e-50ca-ab01-a8d7d3715dae"
+  },
+  {
+    "ref": "C21",
+    "value": "4.7u 16V",
+    "fp": "Chiptune:Board_C21",
+    "nets": {
+      "1": "USB_VBUS",
+      "2": "GND"
+    },
+    "group": 2,
+    "x": 19.0,
+    "y": 49.0,
+    "rot": 90.0,
+    "lcsc": "C19666",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "8ee24cc0-62f3-59ca-b2aa-1676832b422b"
+  },
+  {
+    "ref": "C22",
+    "value": "4.7u 16V",
+    "fp": "Chiptune:Board_C22",
+    "nets": {
+      "1": "+3V2",
+      "2": "GND"
+    },
+    "group": 2,
+    "x": 25.0,
+    "y": 49.0,
+    "rot": 90.0,
+    "lcsc": "C19666",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "6321772f-a3fe-52c9-8e36-b5808de39d18"
+  },
+  {
+    "ref": "J1",
+    "value": "USB-C MIDI DEVICE / POWER",
+    "fp": "Chiptune:Board_J1",
+    "nets": {
+      "A1": "GND",
+      "A12": "GND",
+      "B1": "GND",
+      "B12": "GND",
+      "S1": "GND",
+      "A4": "USB_VBUS",
+      "A9": "USB_VBUS",
+      "B4": "USB_VBUS",
+      "B9": "USB_VBUS",
+      "A5": "CC1",
+      "B5": "CC2",
+      "A6": "USB_D_P",
+      "B6": "USB_D_P",
+      "A7": "USB_D_N",
+      "B7": "USB_D_N",
+      "A8": null,
+      "B8": null
+    },
+    "group": 3,
+    "x": 34.0,
+    "y": 50.349999999999994,
+    "rot": 0.0,
+    "lcsc": "C165948",
+    "pins": [
+      [
+        "A1",
+        "A1",
+        "passive"
+      ],
+      [
+        "A12",
+        "A12",
+        "passive"
+      ],
+      [
+        "B1",
+        "B1",
+        "passive"
+      ],
+      [
+        "B12",
+        "B12",
+        "passive"
+      ],
+      [
+        "S1",
+        "S1",
+        "passive"
+      ],
+      [
+        "A4",
+        "A4",
+        "passive"
+      ],
+      [
+        "A9",
+        "A9",
+        "passive"
+      ],
+      [
+        "B4",
+        "B4",
+        "passive"
+      ],
+      [
+        "B9",
+        "B9",
+        "passive"
+      ],
+      [
+        "A5",
+        "A5",
+        "passive"
+      ],
+      [
+        "B5",
+        "B5",
+        "passive"
+      ],
+      [
+        "A6",
+        "A6",
+        "passive"
+      ],
+      [
+        "B6",
+        "B6",
+        "passive"
+      ],
+      [
+        "A7",
+        "A7",
+        "passive"
+      ],
+      [
+        "B7",
+        "B7",
+        "passive"
+      ],
+      [
+        "A8",
+        "A8",
+        "passive"
+      ],
+      [
+        "B8",
+        "B8",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "9f1b3bb6-a4f9-5ed3-8a07-a5cae4a97fcd"
+  },
+  {
+    "ref": "U9",
+    "value": "USBLC6-2SC6",
+    "fp": "Chiptune:Board_U9",
+    "nets": {
+      "1": "USB_D_P",
+      "2": "GND",
+      "3": "USB_D_N",
+      "4": "USB_D_N",
+      "5": "USB_VBUS",
+      "6": "USB_D_P"
+    },
+    "group": 3,
+    "x": 41.5,
+    "y": 49.0,
+    "rot": 0.0,
+    "lcsc": "C7519",
+    "pins": [
+      [
+        "1",
+        "IO1",
+        "passive"
+      ],
+      [
+        "2",
+        "GND",
+        "passive"
+      ],
+      [
+        "3",
+        "IO2",
+        "passive"
+      ],
+      [
+        "4",
+        "IO2",
+        "passive"
+      ],
+      [
+        "5",
+        "VBUS",
+        "passive"
+      ],
+      [
+        "6",
+        "IO1",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "c139ea75-74df-52a4-9984-b256bc28e686"
+  },
+  {
+    "ref": "R11",
+    "value": "27R",
+    "fp": "Chiptune:Board_R11",
+    "nets": {
+      "1": "USB_D_P",
+      "2": "USB_MCU_D_P"
+    },
+    "group": 3,
+    "x": 37.0,
+    "y": 33.0,
+    "rot": 90.0,
+    "lcsc": "C25190",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "80e5abcb-9767-521c-8fe8-dfd3025b796b"
+  },
+  {
+    "ref": "R12",
+    "value": "27R",
+    "fp": "Chiptune:Board_R12",
+    "nets": {
+      "1": "USB_D_N",
+      "2": "USB_MCU_D_N"
+    },
+    "group": 3,
+    "x": 39.0,
+    "y": 33.0,
+    "rot": 90.0,
+    "lcsc": "C25190",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "8a95b6f2-4401-56c9-a678-46a78c83940e"
+  },
+  {
+    "ref": "R16",
+    "value": "4.7k",
+    "fp": "Chiptune:Board_R16",
+    "nets": {
+      "1": "UI_SDA",
+      "2": "+3V2"
+    },
+    "group": 8,
+    "x": 47.0,
+    "y": 21.5,
+    "rot": 0.0,
+    "lcsc": "C23162",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "a09a4b91-e550-553d-b1f6-1619a9b8939e"
+  },
+  {
+    "ref": "R17",
+    "value": "4.7k",
+    "fp": "Chiptune:Board_R17",
+    "nets": {
+      "1": "UI_SCL",
+      "2": "+3V2"
+    },
+    "group": 8,
+    "x": 43.5,
+    "y": 22.5,
+    "rot": 90.0,
+    "lcsc": "C23162",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "56e2b3b7-7497-58d7-8086-9cf55072d58d"
+  },
+  {
+    "ref": "U10",
+    "value": "SAA1099 DIP18",
+    "fp": "Chiptune:Board_U10",
+    "nets": {
+      "1": "WR_N",
+      "2": "SAA_CS_N",
+      "3": "SAA_A0",
+      "4": "SAA_R",
+      "5": "SAA_L",
+      "6": "SAA_IREF",
+      "7": "SAA_DTACK_N",
+      "8": "SAA_CLK",
+      "9": "GND",
+      "18": "+5V",
+      "10": "D7",
+      "11": "D6",
+      "12": "D5",
+      "13": "D4",
+      "14": "D3",
+      "15": "D2",
+      "16": "D1",
+      "17": "D0"
+    },
+    "group": 4,
+    "x": 7.5,
+    "y": 12.299999999999997,
+    "rot": 90.0,
+    "lcsc": "",
+    "pins": [
+      [
+        "1",
+        "WR_N",
+        "input"
+      ],
+      [
+        "2",
+        "CS_N",
+        "input"
+      ],
+      [
+        "3",
+        "A0",
+        "input"
+      ],
+      [
+        "4",
+        "OUT_R",
+        "output"
+      ],
+      [
+        "5",
+        "OUT_L",
+        "output"
+      ],
+      [
+        "6",
+        "IREF",
+        "passive"
+      ],
+      [
+        "7",
+        "DTACK_N",
+        "open_collector"
+      ],
+      [
+        "8",
+        "CLK",
+        "input"
+      ],
+      [
+        "9",
+        "VSS",
+        "power_in"
+      ],
+      [
+        "10",
+        "D0",
+        "input"
+      ],
+      [
+        "11",
+        "D1",
+        "input"
+      ],
+      [
+        "12",
+        "D2",
+        "input"
+      ],
+      [
+        "13",
+        "D3",
+        "input"
+      ],
+      [
+        "14",
+        "D4",
+        "input"
+      ],
+      [
+        "15",
+        "D5",
+        "input"
+      ],
+      [
+        "16",
+        "D6",
+        "input"
+      ],
+      [
+        "17",
+        "D7",
+        "input"
+      ],
+      [
+        "18",
+        "VDD",
+        "power_in"
+      ]
+    ],
+    "side": "F",
+    "notes": "User supplied IC; hand solder DIP18 socket; GPIO0..7 word equals logical byte; reverse8 only for individual PIN_Dn writes",
+    "uuid": "1dee95c4-da3a-5274-afa5-545c3d9b3def"
+  },
+  {
+    "ref": "U11",
+    "value": "SN76489AN DIP16",
+    "fp": "Chiptune:Board_U11",
+    "nets": {
+      "1": "D2",
+      "2": "D1",
+      "3": "D0",
+      "4": null,
+      "5": "WR_N",
+      "6": "SN1_CS_N",
+      "7": "SN1_OUT",
+      "8": "GND",
+      "9": null,
+      "10": "D7",
+      "11": "D6",
+      "12": "D5",
+      "13": "D4",
+      "14": "SN_CLK",
+      "15": "D3",
+      "16": "+5V"
+    },
+    "group": 4,
+    "x": 34.0,
+    "y": 12.299999999999997,
+    "rot": 90.0,
+    "lcsc": "",
+    "pins": [
+      [
+        "1",
+        "D2",
+        "input"
+      ],
+      [
+        "2",
+        "D1",
+        "input"
+      ],
+      [
+        "3",
+        "D0",
+        "input"
+      ],
+      [
+        "4",
+        "READY",
+        "open_collector"
+      ],
+      [
+        "5",
+        "WE_N",
+        "input"
+      ],
+      [
+        "6",
+        "CE_N",
+        "input"
+      ],
+      [
+        "7",
+        "AUDIO",
+        "output"
+      ],
+      [
+        "8",
+        "GND",
+        "power_in"
+      ],
+      [
+        "9",
+        "NC",
+        "no_connect"
+      ],
+      [
+        "10",
+        "D7",
+        "input"
+      ],
+      [
+        "11",
+        "D6",
+        "input"
+      ],
+      [
+        "12",
+        "D5",
+        "input"
+      ],
+      [
+        "13",
+        "D4",
+        "input"
+      ],
+      [
+        "14",
+        "CLK",
+        "input"
+      ],
+      [
+        "15",
+        "D3",
+        "input"
+      ],
+      [
+        "16",
+        "VCC",
+        "power_in"
+      ]
+    ],
+    "side": "F",
+    "notes": "User supplied IC; hand solder DIP16 socket; READY unused, firmware write wait >=10us at 4MHz",
+    "uuid": "63c8a411-5f12-5c0b-8fd7-e3345c1cec68"
+  },
+  {
+    "ref": "U12",
+    "value": "SN76489AN DIP16",
+    "fp": "Chiptune:Board_U12",
+    "nets": {
+      "1": "D2",
+      "2": "D1",
+      "3": "D0",
+      "4": null,
+      "5": "WR_N",
+      "6": "SN2_CS_N",
+      "7": "SN2_OUT",
+      "8": "GND",
+      "9": null,
+      "10": "D7",
+      "11": "D6",
+      "12": "D5",
+      "13": "D4",
+      "14": "SN_CLK",
+      "15": "D3",
+      "16": "+5V"
+    },
+    "group": 4,
+    "x": 58.5,
+    "y": 12.299999999999997,
+    "rot": 90.0,
+    "lcsc": "",
+    "pins": [
+      [
+        "1",
+        "D2",
+        "input"
+      ],
+      [
+        "2",
+        "D1",
+        "input"
+      ],
+      [
+        "3",
+        "D0",
+        "input"
+      ],
+      [
+        "4",
+        "READY",
+        "open_collector"
+      ],
+      [
+        "5",
+        "WE_N",
+        "input"
+      ],
+      [
+        "6",
+        "CE_N",
+        "input"
+      ],
+      [
+        "7",
+        "AUDIO",
+        "output"
+      ],
+      [
+        "8",
+        "GND",
+        "power_in"
+      ],
+      [
+        "9",
+        "NC",
+        "no_connect"
+      ],
+      [
+        "10",
+        "D7",
+        "input"
+      ],
+      [
+        "11",
+        "D6",
+        "input"
+      ],
+      [
+        "12",
+        "D5",
+        "input"
+      ],
+      [
+        "13",
+        "D4",
+        "input"
+      ],
+      [
+        "14",
+        "CLK",
+        "input"
+      ],
+      [
+        "15",
+        "D3",
+        "input"
+      ],
+      [
+        "16",
+        "VCC",
+        "power_in"
+      ]
+    ],
+    "side": "F",
+    "notes": "User supplied IC; hand solder DIP16 socket; READY unused, firmware write wait >=10us at 4MHz",
+    "uuid": "a05e29a2-e2a4-58e8-946a-792e42b40a52"
+  },
+  {
+    "ref": "R26",
+    "value": "33R",
+    "fp": "Chiptune:Board_R26",
+    "nets": {
+      "1": "SAA_CLK_RAW",
+      "2": "SAA_CLK"
+    },
+    "group": 4,
+    "x": 30.5,
+    "y": 25.5,
+    "rot": 0.0,
+    "lcsc": "C23140",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "0991d0ce-4c3b-53da-b170-dcad8c88206d"
+  },
+  {
+    "ref": "R27",
+    "value": "33R",
+    "fp": "Chiptune:Board_R27",
+    "nets": {
+      "1": "SN_CLK_RAW",
+      "2": "SN_CLK"
+    },
+    "group": 4,
+    "x": 26.25,
+    "y": 28.0,
+    "rot": 180.0,
+    "lcsc": "C23140",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "56aafa14-02d9-57b5-ae49-a8e111257d52"
+  },
+  {
+    "ref": "R28",
+    "value": "100k",
+    "fp": "Chiptune:Board_R28",
+    "nets": {
+      "1": "WR_N",
+      "2": "GND"
+    },
+    "group": 4,
+    "x": 37.5,
+    "y": 15.5,
+    "rot": -90.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "4ab29930-a6e7-562c-b798-483b58edf07a"
+  },
+  {
+    "ref": "R29",
+    "value": "100k",
+    "fp": "Chiptune:Board_R29",
+    "nets": {
+      "1": "SAA_CS_N",
+      "2": "GND"
+    },
+    "group": 4,
+    "x": 25.5,
+    "y": 15.5,
+    "rot": 90.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "d8d3b252-955a-598e-b911-ddc6408ed345"
+  },
+  {
+    "ref": "R30",
+    "value": "100k",
+    "fp": "Chiptune:Board_R30",
+    "nets": {
+      "1": "SN1_CS_N",
+      "2": "GND"
+    },
+    "group": 4,
+    "x": 42.5,
+    "y": 15.5,
+    "rot": 90.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "cd635fae-1269-5527-b48e-5e2eb5bd680b"
+  },
+  {
+    "ref": "R31",
+    "value": "100k",
+    "fp": "Chiptune:Board_R31",
+    "nets": {
+      "1": "SN2_CS_N",
+      "2": "GND"
+    },
+    "group": 4,
+    "x": 40.0,
+    "y": 16.5,
+    "rot": 0.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "6ab08d20-e7df-580c-b709-ec0c2900755c"
+  },
+  {
+    "ref": "R32",
+    "value": "10k",
+    "fp": "Chiptune:Board_R32",
+    "nets": {
+      "1": "SAA_DTACK_N",
+      "2": "+3V2"
+    },
+    "group": 4,
+    "x": 34.5,
+    "y": 19.0,
+    "rot": 0.0,
+    "lcsc": "C25804",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "fd820dd4-c732-5359-a75b-684f184579a7"
+  },
+  {
+    "ref": "R35",
+    "value": "100k",
+    "fp": "Chiptune:Board_R35",
+    "nets": {
+      "1": "SAA_A0",
+      "2": "GND"
+    },
+    "group": 4,
+    "x": 28.5,
+    "y": 15.0,
+    "rot": 0.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "01b69d02-ce58-5963-b99e-f1f1dc6b6413"
+  },
+  {
+    "ref": "R36",
+    "value": "100k",
+    "fp": "Chiptune:Board_R36",
+    "nets": {
+      "1": "SAA_CLK_RAW",
+      "2": "GND"
+    },
+    "group": 4,
+    "x": 39.0,
+    "y": 24.0,
+    "rot": 0.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "9e26479b-9144-58de-a392-8b10ab9afe9e"
+  },
+  {
+    "ref": "R37",
+    "value": "100k",
+    "fp": "Chiptune:Board_R37",
+    "nets": {
+      "1": "SN_CLK_RAW",
+      "2": "GND"
+    },
+    "group": 4,
+    "x": 37.0,
+    "y": 21.5,
+    "rot": 90.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "0c250330-42bc-5fea-afab-b80712bcc689"
+  },
+  {
+    "ref": "C28",
+    "value": "100n",
+    "fp": "Chiptune:Board_C28",
+    "nets": {
+      "1": "+5V",
+      "2": "GND"
+    },
+    "group": 4,
+    "x": 7.5,
+    "y": 2.0,
+    "rot": 0.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "7df59b12-a40c-5d9c-af1b-9ff1360b2373"
+  },
+  {
+    "ref": "C29",
+    "value": "100n",
+    "fp": "Chiptune:Board_C29",
+    "nets": {
+      "1": "+5V",
+      "2": "GND"
+    },
+    "group": 4,
+    "x": 34.0,
+    "y": 2.0,
+    "rot": 0.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "f63c0b17-9528-5cfa-9165-c5011652b2f4"
+  },
+  {
+    "ref": "C30",
+    "value": "100n",
+    "fp": "Chiptune:Board_C30",
+    "nets": {
+      "1": "+5V",
+      "2": "GND"
+    },
+    "group": 4,
+    "x": 58.5,
+    "y": 2.0,
+    "rot": 0.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "0af2a7fc-bfee-5014-89ea-f272587bb078"
+  },
+  {
+    "ref": "C31",
+    "value": "4.7u 16V",
+    "fp": "Chiptune:Board_C31",
+    "nets": {
+      "1": "+5V",
+      "2": "GND"
+    },
+    "group": 4,
+    "x": 11.0,
+    "y": 2.0,
+    "rot": 0.0,
+    "lcsc": "C19666",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "3518edc8-2c93-5042-8147-12825a2bbb9d"
+  },
+  {
+    "ref": "C32",
+    "value": "4.7u 16V",
+    "fp": "Chiptune:Board_C32",
+    "nets": {
+      "1": "+5V",
+      "2": "GND"
+    },
+    "group": 4,
+    "x": 37.5,
+    "y": 2.0,
+    "rot": 0.0,
+    "lcsc": "C19666",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "9a42baf4-8239-5eee-b24e-09f5d2dedcc2"
+  },
+  {
+    "ref": "C33",
+    "value": "4.7u 16V",
+    "fp": "Chiptune:Board_C33",
+    "nets": {
+      "1": "+5V",
+      "2": "GND"
+    },
+    "group": 4,
+    "x": 62.0,
+    "y": 2.0,
+    "rot": 0.0,
+    "lcsc": "C19666",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "e18def2a-fb64-5646-9809-ae43ae9bd0a9"
+  },
+  {
+    "ref": "J2",
+    "value": "TRS MIDI IN TYPE A",
+    "fp": "Chiptune:Board_J2",
+    "nets": {
+      "1": null,
+      "2": "MIDI_TIP",
+      "3": "MIDI_RING",
+      "4": null
+    },
+    "group": 5,
+    "x": 8.299999999999997,
+    "y": 42.5,
+    "rot": 0.0,
+    "lcsc": "C95562",
+    "pins": [
+      [
+        "1",
+        "SLEEVE_ISOLATED",
+        "passive"
+      ],
+      [
+        "2",
+        "TIP",
+        "passive"
+      ],
+      [
+        "3",
+        "RING",
+        "passive"
+      ],
+      [
+        "4",
+        "RING2_NC",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "e4cecdd6-6422-5b79-977a-9040344c5e43"
+  },
+  {
+    "ref": "R38",
+    "value": "220R",
+    "fp": "Chiptune:Board_R38",
+    "nets": {
+      "1": "MIDI_RING",
+      "2": "MIDI_ANODE"
+    },
+    "group": 5,
+    "x": 21.5,
+    "y": 34.5,
+    "rot": 0.0,
+    "lcsc": "C22962",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "1a8f1c6f-4127-587c-a96c-ff6b84e45625"
+  },
+  {
+    "ref": "D1",
+    "value": "1N4148W",
+    "fp": "Chiptune:Board_D1",
+    "nets": {
+      "1": "MIDI_ANODE",
+      "2": "MIDI_TIP"
+    },
+    "group": 5,
+    "x": 17.25,
+    "y": 34.5,
+    "rot": 0.0,
+    "lcsc": "C81598",
+    "pins": [
+      [
+        "1",
+        "K",
+        "passive"
+      ],
+      [
+        "2",
+        "A",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "d52fcf6e-6e51-52d5-9586-f9c0ea1b66f8"
+  },
+  {
+    "ref": "U13",
+    "value": "6N137S(T1)",
+    "fp": "Chiptune:Board_U13",
+    "nets": {
+      "1": null,
+      "2": "MIDI_ANODE",
+      "3": "MIDI_TIP",
+      "4": null,
+      "5": "GND",
+      "6": "MIDI_RX",
+      "7": "+5V",
+      "8": "+5V"
+    },
+    "group": 5,
+    "x": 20.75,
+    "y": 41.25,
+    "rot": 0.0,
+    "lcsc": "C191867",
+    "pins": [
+      [
+        "1",
+        "NC",
+        "no_connect"
+      ],
+      [
+        "2",
+        "ANODE",
+        "passive"
+      ],
+      [
+        "3",
+        "CATHODE",
+        "passive"
+      ],
+      [
+        "4",
+        "NC",
+        "no_connect"
+      ],
+      [
+        "5",
+        "GND",
+        "power_in"
+      ],
+      [
+        "6",
+        "OUT",
+        "open_collector"
+      ],
+      [
+        "7",
+        "ENABLE",
+        "input"
+      ],
+      [
+        "8",
+        "VCC",
+        "power_in"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "7038fcd0-17ad-55c3-99b7-ea7225f56440"
+  },
+  {
+    "ref": "R39",
+    "value": "2.2k",
+    "fp": "Chiptune:Board_R39",
+    "nets": {
+      "1": "MIDI_RX",
+      "2": "+3V2"
+    },
+    "group": 5,
+    "x": 27.75,
+    "y": 42.5,
+    "rot": 90.0,
+    "lcsc": "C4190",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "e4d093f3-1814-56aa-bea6-d94d08f508f8"
+  },
+  {
+    "ref": "C34",
+    "value": "100n",
+    "fp": "Chiptune:Board_C34",
+    "nets": {
+      "1": "+5V",
+      "2": "GND"
+    },
+    "group": 5,
+    "x": 28.5,
+    "y": 36.0,
+    "rot": 0.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "d7123837-8f6a-500e-92f6-a18afdbfaad4"
+  },
+  {
+    "ref": "U14",
+    "value": "TLV9004IPWR",
+    "fp": "Chiptune:Board_U14",
+    "nets": {
+      "1": "VREF",
+      "2": "VREF",
+      "3": "VREF_DIV",
+      "4": "+5V_A",
+      "5": "VREF",
+      "6": "SUM_L",
+      "7": "MIX_L",
+      "8": "MIX_R",
+      "9": "SUM_R",
+      "10": "VREF",
+      "11": "GND",
+      "12": "VREF",
+      "13": "UNUSED_OP_OUT",
+      "14": "UNUSED_OP_OUT"
+    },
+    "group": 6,
+    "x": 63.0,
+    "y": 40.0,
+    "rot": 0.0,
+    "lcsc": "C2058050",
+    "pins": [
+      [
+        "1",
+        "OUT_A",
+        "output"
+      ],
+      [
+        "2",
+        "IN-_A",
+        "input"
+      ],
+      [
+        "3",
+        "IN+_A",
+        "input"
+      ],
+      [
+        "4",
+        "VCC",
+        "power_in"
+      ],
+      [
+        "5",
+        "IN+_B",
+        "input"
+      ],
+      [
+        "6",
+        "IN-_B",
+        "input"
+      ],
+      [
+        "7",
+        "OUT_B",
+        "output"
+      ],
+      [
+        "8",
+        "OUT_C",
+        "output"
+      ],
+      [
+        "9",
+        "IN-_C",
+        "input"
+      ],
+      [
+        "10",
+        "IN+_C",
+        "input"
+      ],
+      [
+        "11",
+        "VSS",
+        "power_in"
+      ],
+      [
+        "12",
+        "IN+_D",
+        "input"
+      ],
+      [
+        "13",
+        "IN-_D",
+        "input"
+      ],
+      [
+        "14",
+        "OUT_D",
+        "output"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "f1712d6a-462a-5e39-86e5-803ed45dee14"
+  },
+  {
+    "ref": "FB1",
+    "value": "10R analog RC filter",
+    "fp": "Chiptune:Board_FB1",
+    "nets": {
+      "1": "+5V",
+      "2": "+5V_A"
+    },
+    "group": 6,
+    "x": 59.0,
+    "y": 33.0,
+    "rot": 90.0,
+    "lcsc": "C22859",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "be753e5a-1641-5d39-843b-9f63f157b197"
+  },
+  {
+    "ref": "C35",
+    "value": "22u 25V",
+    "fp": "Chiptune:Board_C35",
+    "nets": {
+      "1": "+5V_A",
+      "2": "GND"
+    },
+    "group": 6,
+    "x": 55.0,
+    "y": 38.0,
+    "rot": 90.0,
+    "lcsc": "C45783",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "bf6f60e9-a88c-5336-99e8-3771ab97613e"
+  },
+  {
+    "ref": "C36",
+    "value": "100n",
+    "fp": "Chiptune:Board_C36",
+    "nets": {
+      "1": "+5V_A",
+      "2": "GND"
+    },
+    "group": 6,
+    "x": 58.0,
+    "y": 40.0,
+    "rot": 90.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "58c7eefb-4a10-5105-95d0-0f5688929566"
+  },
+  {
+    "ref": "R40",
+    "value": "10k",
+    "fp": "Chiptune:Board_R40",
+    "nets": {
+      "1": "+5V_A",
+      "2": "VREF_DIV"
+    },
+    "group": 6,
+    "x": 52.0,
+    "y": 38.5,
+    "rot": 0.0,
+    "lcsc": "C25804",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "4f7bfd5a-1328-568a-b442-9b492edd6cde"
+  },
+  {
+    "ref": "R41",
+    "value": "10k",
+    "fp": "Chiptune:Board_R41",
+    "nets": {
+      "1": "VREF_DIV",
+      "2": "GND"
+    },
+    "group": 6,
+    "x": 51.0,
+    "y": 36.0,
+    "rot": 90.0,
+    "lcsc": "C25804",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "013bae6a-3564-5d47-90f8-12d954ec539e"
+  },
+  {
+    "ref": "C37",
+    "value": "4.7u 16V",
+    "fp": "Chiptune:Board_C37",
+    "nets": {
+      "1": "VREF_DIV",
+      "2": "GND"
+    },
+    "group": 6,
+    "x": 53.0,
+    "y": 36.0,
+    "rot": 90.0,
+    "lcsc": "C19666",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "9867cebf-4c96-525a-9985-b9045f1445c2"
+  },
+  {
+    "ref": "R42",
+    "value": "10k",
+    "fp": "Chiptune:Board_R42",
+    "nets": {
+      "1": "+5V",
+      "2": "SAA_IREF"
+    },
+    "group": 6,
+    "x": 22.0,
+    "y": 16.0,
+    "rot": 0.0,
+    "lcsc": "C25804",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "c0bafc0e-55bf-5304-bbc8-454e8be1885d"
+  },
+  {
+    "ref": "R43",
+    "value": "1.5k",
+    "fp": "Chiptune:Board_R43",
+    "nets": {
+      "1": "+5V",
+      "2": "SAA_L"
+    },
+    "group": 6,
+    "x": 18.5,
+    "y": 16.0,
+    "rot": 0.0,
+    "lcsc": "C22843",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "0f25b09a-7487-5af9-904a-ea752700e5df"
+  },
+  {
+    "ref": "R44",
+    "value": "1.5k",
+    "fp": "Chiptune:Board_R44",
+    "nets": {
+      "1": "+5V",
+      "2": "SAA_R"
+    },
+    "group": 6,
+    "x": 16.0,
+    "y": 16.0,
+    "rot": 90.0,
+    "lcsc": "C22843",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "095ef7e8-5b1a-572a-acae-182d652e48cf"
+  },
+  {
+    "ref": "C38",
+    "value": "1u",
+    "fp": "Chiptune:Board_C38",
+    "nets": {
+      "1": "SAA_L",
+      "2": "SAA_L_AC"
+    },
+    "group": 6,
+    "x": 57.5,
+    "y": 36.5,
+    "rot": -90.0,
+    "lcsc": "C15849",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "d97f75b6-d28d-54cf-a9e7-2773d6bd605a"
+  },
+  {
+    "ref": "R45",
+    "value": "22k",
+    "fp": "Chiptune:Board_R45",
+    "nets": {
+      "1": "SAA_L_AC",
+      "2": "SUM_L"
+    },
+    "group": 6,
+    "x": 62.5,
+    "y": 44.5,
+    "rot": -90.0,
+    "lcsc": "C31850",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "23ee1aaf-9d96-5597-9ae8-13e7a15a97b4"
+  },
+  {
+    "ref": "C39",
+    "value": "1u",
+    "fp": "Chiptune:Board_C39",
+    "nets": {
+      "1": "SN1_OUT",
+      "2": "SN1_OUT_AC"
+    },
+    "group": 6,
+    "x": 51.0,
+    "y": 43.5,
+    "rot": -90.0,
+    "lcsc": "C15849",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "3ef20c37-f626-5ac0-a360-b8f43a438881"
+  },
+  {
+    "ref": "R46",
+    "value": "22k",
+    "fp": "Chiptune:Board_R46",
+    "nets": {
+      "1": "SN1_OUT_AC",
+      "2": "SUM_L"
+    },
+    "group": 6,
+    "x": 53.0,
+    "y": 46.0,
+    "rot": 0.0,
+    "lcsc": "C31850",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "c1eba261-3569-51fe-aae3-013c1a2e17d4"
+  },
+  {
+    "ref": "C40",
+    "value": "1u",
+    "fp": "Chiptune:Board_C40",
+    "nets": {
+      "1": "SAA_R",
+      "2": "SAA_R_AC"
+    },
+    "group": 6,
+    "x": 61.0,
+    "y": 35.5,
+    "rot": 0.0,
+    "lcsc": "C15849",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "db3b787a-ee98-597f-bc51-1d0c7a6b95de"
+  },
+  {
+    "ref": "R47",
+    "value": "22k",
+    "fp": "Chiptune:Board_R47",
+    "nets": {
+      "1": "SAA_R_AC",
+      "2": "SUM_R"
+    },
+    "group": 6,
+    "x": 68.0,
+    "y": 39.0,
+    "rot": -90.0,
+    "lcsc": "C31850",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "c5c091ba-bec3-58e2-b65c-9c92f8135361"
+  },
+  {
+    "ref": "C41",
+    "value": "1u",
+    "fp": "Chiptune:Board_C41",
+    "nets": {
+      "1": "SN2_OUT",
+      "2": "SN2_OUT_AC"
+    },
+    "group": 6,
+    "x": 69.5,
+    "y": 35.5,
+    "rot": -90.0,
+    "lcsc": "C15849",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "4ffedb75-bb14-559b-9dd4-9829ee62dbcb"
+  },
+  {
+    "ref": "R48",
+    "value": "22k",
+    "fp": "Chiptune:Board_R48",
+    "nets": {
+      "1": "SN2_OUT_AC",
+      "2": "SUM_R"
+    },
+    "group": 6,
+    "x": 68.5,
+    "y": 41.5,
+    "rot": 180.0,
+    "lcsc": "C31850",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "b98b498c-50f0-5f28-89ff-f6c521012b7b"
+  },
+  {
+    "ref": "R49",
+    "value": "10k",
+    "fp": "Chiptune:Board_R49",
+    "nets": {
+      "1": "MIX_L",
+      "2": "SUM_L"
+    },
+    "group": 6,
+    "x": 60.0,
+    "y": 45.75,
+    "rot": 0.0,
+    "lcsc": "C25804",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "85873ee8-079b-5a35-812d-750fecd11eb4"
+  },
+  {
+    "ref": "C42",
+    "value": "470p X7R",
+    "fp": "Chiptune:Board_C42",
+    "nets": {
+      "1": "MIX_L",
+      "2": "SUM_L"
+    },
+    "group": 6,
+    "x": 60.0,
+    "y": 43.75,
+    "rot": 0.0,
+    "lcsc": "C1620",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "7845f765-fa03-53c0-8ca1-7b66fbde81fa"
+  },
+  {
+    "ref": "C43",
+    "value": "10u 10V",
+    "fp": "Chiptune:Board_C43",
+    "nets": {
+      "1": "MIX_L",
+      "2": "LINE_L_AC"
+    },
+    "group": 6,
+    "x": 57.5,
+    "y": 43.5,
+    "rot": 90.0,
+    "lcsc": "C19702",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "4a5e93b0-92cd-543b-9617-9f422b7ad7f1"
+  },
+  {
+    "ref": "R50",
+    "value": "100R",
+    "fp": "Chiptune:Board_R50",
+    "nets": {
+      "1": "LINE_L_AC",
+      "2": "LINE_L"
+    },
+    "group": 6,
+    "x": 56.5,
+    "y": 46.0,
+    "rot": 180.0,
+    "lcsc": "C22775",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "f9e31ce9-6778-5c21-8e9d-5277fb6bad6e"
+  },
+  {
+    "ref": "R51",
+    "value": "100k",
+    "fp": "Chiptune:Board_R51",
+    "nets": {
+      "1": "LINE_L",
+      "2": "GND"
+    },
+    "group": 6,
+    "x": 72.0,
+    "y": 48.5,
+    "rot": 180.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "babb3734-eb4e-5836-969b-a561548a4584"
+  },
+  {
+    "ref": "R52",
+    "value": "10k",
+    "fp": "Chiptune:Board_R52",
+    "nets": {
+      "1": "MIX_R",
+      "2": "SUM_R"
+    },
+    "group": 6,
+    "x": 65.5,
+    "y": 45.75,
+    "rot": 0.0,
+    "lcsc": "C25804",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "9d3c5817-cf33-5b3e-b5fd-31ae047f9b9a"
+  },
+  {
+    "ref": "C44",
+    "value": "470p X7R",
+    "fp": "Chiptune:Board_C44",
+    "nets": {
+      "1": "MIX_R",
+      "2": "SUM_R"
+    },
+    "group": 6,
+    "x": 65.5,
+    "y": 43.75,
+    "rot": 0.0,
+    "lcsc": "C1620",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "7191b6bd-3c5f-5b05-9467-99bc7c7158d9"
+  },
+  {
+    "ref": "C45",
+    "value": "10u 10V",
+    "fp": "Chiptune:Board_C45",
+    "nets": {
+      "1": "MIX_R",
+      "2": "LINE_R_AC"
+    },
+    "group": 6,
+    "x": 68.5,
+    "y": 44.25,
+    "rot": 90.0,
+    "lcsc": "C19702",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "cbe1bfb3-4b15-5475-9aa0-f3d8301196b7"
+  },
+  {
+    "ref": "R53",
+    "value": "100R",
+    "fp": "Chiptune:Board_R53",
+    "nets": {
+      "1": "LINE_R_AC",
+      "2": "LINE_R"
+    },
+    "group": 6,
+    "x": 71.5,
+    "y": 51.0,
+    "rot": 90.0,
+    "lcsc": "C22775",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "2166abd6-0683-52ce-8405-da831e142960"
+  },
+  {
+    "ref": "R54",
+    "value": "100k",
+    "fp": "Chiptune:Board_R54",
+    "nets": {
+      "1": "LINE_R",
+      "2": "GND"
+    },
+    "group": 6,
+    "x": 77.5,
+    "y": 49.5,
+    "rot": 0.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "dfa81d56-5bff-5d03-9ed2-f618f7d7ae30"
+  },
+  {
+    "ref": "J3",
+    "value": "STEREO LINE OUT",
+    "fp": "Chiptune:Board_J3",
+    "nets": {
+      "1": "GND",
+      "2": "LINE_L",
+      "3": "LINE_R",
+      "4": null
+    },
+    "group": 6,
+    "x": 76.69999999999999,
+    "y": 42.5,
+    "rot": 180.0,
+    "lcsc": "C95562",
+    "pins": [
+      [
+        "1",
+        "SLEEVE",
+        "passive"
+      ],
+      [
+        "2",
+        "TIP_L",
+        "passive"
+      ],
+      [
+        "3",
+        "RING_R",
+        "passive"
+      ],
+      [
+        "4",
+        "RING2_NC",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "a4426ab5-3965-59e2-8454-24a49cf2d889"
+  },
+  {
+    "ref": "D2",
+    "value": "RED STATUS",
+    "fp": "Chiptune:Board_D2",
+    "nets": {
+      "1": "GND",
+      "2": "LED_A"
+    },
+    "group": 1,
+    "x": 74.0,
+    "y": 51.5,
+    "rot": 0.0,
+    "lcsc": "C2286",
+    "pins": [
+      [
+        "1",
+        "K",
+        "passive"
+      ],
+      [
+        "2",
+        "A",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "6a956de2-4469-51d3-afd4-1d8496e247a5"
+  },
+  {
+    "ref": "R55",
+    "value": "2.2k",
+    "fp": "Chiptune:Board_R55",
+    "nets": {
+      "1": "STATUS_LED",
+      "2": "LED_A"
+    },
+    "group": 1,
+    "x": 77.5,
+    "y": 51.5,
+    "rot": 0.0,
+    "lcsc": "C4190",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "018f786e-bc99-52dd-b3e5-51d99eefd511"
+  },
+  {
+    "ref": "R58",
+    "value": "5.1k",
+    "fp": "Chiptune:Board_R58",
+    "nets": {
+      "1": "CC1",
+      "2": "GND"
+    },
+    "group": 3,
+    "x": 34.5,
+    "y": 44.0,
+    "rot": 0.0,
+    "lcsc": "C23186",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "b40ff6a7-62c4-547c-ab34-165888ac8049"
+  },
+  {
+    "ref": "R61",
+    "value": "100k",
+    "fp": "Chiptune:Board_R61",
+    "nets": {
+      "1": "CC1",
+      "2": "CC1_ADC"
+    },
+    "group": 3,
+    "x": 44.0,
+    "y": 35.0,
+    "rot": -90.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "fac44625-6d14-57da-92a6-87bdbc46ecaf"
+  },
+  {
+    "ref": "R62",
+    "value": "100k",
+    "fp": "Chiptune:Board_R62",
+    "nets": {
+      "1": "CC1_ADC",
+      "2": "GND"
+    },
+    "group": 3,
+    "x": 45.0,
+    "y": 38.5,
+    "rot": -90.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "63f4a840-98ff-5699-9b97-f4f342c7c7c6"
+  },
+  {
+    "ref": "C50",
+    "value": "100n",
+    "fp": "Chiptune:Board_C50",
+    "nets": {
+      "1": "CC1_ADC",
+      "2": "GND"
+    },
+    "group": 3,
+    "x": 42.5,
+    "y": 39.5,
+    "rot": 180.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "0f6fd287-33d1-59f6-83ef-aa1810c02472"
+  },
+  {
+    "ref": "R59",
+    "value": "5.1k",
+    "fp": "Chiptune:Board_R59",
+    "nets": {
+      "1": "CC2",
+      "2": "GND"
+    },
+    "group": 3,
+    "x": 35.0,
+    "y": 42.0,
+    "rot": 180.0,
+    "lcsc": "C23186",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "a4a17af3-9680-51ff-beca-a7845e38f5ce"
+  },
+  {
+    "ref": "R63",
+    "value": "100k",
+    "fp": "Chiptune:Board_R63",
+    "nets": {
+      "1": "CC2",
+      "2": "CC2_ADC"
+    },
+    "group": 3,
+    "x": 39.0,
+    "y": 40.5,
+    "rot": 0.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "14dd09cf-3241-5ee5-8c46-3c63d1925cec"
+  },
+  {
+    "ref": "R64",
+    "value": "100k",
+    "fp": "Chiptune:Board_R64",
+    "nets": {
+      "1": "CC2_ADC",
+      "2": "GND"
+    },
+    "group": 3,
+    "x": 42.5,
+    "y": 37.5,
+    "rot": 0.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "895bc130-cbc1-52b3-b6fe-ac5ced711599"
+  },
+  {
+    "ref": "C51",
+    "value": "100n",
+    "fp": "Chiptune:Board_C51",
+    "nets": {
+      "1": "CC2_ADC",
+      "2": "GND"
+    },
+    "group": 3,
+    "x": 40.0,
+    "y": 38.0,
+    "rot": -90.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "f59da2f6-c599-530e-b239-037668c7211f"
+  },
+  {
+    "ref": "C52",
+    "value": "1u",
+    "fp": "Chiptune:Board_C52",
+    "nets": {
+      "1": "USB_VBUS",
+      "2": "GND"
+    },
+    "group": 3,
+    "x": 27.5,
+    "y": 48.5,
+    "rot": 90.0,
+    "lcsc": "C15849",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "313858bf-0b3b-558a-a56b-f7e6104c020d"
+  },
+  {
+    "ref": "U15",
+    "value": "TLV9004IPWR CV BUFFER",
+    "fp": "Chiptune:Board_U15",
+    "nets": {
+      "1": "CV_BIAS",
+      "2": "CV_BIAS",
+      "3": "CV_BIAS_DIV",
+      "4": "+3V2",
+      "5": "CV1_NODE",
+      "6": "CV1_BUF",
+      "7": "CV1_BUF",
+      "8": "CV2_BUF",
+      "9": "CV2_BUF",
+      "10": "CV2_NODE",
+      "11": "GND",
+      "12": "CV_REF_NODE",
+      "13": "CV_REF",
+      "14": "CV_REF"
+    },
+    "group": 7,
+    "x": 56.5,
+    "y": 24.25,
+    "rot": 0.0,
+    "lcsc": "C2058050",
+    "pins": [
+      [
+        "1",
+        "OUT_A",
+        "output"
+      ],
+      [
+        "2",
+        "IN-_A",
+        "input"
+      ],
+      [
+        "3",
+        "IN+_A",
+        "input"
+      ],
+      [
+        "4",
+        "VCC",
+        "power_in"
+      ],
+      [
+        "5",
+        "IN+_B",
+        "input"
+      ],
+      [
+        "6",
+        "IN-_B",
+        "input"
+      ],
+      [
+        "7",
+        "OUT_B",
+        "output"
+      ],
+      [
+        "8",
+        "OUT_C",
+        "output"
+      ],
+      [
+        "9",
+        "IN-_C",
+        "input"
+      ],
+      [
+        "10",
+        "IN+_C",
+        "input"
+      ],
+      [
+        "11",
+        "VSS",
+        "power_in"
+      ],
+      [
+        "12",
+        "IN+_D",
+        "input"
+      ],
+      [
+        "13",
+        "IN-_D",
+        "input"
+      ],
+      [
+        "14",
+        "OUT_D",
+        "output"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "5723cc46-d3b5-5cd1-873f-ef366f785d94"
+  },
+  {
+    "ref": "U16",
+    "value": "ADS1115IDGSR",
+    "fp": "Chiptune:Board_U16",
+    "nets": {
+      "1": "GND",
+      "2": null,
+      "3": "GND",
+      "4": "CV1_BUF",
+      "5": "CV_REF",
+      "6": "CV2_BUF",
+      "7": "CV_REF",
+      "8": "+3V2",
+      "9": "UI_SDA",
+      "10": "UI_SCL"
+    },
+    "group": 7,
+    "x": 64.0,
+    "y": 24.25,
+    "rot": 0.0,
+    "lcsc": "C37593",
+    "pins": [
+      [
+        "1",
+        "ADDR",
+        "input"
+      ],
+      [
+        "2",
+        "ALERT_RDY",
+        "open_collector"
+      ],
+      [
+        "3",
+        "GND",
+        "power_in"
+      ],
+      [
+        "4",
+        "AIN0",
+        "input"
+      ],
+      [
+        "5",
+        "AIN1",
+        "input"
+      ],
+      [
+        "6",
+        "AIN2",
+        "input"
+      ],
+      [
+        "7",
+        "AIN3",
+        "input"
+      ],
+      [
+        "8",
+        "VDD",
+        "power_in"
+      ],
+      [
+        "9",
+        "SDA",
+        "bidirectional"
+      ],
+      [
+        "10",
+        "SCL",
+        "input"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "ececbe84-24d1-5cc9-8c13-b94a58836758"
+  },
+  {
+    "ref": "R66",
+    "value": "10k",
+    "fp": "Chiptune:Board_R66",
+    "nets": {
+      "1": "+3V2",
+      "2": "CV_BIAS_DIV"
+    },
+    "group": 7,
+    "x": 51.0,
+    "y": 18.5,
+    "rot": -90.0,
+    "lcsc": "C25804",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "98591506-554b-5e56-a4e6-d01095e44d34"
+  },
+  {
+    "ref": "R67",
+    "value": "10k",
+    "fp": "Chiptune:Board_R67",
+    "nets": {
+      "1": "CV_BIAS_DIV",
+      "2": "GND"
+    },
+    "group": 7,
+    "x": 50.5,
+    "y": 21.0,
+    "rot": 180.0,
+    "lcsc": "C25804",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "4d92d507-31c3-549e-ba92-c3762ace0b03"
+  },
+  {
+    "ref": "C53",
+    "value": "100n",
+    "fp": "Chiptune:Board_C53",
+    "nets": {
+      "1": "CV_BIAS_DIV",
+      "2": "GND"
+    },
+    "group": 7,
+    "x": 49.0,
+    "y": 18.5,
+    "rot": 90.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "de8383fc-548d-5db6-aa20-ec346930b7e8"
+  },
+  {
+    "ref": "R68",
+    "value": "100k 0.1%",
+    "fp": "Chiptune:Board_R68",
+    "nets": {
+      "1": "CV1_IN",
+      "2": "CV1_NODE"
+    },
+    "group": 7,
+    "x": 51.5,
+    "y": 32.5,
+    "rot": 90.0,
+    "lcsc": "C855559",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "a36f2d81-9a06-58f6-a18f-01574c9061dc"
+  },
+  {
+    "ref": "R69",
+    "value": "10k 0.1%",
+    "fp": "Chiptune:Board_R69",
+    "nets": {
+      "1": "CV1_NODE",
+      "2": "CV_BIAS"
+    },
+    "group": 7,
+    "x": 53.5,
+    "y": 32.5,
+    "rot": -90.0,
+    "lcsc": "C95204",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "e82fd761-fbad-591f-8350-6f64c9c34070"
+  },
+  {
+    "ref": "C54",
+    "value": "100n",
+    "fp": "Chiptune:Board_C54",
+    "nets": {
+      "1": "CV1_NODE",
+      "2": "GND"
+    },
+    "group": 7,
+    "x": 53.5,
+    "y": 29.0,
+    "rot": 90.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "72dc3307-bb0b-5b54-a196-49348deac89c"
+  },
+  {
+    "ref": "D3",
+    "value": "BAT54S",
+    "fp": "Chiptune:Board_D3",
+    "nets": {
+      "1": "GND",
+      "2": "+3V2",
+      "3": "CV1_NODE"
+    },
+    "group": 7,
+    "x": 50.5,
+    "y": 29.0,
+    "rot": 0.0,
+    "lcsc": "C83935",
+    "pins": [
+      [
+        "1",
+        "LOW_ANODE",
+        "passive"
+      ],
+      [
+        "2",
+        "HIGH_CATHODE",
+        "passive"
+      ],
+      [
+        "3",
+        "COMMON",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "402e11a7-4b87-5455-a171-aea63d483469"
+  },
+  {
+    "ref": "R70",
+    "value": "100k 0.1%",
+    "fp": "Chiptune:Board_R70",
+    "nets": {
+      "1": "CV2_IN",
+      "2": "CV2_NODE"
+    },
+    "group": 7,
+    "x": 56.0,
+    "y": 28.0,
+    "rot": 0.0,
+    "lcsc": "C855559",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "f22afc80-7f4d-520c-8ca0-eef0042d1f5f"
+  },
+  {
+    "ref": "R71",
+    "value": "10k 0.1%",
+    "fp": "Chiptune:Board_R71",
+    "nets": {
+      "1": "CV2_NODE",
+      "2": "CV_BIAS"
+    },
+    "group": 7,
+    "x": 56.0,
+    "y": 32.0,
+    "rot": 180.0,
+    "lcsc": "C95204",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "06211a03-688d-58dd-8684-e66bc4ddf636"
+  },
+  {
+    "ref": "C55",
+    "value": "100n",
+    "fp": "Chiptune:Board_C55",
+    "nets": {
+      "1": "CV2_NODE",
+      "2": "GND"
+    },
+    "group": 7,
+    "x": 56.0,
+    "y": 30.0,
+    "rot": 180.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "8345f7fe-b39b-5f56-8b1b-cc42ce0e2065"
+  },
+  {
+    "ref": "D4",
+    "value": "BAT54S",
+    "fp": "Chiptune:Board_D4",
+    "nets": {
+      "1": "GND",
+      "2": "+3V2",
+      "3": "CV2_NODE"
+    },
+    "group": 7,
+    "x": 60.0,
+    "y": 29.5,
+    "rot": 180.0,
+    "lcsc": "C83935",
+    "pins": [
+      [
+        "1",
+        "LOW_ANODE",
+        "passive"
+      ],
+      [
+        "2",
+        "HIGH_CATHODE",
+        "passive"
+      ],
+      [
+        "3",
+        "COMMON",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "50ade85d-beed-59f5-8c1e-6496cfaf5261"
+  },
+  {
+    "ref": "R72",
+    "value": "100k 0.1%",
+    "fp": "Chiptune:Board_R72",
+    "nets": {
+      "1": "GND",
+      "2": "CV_REF_NODE"
+    },
+    "group": 7,
+    "x": 62.0,
+    "y": 21.0,
+    "rot": 180.0,
+    "lcsc": "C855559",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "2206ec26-fd18-5080-baf0-66bdbf4ea716"
+  },
+  {
+    "ref": "R73",
+    "value": "10k 0.1%",
+    "fp": "Chiptune:Board_R73",
+    "nets": {
+      "1": "CV_REF_NODE",
+      "2": "CV_BIAS"
+    },
+    "group": 7,
+    "x": 58.5,
+    "y": 20.5,
+    "rot": 180.0,
+    "lcsc": "C95204",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "178c7ef5-5a48-59bb-89c7-7fd57f0c0ffd"
+  },
+  {
+    "ref": "C56",
+    "value": "100n",
+    "fp": "Chiptune:Board_C56",
+    "nets": {
+      "1": "CV_REF_NODE",
+      "2": "GND"
+    },
+    "group": 7,
+    "x": 61.0,
+    "y": 18.5,
+    "rot": 90.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "1fa73493-99fd-5b82-bbfa-82e5737c7392"
+  },
+  {
+    "ref": "C57",
+    "value": "100n",
+    "fp": "Chiptune:Board_C57",
+    "nets": {
+      "1": "+3V2",
+      "2": "GND"
+    },
+    "group": 7,
+    "x": 51.5,
+    "y": 24.25,
+    "rot": 90.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "401f77b5-507e-530d-8140-c5cf7d7b00b2"
+  },
+  {
+    "ref": "C58",
+    "value": "100n",
+    "fp": "Chiptune:Board_C58",
+    "nets": {
+      "1": "+3V2",
+      "2": "GND"
+    },
+    "group": 7,
+    "x": 68.5,
+    "y": 24.25,
+    "rot": 90.0,
+    "lcsc": "C14663",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "f0a7a288-33cb-51f9-9447-a8c7fd3b11fd"
+  },
+  {
+    "ref": "R74",
+    "value": "2.2k",
+    "fp": "Chiptune:Board_R74",
+    "nets": {
+      "1": "+3V2",
+      "2": "GND"
+    },
+    "group": 7,
+    "x": 67.5,
+    "y": 17.0,
+    "rot": 0.0,
+    "lcsc": "C4190",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "df25b3d8-9c54-56b4-af5e-16c48d44f2dc"
+  },
+  {
+    "ref": "Q3",
+    "value": "MMBT3904(RANGE:100-300)",
+    "fp": "Chiptune:Board_Q3",
+    "nets": {
+      "1": "GATE1_BASE",
+      "2": "GND",
+      "3": "GATE1_N"
+    },
+    "group": 7,
+    "x": 18.0,
+    "y": 28.75,
+    "rot": 0.0,
+    "lcsc": "C20526",
+    "pins": [
+      [
+        "1",
+        "B",
+        "input"
+      ],
+      [
+        "2",
+        "E",
+        "passive"
+      ],
+      [
+        "3",
+        "C",
+        "open_collector"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "3f598228-2a27-559c-9f0a-0cc6508f0f25"
+  },
+  {
+    "ref": "R76",
+    "value": "100k",
+    "fp": "Chiptune:Board_R76",
+    "nets": {
+      "1": "GATE1_IN",
+      "2": "GATE1_BASE"
+    },
+    "group": 7,
+    "x": 16.5,
+    "y": 26.0,
+    "rot": 0.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "308c525f-1a59-5a05-bb2e-a452f059ea75"
+  },
+  {
+    "ref": "R77",
+    "value": "100k",
+    "fp": "Chiptune:Board_R77",
+    "nets": {
+      "1": "GATE1_BASE",
+      "2": "GND"
+    },
+    "group": 7,
+    "x": 20.849999999999994,
+    "y": 27.25,
+    "rot": 90.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "813ba8b7-c832-5100-ae0d-2879b046dae0"
+  },
+  {
+    "ref": "R78",
+    "value": "10k",
+    "fp": "Chiptune:Board_R78",
+    "nets": {
+      "1": "GATE1_N",
+      "2": "+3V2"
+    },
+    "group": 7,
+    "x": 20.849999999999994,
+    "y": 30.75,
+    "rot": 90.0,
+    "lcsc": "C25804",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "848b83bf-c835-5f7b-8e1f-2aaf96a79a43"
+  },
+  {
+    "ref": "D5",
+    "value": "1N4148W",
+    "fp": "Chiptune:Board_D5",
+    "nets": {
+      "1": "GATE1_BASE",
+      "2": "GND"
+    },
+    "group": 7,
+    "x": 17.5,
+    "y": 32.0,
+    "rot": 0.0,
+    "lcsc": "C81598",
+    "pins": [
+      [
+        "1",
+        "K",
+        "passive"
+      ],
+      [
+        "2",
+        "A",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "c3b388cf-6f03-5ceb-9d8f-e3998680cf32"
+  },
+  {
+    "ref": "Q4",
+    "value": "MMBT3904(RANGE:100-300)",
+    "fp": "Chiptune:Board_Q4",
+    "nets": {
+      "1": "GATE2_BASE",
+      "2": "GND",
+      "3": "GATE2_N"
+    },
+    "group": 7,
+    "x": 67.5,
+    "y": 28.75,
+    "rot": 180.0,
+    "lcsc": "C20526",
+    "pins": [
+      [
+        "1",
+        "B",
+        "input"
+      ],
+      [
+        "2",
+        "E",
+        "passive"
+      ],
+      [
+        "3",
+        "C",
+        "open_collector"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "17077f3e-5e47-51c0-a4a0-bb20185fd9b1"
+  },
+  {
+    "ref": "R79",
+    "value": "100k",
+    "fp": "Chiptune:Board_R79",
+    "nets": {
+      "1": "GATE2_IN",
+      "2": "GATE2_BASE"
+    },
+    "group": 7,
+    "x": 68.5,
+    "y": 32.25,
+    "rot": 0.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "1fcdb7f6-2c5f-5782-abfc-4bf71fc572c6"
+  },
+  {
+    "ref": "R80",
+    "value": "100k",
+    "fp": "Chiptune:Board_R80",
+    "nets": {
+      "1": "GATE2_BASE",
+      "2": "GND"
+    },
+    "group": 7,
+    "x": 65.75,
+    "y": 33.0,
+    "rot": 90.0,
+    "lcsc": "C25803",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "c3f239e6-a5a1-5e3f-b9df-d1bf4f2637b5"
+  },
+  {
+    "ref": "R81",
+    "value": "10k",
+    "fp": "Chiptune:Board_R81",
+    "nets": {
+      "1": "GATE2_N",
+      "2": "+3V2"
+    },
+    "group": 7,
+    "x": 63.0,
+    "y": 33.25,
+    "rot": 0.0,
+    "lcsc": "C25804",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "81ce8f81-a956-55b1-a675-9fd6f3620699"
+  },
+  {
+    "ref": "D6",
+    "value": "1N4148W",
+    "fp": "Chiptune:Board_D6",
+    "nets": {
+      "1": "GATE2_BASE",
+      "2": "GND"
+    },
+    "group": 7,
+    "x": 63.5,
+    "y": 29.5,
+    "rot": 90.0,
+    "lcsc": "C81598",
+    "pins": [
+      [
+        "1",
+        "K",
+        "passive"
+      ],
+      [
+        "2",
+        "A",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "7d0aa95e-995f-538a-b5e3-4251222c2c3d"
+  },
+  {
+    "ref": "J6",
+    "value": "CV1_IN",
+    "fp": "Chiptune:Board_J6",
+    "nets": {
+      "1": "GND",
+      "2": "CV1_IN",
+      "3": "GND",
+      "4": null
+    },
+    "group": 7,
+    "x": 8.299999999999997,
+    "y": 19.5,
+    "rot": 0.0,
+    "lcsc": "C95562",
+    "pins": [
+      [
+        "1",
+        "SLEEVE",
+        "passive"
+      ],
+      [
+        "2",
+        "TIP",
+        "passive"
+      ],
+      [
+        "3",
+        "RING_GND",
+        "passive"
+      ],
+      [
+        "4",
+        "NC",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "78b2dfd5-2877-52e6-b0a4-9d442f17044a"
+  },
+  {
+    "ref": "J7",
+    "value": "GATE1_IN",
+    "fp": "Chiptune:Board_J7",
+    "nets": {
+      "1": "GND",
+      "2": "GATE1_IN",
+      "3": "GND",
+      "4": null
+    },
+    "group": 7,
+    "x": 8.299999999999997,
+    "y": 31.0,
+    "rot": 0.0,
+    "lcsc": "C95562",
+    "pins": [
+      [
+        "1",
+        "SLEEVE",
+        "passive"
+      ],
+      [
+        "2",
+        "TIP",
+        "passive"
+      ],
+      [
+        "3",
+        "RING_GND",
+        "passive"
+      ],
+      [
+        "4",
+        "NC",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "72519daa-8010-539c-8976-fd65d00cceea"
+  },
+  {
+    "ref": "J8",
+    "value": "CV2_IN",
+    "fp": "Chiptune:Board_J8",
+    "nets": {
+      "1": "GND",
+      "2": "CV2_IN",
+      "3": "GND",
+      "4": null
+    },
+    "group": 7,
+    "x": 76.69999999999999,
+    "y": 19.5,
+    "rot": 180.0,
+    "lcsc": "C95562",
+    "pins": [
+      [
+        "1",
+        "SLEEVE",
+        "passive"
+      ],
+      [
+        "2",
+        "TIP",
+        "passive"
+      ],
+      [
+        "3",
+        "RING_GND",
+        "passive"
+      ],
+      [
+        "4",
+        "NC",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "7785fca9-601d-5782-8217-fca6730a339c"
+  },
+  {
+    "ref": "J9",
+    "value": "GATE2_IN",
+    "fp": "Chiptune:Board_J9",
+    "nets": {
+      "1": "GND",
+      "2": "GATE2_IN",
+      "3": "GND",
+      "4": null
+    },
+    "group": 7,
+    "x": 76.69999999999999,
+    "y": 31.0,
+    "rot": 180.0,
+    "lcsc": "C95562",
+    "pins": [
+      [
+        "1",
+        "SLEEVE",
+        "passive"
+      ],
+      [
+        "2",
+        "TIP",
+        "passive"
+      ],
+      [
+        "3",
+        "RING_GND",
+        "passive"
+      ],
+      [
+        "4",
+        "NC",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "9722069d-1823-5cf8-ac60-c06d75be8c07"
+  },
+  {
+    "ref": "J5",
+    "value": "HS96L03W2C03 OLED INTERFACE",
+    "fp": "Chiptune:Board_J5",
+    "nets": {
+      "1": "GND",
+      "2": "+3V2",
+      "3": "UI_SCL",
+      "4": "UI_SDA"
+    },
+    "group": 8,
+    "x": 42.5,
+    "y": 31.0,
+    "rot": 0.0,
+    "lcsc": "C5248080",
+    "pins": [
+      [
+        "1",
+        "GND",
+        "power_in"
+      ],
+      [
+        "2",
+        "VCC",
+        "power_in"
+      ],
+      [
+        "3",
+        "SCL",
+        "input"
+      ],
+      [
+        "4",
+        "SDA",
+        "bidirectional"
+      ]
+    ],
+    "side": "F",
+    "notes": "Manual assembly; 27.3x27.8mm SSD1315 module on 5mm M2 spacers, not SMT placed",
+    "uuid": "48b90764-fec4-50d5-9fa0-d5825678cce9"
+  },
+  {
+    "ref": "SW5",
+    "value": "UI_MINUS",
+    "fp": "Chiptune:Board_SW5",
+    "nets": {
+      "1": "UI_MINUS",
+      "2": "GND"
+    },
+    "group": 8,
+    "x": 48.0,
+    "y": 50.0,
+    "rot": 0.0,
+    "lcsc": "C318884",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "30331292-3c9a-5759-aa18-8d76c03832bc"
+  },
+  {
+    "ref": "R82",
+    "value": "10k",
+    "fp": "Chiptune:Board_R82",
+    "nets": {
+      "1": "UI_MINUS",
+      "2": "+3V2"
+    },
+    "group": 8,
+    "x": 44.0,
+    "y": 44.0,
+    "rot": 90.0,
+    "lcsc": "C25804",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "5a64d617-4abf-5ab6-ac07-21f0b1e80fd7"
+  },
+  {
+    "ref": "SW6",
+    "value": "UI_OK",
+    "fp": "Chiptune:Board_SW6",
+    "nets": {
+      "1": "UI_OK",
+      "2": "GND"
+    },
+    "group": 8,
+    "x": 57.0,
+    "y": 50.0,
+    "rot": 0.0,
+    "lcsc": "C318884",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "b3356223-08e2-59eb-9979-29d05343b158"
+  },
+  {
+    "ref": "R83",
+    "value": "10k",
+    "fp": "Chiptune:Board_R83",
+    "nets": {
+      "1": "UI_OK",
+      "2": "+3V2"
+    },
+    "group": 8,
+    "x": 42.0,
+    "y": 44.0,
+    "rot": 90.0,
+    "lcsc": "C25804",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "e9fb795e-cf17-5c10-92df-59d4ff6abb3d"
+  },
+  {
+    "ref": "SW7",
+    "value": "UI_PLUS",
+    "fp": "Chiptune:Board_SW7",
+    "nets": {
+      "1": "UI_PLUS",
+      "2": "GND"
+    },
+    "group": 8,
+    "x": 66.0,
+    "y": 50.0,
+    "rot": 0.0,
+    "lcsc": "C318884",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "7ff4cc4c-d115-55b0-9062-b312c5b6ccab"
+  },
+  {
+    "ref": "R84",
+    "value": "10k",
+    "fp": "Chiptune:Board_R84",
+    "nets": {
+      "1": "UI_PLUS",
+      "2": "+3V2"
+    },
+    "group": 8,
+    "x": 44.0,
+    "y": 41.5,
+    "rot": 180.0,
+    "lcsc": "C25804",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "F",
+    "notes": "",
+    "uuid": "3be66bc7-1773-5457-aaca-d2a2b3a0a22b"
+  },
+  {
+    "ref": "JP1",
+    "value": "BOOT",
+    "fp": "Chiptune:Board_JP1",
+    "nets": {
+      "1": "BOOT_GND",
+      "2": "GND"
+    },
+    "group": 1,
+    "x": 10.0,
+    "y": 48.0,
+    "rot": 0.0,
+    "lcsc": "",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "B",
+    "notes": "Rear service pads; short briefly for BOOT/RESET",
+    "uuid": "b7eaeabe-b662-5f0d-8937-e9669d7f684a"
+  },
+  {
+    "ref": "JP2",
+    "value": "RESET",
+    "fp": "Chiptune:Board_JP2",
+    "nets": {
+      "1": "RUN",
+      "2": "GND"
+    },
+    "group": 1,
+    "x": 15.0,
+    "y": 48.0,
+    "rot": 0.0,
+    "lcsc": "",
+    "pins": [
+      [
+        "1",
+        "1",
+        "passive"
+      ],
+      [
+        "2",
+        "2",
+        "passive"
+      ]
+    ],
+    "side": "B",
+    "notes": "Rear service pads; short briefly for BOOT/RESET",
+    "uuid": "d8091b52-9e5c-5d69-b808-a09942d52d76"
+  }
+]

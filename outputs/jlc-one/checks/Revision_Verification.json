@@ -1,0 +1,144 @@
+{
+  "board_metadata_only_changes": true,
+  "all_other_board_bytes_identical": true,
+  "footprints_pads_tracks_vias_and_nets_identical": true,
+  "assembly_ic_numbered_pad_fits": 9,
+  "hand_assembly_ic_native_pin1_checks": 3,
+  "cpl_corrections": {
+    "D3": {
+      "rotation_offset": -180.0,
+      "dx_mm": 0,
+      "dy_mm": 0,
+      "method": "All numbered pads fitted to supplier library; body center preserved",
+      "online_preview_verified": false
+    },
+    "D4": {
+      "rotation_offset": -180.0,
+      "dx_mm": 0,
+      "dy_mm": 0,
+      "method": "All numbered pads fitted to supplier library; body center preserved",
+      "online_preview_verified": false
+    },
+    "J1": {
+      "rotation_offset": 0.0,
+      "dx_mm": -0.0003,
+      "dy_mm": 1.5717,
+      "method": "Eight USB signal pads; manufacturer library anchor differs from KiCad by +1.572 mm Y",
+      "online_preview_verified": false
+    },
+    "J2": {
+      "rotation_offset": 90.0,
+      "dx_mm": 0.8008,
+      "dy_mm": 0.0003,
+      "method": "Two locating pegs + outward opening; manufacturer pinout authoritative (supplier 2/4 labels differ)",
+      "online_preview_verified": false
+    },
+    "J3": {
+      "rotation_offset": 90.0,
+      "dx_mm": -0.8008,
+      "dy_mm": -0.0003,
+      "method": "Two locating pegs + outward opening; manufacturer pinout authoritative (supplier 2/4 labels differ)",
+      "online_preview_verified": false
+    },
+    "J6": {
+      "rotation_offset": 90.0,
+      "dx_mm": 0.8008,
+      "dy_mm": 0.0003,
+      "method": "Two locating pegs + outward opening; manufacturer pinout authoritative (supplier 2/4 labels differ)",
+      "online_preview_verified": false
+    },
+    "J7": {
+      "rotation_offset": 90.0,
+      "dx_mm": 0.8008,
+      "dy_mm": 0.0003,
+      "method": "Two locating pegs + outward opening; manufacturer pinout authoritative (supplier 2/4 labels differ)",
+      "online_preview_verified": false
+    },
+    "J8": {
+      "rotation_offset": 90.0,
+      "dx_mm": -0.8008,
+      "dy_mm": -0.0003,
+      "method": "Two locating pegs + outward opening; manufacturer pinout authoritative (supplier 2/4 labels differ)",
+      "online_preview_verified": false
+    },
+    "J9": {
+      "rotation_offset": 90.0,
+      "dx_mm": -0.8008,
+      "dy_mm": -0.0003,
+      "method": "Two locating pegs + outward opening; manufacturer pinout authoritative (supplier 2/4 labels differ)",
+      "online_preview_verified": false
+    },
+    "Q3": {
+      "rotation_offset": -180.0,
+      "dx_mm": 0,
+      "dy_mm": 0,
+      "method": "All numbered pads fitted to supplier library; body center preserved",
+      "online_preview_verified": false
+    },
+    "Q4": {
+      "rotation_offset": -180.0,
+      "dx_mm": 0,
+      "dy_mm": 0,
+      "method": "All numbered pads fitted to supplier library; body center preserved",
+      "online_preview_verified": false
+    },
+    "U13": {
+      "rotation_offset": -90.0,
+      "dx_mm": 0,
+      "dy_mm": 0,
+      "method": "All numbered pads fitted to supplier library; body center preserved",
+      "online_preview_verified": false
+    },
+    "U14": {
+      "rotation_offset": -90.0,
+      "dx_mm": 0,
+      "dy_mm": 0,
+      "method": "All numbered pads fitted to supplier library; body center preserved",
+      "online_preview_verified": false
+    },
+    "U15": {
+      "rotation_offset": -90.0,
+      "dx_mm": 0,
+      "dy_mm": 0,
+      "method": "All numbered pads fitted to supplier library; body center preserved",
+      "online_preview_verified": false
+    },
+    "U16": {
+      "rotation_offset": -90.0,
+      "dx_mm": 0,
+      "dy_mm": 0,
+      "method": "All numbered pads fitted to supplier library; body center preserved",
+      "online_preview_verified": false
+    },
+    "U2": {
+      "rotation_offset": -90.0,
+      "dx_mm": 0,
+      "dy_mm": 0,
+      "method": "All numbered pads fitted to supplier library; body center preserved",
+      "online_preview_verified": false
+    },
+    "U3": {
+      "rotation_offset": -180.0,
+      "dx_mm": 0,
+      "dy_mm": 0,
+      "method": "All numbered pads fitted to supplier library; body center preserved",
+      "online_preview_verified": false
+    },
+    "U5": {
+      "rotation_offset": -180.0,
+      "dx_mm": 0,
+      "dy_mm": 0,
+      "method": "All numbered pads fitted to supplier library; body center preserved",
+      "online_preview_verified": false
+    },
+    "U9": {
+      "rotation_offset": -90.0,
+      "dx_mm": 0,
+      "dy_mm": 0,
+      "method": "All numbered pads fitted to supplier library; body center preserved",
+      "online_preview_verified": false
+    }
+  },
+  "jlc_online_preview_verified": false,
+  "source_board_sha256": "55ab595f397bca30c0f537f32063af6ece6441c61c2f6eb9e14c219f94813180"
+}

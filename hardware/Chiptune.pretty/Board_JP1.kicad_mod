@@ -1,0 +1,70 @@
+(footprint "Board_JP1"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(descr "Rear service pads; short briefly for BOOT/RESET")
+	(property "Reference" "JP1"
+		(at 0 -1 180)
+		(layer "F.Fab")
+		(uuid "ff273a44-876e-4df3-8fc4-8d2ac6eaa061")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.12)
+			)
+		)
+	)
+	(property "Value" "BOOT"
+		(at 0 1 180)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "2270a56a-21d9-4698-abb3-dda415669b57")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 180)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "1a084ce7-03d7-4736-a1d1-fcc036958bd5")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 180)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "76950b86-43da-423f-87b6-18b8d317adef")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(pad "1" smd roundrect
+		(at -0.75 0)
+		(size 1 1.5)
+		(layers "F.Cu" "F.Mask")
+		(roundrect_rratio 0.2)
+		(uuid "380a39e5-bbf2-45db-a952-76029b050e9f")
+	)
+	(pad "2" smd roundrect
+		(at 0.75 0)
+		(size 1 1.5)
+		(layers "F.Cu" "F.Mask")
+		(roundrect_rratio 0.2)
+		(uuid "909989ae-d811-45b2-889a-0c5b86125390")
+	)
+	(embedded_fonts no)
+)

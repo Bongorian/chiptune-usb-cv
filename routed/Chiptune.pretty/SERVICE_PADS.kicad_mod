@@ -1,0 +1,6 @@
+(footprint "SERVICE_PADS" (version 20241229) (generator "pcbnew") (layer "F.Cu") (attr smd)
+(property "Reference" "REF**" (at 0 -1) (layer "F.Fab") (effects (font (size 0.8 0.8))))
+(property "Value" "SERVICE" (at 0 1) (layer "F.Fab") (effects (font (size 0.8 0.8))))
+(pad "1" smd roundrect (at -0.75 0) (size 1 1.5) (layers "F.Cu" "F.Mask") (roundrect_rratio 0.2))
+(pad "2" smd roundrect (at 0.75 0) (size 1 1.5) (layers "F.Cu" "F.Mask") (roundrect_rratio 0.2))
+)

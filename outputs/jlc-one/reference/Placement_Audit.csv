@@ -1,0 +1,29 @@
+Reference,LCSC,Value,KiCad rotation CCW,Supplier library rotation CCW,CPL X correction mm,CPL Y correction mm,Pad or peg fit max residual mm,Pin marker,Pin marker X mm,Pin marker Y mm,Pin net,Evidence,Preview status
+D1,C81598,1N4148W,0.0,0,0,0,0.0848,1,15.6,19.5,MIDI_ANODE,All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+D2,C2286,RED STATUS,0.0,0.0,0,0,,1,73.2125,2.5,GND,Native placement; online polarity/reference-frame confirmation required,REQUIRES fresh JLCONE preview; native pin/net check complete
+D3,C83935,BAT54S,0.0,180,0,0,0.0843,1,49.5625,25.95,GND,All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+D4,C83935,BAT54S,180.0,0,0,0,0.0843,1,60.9375,23.55,GND,All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+D5,C81598,1N4148W,0.0,0,0,0,0.0848,1,15.85,22.0,GATE1_BASE,All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+D6,C81598,1N4148W,90.0,90,0,0,0.0848,1,63.5,22.85,GATE2_BASE,All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+J1,C165948,USB-C MIDI DEVICE / POWER,0.0,0,-0.0003,1.5717,0.0011,A5,32.75,7.695,CC1,Eight USB signal pads; manufacturer library anchor differs from KiCad by +1.572 mm Y,REQUIRES fresh JLCONE preview; native pin/net check complete
+J2,C95562,TRS MIDI IN TYPE A,0.0,90.0,0.8008,0.0003,0.0001,1,13.25,8.25,unconnected-(J2-SLEEVE_ISOLATED-Pad1),Two locating pegs + outward opening; manufacturer pinout authoritative (supplier 2/4 labels differ),REQUIRES fresh JLCONE preview; native pin/net check complete
+J3,C95562,STEREO LINE OUT,180.0,270.0,-0.8008,-0.0003,0.0001,1,71.75,14.75,GND,Two locating pegs + outward opening; manufacturer pinout authoritative (supplier 2/4 labels differ),REQUIRES fresh JLCONE preview; native pin/net check complete
+J6,C95562,CV1_IN,0.0,90.0,0.8008,0.0003,0.0001,1,13.25,31.25,GND,Two locating pegs + outward opening; manufacturer pinout authoritative (supplier 2/4 labels differ),REQUIRES fresh JLCONE preview; native pin/net check complete
+J7,C95562,GATE1_IN,0.0,90.0,0.8008,0.0003,0.0001,1,13.25,19.75,GND,Two locating pegs + outward opening; manufacturer pinout authoritative (supplier 2/4 labels differ),REQUIRES fresh JLCONE preview; native pin/net check complete
+J8,C95562,CV2_IN,180.0,270.0,-0.8008,-0.0003,0.0001,1,71.75,37.75,GND,Two locating pegs + outward opening; manufacturer pinout authoritative (supplier 2/4 labels differ),REQUIRES fresh JLCONE preview; native pin/net check complete
+J9,C95562,GATE2_IN,180.0,270.0,-0.8008,-0.0003,0.0001,1,71.75,26.25,GND,Two locating pegs + outward opening; manufacturer pinout authoritative (supplier 2/4 labels differ),REQUIRES fresh JLCONE preview; native pin/net check complete
+Q3,C20526,MMBT3904(RANGE:100-300),0.0,180,0,0,0.0843,1,17.0625,26.2,GATE1_BASE,All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+Q4,C20526,MMBT3904(RANGE:100-300),180.0,0,0,0,0.0843,1,68.4375,24.3,GATE2_BASE,All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+U1,C2040,RP2040,270.0,270,0,0,0.0128,1,34.6,26.4375,+3V2,All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+U10,,SAA1099 DIP18,90.0,90.0,0,0,,1,7.5,41.7,WR_N,Native placement; online polarity/reference-frame confirmation required,REQUIRES fresh JLCONE preview; native pin/net check complete
+U11,,SN76489AN DIP16,90.0,90.0,0,0,,1,34.0,41.7,D2,Native placement; online polarity/reference-frame confirmation required,REQUIRES fresh JLCONE preview; native pin/net check complete
+U12,,SN76489AN DIP16,90.0,90.0,0,0,,1,58.5,41.7,D2,Native placement; online polarity/reference-frame confirmation required,REQUIRES fresh JLCONE preview; native pin/net check complete
+U13,C191867,6N137S(T1),0.0,270,0,0,0.2209,1,15.985,16.56,unconnected-(U13-NC-Pad1),All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+U14,C2058050,TLV9004IPWR,0.0,270,0,0,0.0634,1,60.1375,15.95,VREF,All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+U15,C2058050,TLV9004IPWR CV BUFFER,0.0,270,0,0,0.0634,1,53.6375,31.7,CV_BIAS,All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+U16,C37593,ADS1115IDGSR,0.0,270,0,0,0.0893,1,61.8,30.75,GND,All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+U2,C131025,W25Q16JVSSIQ,180.0,90,0,0,0.0569,1,46.0875,23.845,FLASH_CS,All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+U3,C919459,TPS61023DRLR,180.0,0,0,0,0.0381,1,27.9625,33.0,BOOST_FB,All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+U5,C6500828,AP2120N-3.2TRG1,0.0,180,0,0,0.0843,1,21.0625,5.95,GND,All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+U9,C7519,USBLC6-2SC6,0.0,270,0,0,0.0106,1,40.3625,5.95,USB_D_P,All numbered pads fitted to supplier library; body center preserved,REQUIRES fresh JLCONE preview; native pin/net check complete
+Y1,C20625731,ABM8-272-T3 12MHz,270.0,270.0,0,0,,1,22.65,24.1,XIN,Native placement; online polarity/reference-frame confirmation required,REQUIRES fresh JLCONE preview; native pin/net check complete

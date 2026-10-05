@@ -1,0 +1,30 @@
+#pragma once
+// Generated from scripts/design.py; RP2040 GPIO assignments
+#define PIN_D7 0
+#define PIN_D6 1
+#define PIN_D5 2
+#define PIN_D4 3
+#define PIN_D3 4
+#define PIN_D2 5
+#define PIN_D1 6
+#define PIN_D0 7
+#define PIN_WR_N 8
+#define PIN_SAA_CS_N 9
+#define PIN_SN1_CS_N 10
+#define PIN_SN2_CS_N 11
+#define PIN_SAA_A0 12
+#define PIN_MIDI_RX 13
+#define PIN_SAA_CLK_RAW 14
+#define PIN_GATE1_N 15
+#define PIN_SN_CLK_RAW 16
+#define PIN_GATE2_N 17
+#define PIN_UI_SDA 18
+#define PIN_UI_SCL 19
+#define PIN_UI_MINUS 20
+#define PIN_UI_OK 21
+#define PIN_UI_PLUS 22
+#define PIN_SAA_DTACK_N 25
+#define PIN_CC1_ADC 26
+#define PIN_CC2_ADC 27
+#define PIN_STATUS_LED 28
+#define PIN_SOUND_ENABLE 29

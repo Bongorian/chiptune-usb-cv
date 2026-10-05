@@ -1,0 +1,1 @@
+(fp_lib_table (version 7) (lib (name "Chiptune") (type "KiCad") (uri "${KIPRJMOD}/Chiptune.pretty") (options "") (descr "Custom package footprints")))

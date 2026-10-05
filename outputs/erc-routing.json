@@ -1,0 +1,58 @@
+{
+    "$schema": "https://schemas.kicad.org/erc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-10-05T18:18:48+0900",
+    "included_severities": [
+        "error",
+        "warning"
+    ],
+    "kicad_version": "9.0.9",
+    "sheets": [
+        {
+            "path": "/",
+            "uuid_path": "/6f4c991b-1229-5117-adae-27f3127ba2ff",
+            "violations": []
+        },
+        {
+            "path": "/MCU and programming/",
+            "uuid_path": "/6f4c991b-1229-5117-adae-27f3127ba2ff/7a4487dd-39f9-5f07-9417-ec9583deb0e1",
+            "violations": []
+        },
+        {
+            "path": "/USB power and sound supply/",
+            "uuid_path": "/6f4c991b-1229-5117-adae-27f3127ba2ff/6c90ef5e-1957-5be5-bb1a-211dda2ae431",
+            "violations": []
+        },
+        {
+            "path": "/USB-C device/",
+            "uuid_path": "/6f4c991b-1229-5117-adae-27f3127ba2ff/1c51a3a7-711e-5c14-90a0-7b6cb8d370c1",
+            "violations": []
+        },
+        {
+            "path": "/Sound IC sockets/",
+            "uuid_path": "/6f4c991b-1229-5117-adae-27f3127ba2ff/4a3d7b7d-d6e9-5e28-8972-697d558d0e16",
+            "violations": []
+        },
+        {
+            "path": "/Isolated MIDI input/",
+            "uuid_path": "/6f4c991b-1229-5117-adae-27f3127ba2ff/b890c7ea-d5ec-549f-803f-517083ea5699",
+            "violations": []
+        },
+        {
+            "path": "/Stereo line mixer/",
+            "uuid_path": "/6f4c991b-1229-5117-adae-27f3127ba2ff/d86f03b9-054e-5ef0-8ef5-bddc94c5486b",
+            "violations": []
+        },
+        {
+            "path": "/CV and gate inputs/",
+            "uuid_path": "/6f4c991b-1229-5117-adae-27f3127ba2ff/49587fd1-b241-57ed-b75a-10a293796ec2",
+            "violations": []
+        },
+        {
+            "path": "/OLED and controls/",
+            "uuid_path": "/6f4c991b-1229-5117-adae-27f3127ba2ff/1d7e0fc6-3d99-51dd-ba6e-b1cc1cd3e50b",
+            "violations": []
+        }
+    ],
+    "source": "Chiptune_USB_CV.kicad_sch"
+}

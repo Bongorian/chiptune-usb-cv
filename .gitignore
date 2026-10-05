@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+*.kicad_prl
+*.lck
+*-backups/
+.DS_Store
+publication/
+research/*.pdf
+research/*.html
+research/jlc-review/*.html
+research/jlc-review/*-jlc.json

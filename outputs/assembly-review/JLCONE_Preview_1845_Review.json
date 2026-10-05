@@ -1,0 +1,90 @@
+{
+  "source": "User-provided screenshot 2026-10-05 18.45.06.png in conversation; original macOS file not accessed",
+  "native_board_changed": false,
+  "all_nine_ic_body_and_lead_alignment_visually_consistent": true,
+  "all_nine_pin1_visually_confirmed": false,
+  "purple_viewer_dots_not_assumed_pin1": "https://jlcpcb.com/help/article/pcb-assembly-faqs-part-2",
+  "components": [
+    {
+      "reference": "U1",
+      "expected_pin1_corner_top_view": "upper right",
+      "native_pin1_x_mm": 34.6,
+      "native_pin1_y_mm": 26.4375,
+      "lead_alignment_in_image": "consistent",
+      "visible_package_pin1_mark_confirmed": true,
+      "observation": "Visible package corner dot consistent with native pin 1"
+    },
+    {
+      "reference": "U2",
+      "expected_pin1_corner_top_view": "lower right",
+      "native_pin1_x_mm": 46.0875,
+      "native_pin1_y_mm": 23.845,
+      "lead_alignment_in_image": "consistent",
+      "visible_package_pin1_mark_confirmed": false,
+      "observation": "Package pin-1 dot/notch not distinguishable in supplied image; 180-degree orientation not independently confirmed"
+    },
+    {
+      "reference": "U3",
+      "expected_pin1_corner_top_view": "lower right",
+      "native_pin1_x_mm": 27.9625,
+      "native_pin1_y_mm": 33.0,
+      "lead_alignment_in_image": "consistent",
+      "visible_package_pin1_mark_confirmed": false,
+      "observation": "Package pin-1 dot/notch not distinguishable in supplied image; 180-degree orientation not independently confirmed"
+    },
+    {
+      "reference": "U5",
+      "expected_pin1_corner_top_view": "upper left",
+      "native_pin1_x_mm": 21.0625,
+      "native_pin1_y_mm": 5.95,
+      "lead_alignment_in_image": "consistent",
+      "visible_package_pin1_mark_confirmed": false,
+      "observation": "Asymmetric three-lead layout consistent; package dot not distinguishable"
+    },
+    {
+      "reference": "U9",
+      "expected_pin1_corner_top_view": "upper left",
+      "native_pin1_x_mm": 40.3625,
+      "native_pin1_y_mm": 5.95,
+      "lead_alignment_in_image": "consistent",
+      "visible_package_pin1_mark_confirmed": false,
+      "observation": "Package pin-1 dot/notch not distinguishable in supplied image; 180-degree orientation not independently confirmed"
+    },
+    {
+      "reference": "U13",
+      "expected_pin1_corner_top_view": "upper left",
+      "native_pin1_x_mm": 15.985,
+      "native_pin1_y_mm": 16.56,
+      "lead_alignment_in_image": "consistent",
+      "visible_package_pin1_mark_confirmed": true,
+      "observation": "Visible package corner dot consistent with native pin 1"
+    },
+    {
+      "reference": "U14",
+      "expected_pin1_corner_top_view": "upper left",
+      "native_pin1_x_mm": 60.1375,
+      "native_pin1_y_mm": 15.95,
+      "lead_alignment_in_image": "consistent",
+      "visible_package_pin1_mark_confirmed": false,
+      "observation": "Package pin-1 dot/notch not distinguishable in supplied image; 180-degree orientation not independently confirmed"
+    },
+    {
+      "reference": "U15",
+      "expected_pin1_corner_top_view": "upper left",
+      "native_pin1_x_mm": 53.6375,
+      "native_pin1_y_mm": 31.7,
+      "lead_alignment_in_image": "consistent",
+      "visible_package_pin1_mark_confirmed": false,
+      "observation": "Package pin-1 dot/notch not distinguishable in supplied image; 180-degree orientation not independently confirmed"
+    },
+    {
+      "reference": "U16",
+      "expected_pin1_corner_top_view": "upper left",
+      "native_pin1_x_mm": 61.8,
+      "native_pin1_y_mm": 30.75,
+      "lead_alignment_in_image": "consistent",
+      "visible_package_pin1_mark_confirmed": true,
+      "observation": "Visible package corner dot consistent with native pin 1"
+    }
+  ]
+}

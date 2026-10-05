@@ -1,0 +1,109 @@
+(footprint "Board_BT1"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(descr "Hand solder underside; verified manufacturer PCB drawing")
+	(property "Reference" "BT1"
+		(at 0 -12.7 0)
+		(layer "F.Fab")
+		(uuid "797a9710-762a-4bf3-b745-82edfd4c41d9")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.12)
+			)
+		)
+	)
+	(property "Value" "BH-AAA-B5AA001 2xAAA"
+		(at 0 12.7 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "25f4e743-93c4-42f1-b835-50fe379f7a7f")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.12)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "6af94917-584e-40b9-b696-7b175012ec9d")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "dc946aac-8e21-4334-b0b9-b256ef12c7c9")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_rect
+		(start -31.6 -11.7)
+		(end 31.6 11.7)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "d61d7463-6915-4a3b-9c99-a68bfc0dd7d0")
+	)
+	(fp_rect
+		(start -31.1 -11.2)
+		(end 31.1 11.2)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "7cee3752-6216-4fd4-8219-6e163ed0a944")
+	)
+	(pad "" np_thru_hole circle
+		(at -23.5 -10.45)
+		(size 1.8 1.8)
+		(drill 1.8)
+		(layers "*.Cu" "*.Mask")
+		(uuid "3778b81e-3c4c-4851-98a3-c0e5c01c940e")
+	)
+	(pad "1" smd rect
+		(at -27.875 -5.5)
+		(size 7.45 6.1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "628b1292-2d89-4e2e-9f0c-b2fda394a4ed")
+	)
+	(pad "2" smd rect
+		(at 27.875 -5.5)
+		(size 7.45 6.1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "1c0171cb-229e-481c-b9cb-5acb6b08eba5")
+	)
+	(pad "3" smd rect
+		(at -27.875 5.5)
+		(size 7.45 6.1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "73530223-e38c-4c4c-925d-3b793a6ef7bb")
+	)
+	(pad "4" smd rect
+		(at 27.875 5.5)
+		(size 7.45 6.1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "7bf2429d-00bd-406c-8cf4-e369e8f43b1c")
+	)
+	(embedded_fonts no)
+)

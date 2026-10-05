@@ -1,0 +1,695 @@
+{
+  "C110499": {
+    "productCode": "C110499",
+    "productModel": "DMP2035U-7",
+    "encapStandard": "SOT-23",
+    "brandNameEn": "DIODES",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/f4ba9e72cdd94a6abf97d7e8b5d408d2.svg?t=1731399963",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/b3b82869fa924bae820e3a6cfb44d689.svg?t=1731399963"
+    }
+  },
+  "C12516": {
+    "productCode": "C12516",
+    "productModel": "74LVC1G32GW,125",
+    "encapStandard": "SOT-353",
+    "brandNameEn": "Nexperia",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/1395024a5b51c0949b9d4363f87be416.svg?t=1732100110",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/4150fd4e5ba14479909d64cb0c79baa2.svg?t=1732100110"
+    }
+  },
+  "C131025": {
+    "productCode": "C131025",
+    "productModel": "W25Q16JVSSIQ",
+    "encapStandard": "SOIC-8-208mil",
+    "brandNameEn": "Winbond",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/32befe6fd3cd48f09b90004ec634748e.svg?t=1752487816",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/fdf2396de7694c3e8177c1c94fe2bbcd.svg?t=1752487816"
+    }
+  },
+  "C132554": {
+    "productCode": "C132554",
+    "productModel": "TUSB320LAIRWBR",
+    "encapStandard": "X2-QFN-12(1.6x1.6)",
+    "brandNameEn": "TI",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/178e96cf157e48c5aa1ba2930a7b7c42.svg?t=1731924919",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/7533564a207d42d6b3d4c88809f62830.svg?t=1731924919"
+    }
+  },
+  "C14663": {
+    "productCode": "C14663",
+    "productModel": "CC0603KRX7R9BB104",
+    "encapStandard": "0603",
+    "brandNameEn": "YAGEO",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/154b66255b01a09bf1c88bb1ea89be78.svg?t=1785199256",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/f8151fdc728a41ebbc304e11d39e5437.svg?t=1785199256"
+    }
+  },
+  "C15849": {
+    "productCode": "C15849",
+    "productModel": "CL10A105KB8NNNC",
+    "encapStandard": "0603",
+    "brandNameEn": "Samsung Electro-Mechanics",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/637415f70eb949abfaeba2abe658ee9b.svg?t=1732101053",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/f8151fdc728a41ebbc304e11d39e5437.svg?t=1732101053"
+    }
+  },
+  "C1620": {
+    "productCode": "C1620",
+    "productModel": "0603B471K500NT",
+    "encapStandard": "0603",
+    "brandNameEn": "FH",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/01efb400c413e4ef0997c6167a9b05a3.svg?t=1742386523",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/f8151fdc728a41ebbc304e11d39e5437.svg?t=1742386523"
+    }
+  },
+  "C1644": {
+    "productCode": "C1644",
+    "productModel": "CL10C150JB8NNNC",
+    "encapStandard": "0603",
+    "brandNameEn": "Samsung Electro-Mechanics",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/2e066ace420280867782c1434af4b3ce.svg?t=1710725403",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/f8151fdc728a41ebbc304e11d39e5437.svg?t=1710725403"
+    }
+  },
+  "C165948": {
+    "productCode": "C165948",
+    "productModel": "TYPE-C-31-M-12",
+    "encapStandard": "SMD",
+    "brandNameEn": "Korean Hroparts Elec",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/df8405e2fa0e40a984c435ad4c8d5cf3.svg?t=1757297676",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/d556fcebb18d4647a249a7d49ea0c41d.svg?t=1757297676"
+    }
+  },
+  "C191867": {
+    "productCode": "C191867",
+    "productModel": "6N137S(T1)",
+    "encapStandard": "SOP-8-2.54mm",
+    "brandNameEn": "CT MICRO",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/fabbe87f5de54e57812bcf3de89e7942.svg?t=1677054631",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/e425aca6993a4cf0a6ce7dd486b1ec18.svg?t=1677054631"
+    }
+  },
+  "C19666": {
+    "productCode": "C19666",
+    "productModel": "CL10A475KO8NNNC",
+    "encapStandard": "0603",
+    "brandNameEn": "Samsung Electro-Mechanics",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/3d1896a2a86cb913354614695da7415b.svg?t=1739501688",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/f8151fdc728a41ebbc304e11d39e5437.svg?t=1739501688"
+    }
+  },
+  "C19702": {
+    "productCode": "C19702",
+    "productModel": "CL10A106KP8NNNC",
+    "encapStandard": "0603",
+    "brandNameEn": "Samsung Electro-Mechanics",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/3d033fcb6d334c25b65a754834cf5aaf.svg?t=1744296931",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/f8151fdc728a41ebbc304e11d39e5437.svg?t=1744296931"
+    }
+  },
+  "C2040": {
+    "productCode": "C2040",
+    "productModel": "RP2040",
+    "encapStandard": "LQFN-56(7x7)",
+    "brandNameEn": "Raspberry Pi",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/c2754a5dac404cb1b757213b56759c67.svg?t=1766733192",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/39e1b05b30bd4c64a6c9a1b67d9eb207.svg?t=1766733192"
+    }
+  },
+  "C2058050": {
+    "productCode": "C2058050",
+    "productModel": "TLV9004IPWR",
+    "encapStandard": "TSSOP-14",
+    "brandNameEn": "TI",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/c7d514c9ce5d4d3997b359d7f372282f.svg?t=1734659104",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/80a3980f11914ca3a11dea6a81230c3d.svg?t=1734659104"
+    }
+  },
+  "C20625731": {
+    "productCode": "C20625731",
+    "productModel": "ABM8-272-T3",
+    "encapStandard": "SMD3225-4P",
+    "brandNameEn": "ABRACON",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/d73e9baf622d443da2537ad174606c21.svg?t=1772784660",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/9e297fbdb6c24ee39419d7ac96617dbf.svg?t=1772784660"
+    }
+  },
+  "C21190": {
+    "productCode": "C21190",
+    "productModel": "0603WAF1001T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/597701dbde98d3183fe5df5fb870ec57.svg?t=1730984720",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1730984720"
+    }
+  },
+  "C22775": {
+    "productCode": "C22775",
+    "productModel": "0603WAF1000T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/2291b26429a0a53b9787e50172e9245c.svg?t=1700720440",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1700720440"
+    }
+  },
+  "C22843": {
+    "productCode": "C22843",
+    "productModel": "0603WAF1501T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/61fa9d7b9d0315552ca965dc036134ad.svg?t=1732256402",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1732256402"
+    }
+  },
+  "C22859": {
+    "productCode": "C22859",
+    "productModel": "0603WAF100JT5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/ef94a8d58c234b61620afe16d965b8a7.svg?t=1700721920",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1700721920"
+    }
+  },
+  "C22961": {
+    "productCode": "C22961",
+    "productModel": "0603WAF2203T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/dfb5dea6f134ff419a06b6595552dcfb.svg?t=1700616914",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1700616914"
+    }
+  },
+  "C22962": {
+    "productCode": "C22962",
+    "productModel": "0603WAF2200T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/25eef13595154cf911d80acfae99db0d.svg?t=1700721062",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1700721062"
+    }
+  },
+  "C23140": {
+    "productCode": "C23140",
+    "productModel": "0603WAF330JT5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/f1f201526bc029248b694103008e9483.svg?t=1730985011",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1730985011"
+    }
+  },
+  "C23162": {
+    "productCode": "C23162",
+    "productModel": "0603WAF4701T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/0e9af40e10eb0954509ee99672d67d03.svg?t=1742060978",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1742060978"
+    }
+  },
+  "C23178": {
+    "productCode": "C23178",
+    "productModel": "0603WAF4703T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/1578990171072eb988edac2a3dd758ad.svg?t=1700721671",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1700721671"
+    }
+  },
+  "C23236": {
+    "productCode": "C23236",
+    "productModel": "0603WAF7871T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/e86aeebec2116d5e742c2fc619934118.svg?t=1700720732",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1700720732"
+    }
+  },
+  "C2461421": {
+    "productCode": "C2461421",
+    "productModel": "XC61CC2002MR-G",
+    "encapStandard": "SOT-23",
+    "brandNameEn": "TOREX",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/4f6e48c3430c4534a937f87405999d14.svg?t=1685932043",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/df5cb0c82c3c49349fb70a2fb5dc3d0a.svg?t=1685932043"
+    }
+  },
+  "C25190": {
+    "productCode": "C25190",
+    "productModel": "0603WAF270JT5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/dfc502a4409b751a8728b9741a903464.svg?t=1743183983",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1743183983"
+    }
+  },
+  "C25803": {
+    "productCode": "C25803",
+    "productModel": "0603WAF1003T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/5ff01e5b28266f76e3c6ac889a7fdd07.svg?t=1713800144",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1713800144"
+    }
+  },
+  "C25804": {
+    "productCode": "C25804",
+    "productModel": "0603WAF1002T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/b210af5a1436310a86e8b108e2e5a90b.svg?t=1704977706",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1704977706"
+    }
+  },
+  "C25819": {
+    "productCode": "C25819",
+    "productModel": "0603WAF4702T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/11edeb1c5e2a4db53071549cb265b72b.svg?t=1700721337",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1700721337"
+    }
+  },
+  "C31850": {
+    "productCode": "C31850",
+    "productModel": "0603WAF2202T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/2b1795cdb1f067ec2dd08c046a933608.svg?t=1700721941",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1700721941"
+    }
+  },
+  "C318884": {
+    "productCode": "C318884",
+    "productModel": "TS-1187A-B-A-B",
+    "encapStandard": "SMD-4P,5.1x5.1mm",
+    "brandNameEn": "XKB Connection",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/584d673271dd43738fb1ad2dd2772015.svg?t=1757403670",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/5b5b16d7faee41f894243f3dab7ab98e.svg?t=1757403670"
+    }
+  },
+  "C4190": {
+    "productCode": "C4190",
+    "productModel": "0603WAF2201T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/caf0741cbbe68c68867ee13c04b24a47.svg?t=1744296776",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1744296776"
+    }
+  },
+  "C431540": {
+    "productCode": "C431540",
+    "productModel": "MSK12C02",
+    "encapStandard": "SMD,8x2.8mm",
+    "brandNameEn": "SHOU HAN",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/20682c339523482a9e7bc335454b199a.svg?t=1704424217",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/f66711cfd33f4c908e1bafbce46c9bda.svg?t=1704424217"
+    }
+  },
+  "C45783": {
+    "productCode": "C45783",
+    "productModel": "CL21A226MAQNNNE",
+    "encapStandard": "0805",
+    "brandNameEn": "Samsung Electro-Mechanics",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/3eed98608c2542ad840aa25932b95975.svg?t=1729506308",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/2ee8eb13a0124a108e622ce40c0c25a8.svg?t=1729506308"
+    }
+  },
+  "C46506": {
+    "productCode": "C46506",
+    "productModel": "TPS2552DBVR",
+    "encapStandard": "SOT-23-6",
+    "brandNameEn": "TI",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/05a6ee5730f1de11d429404b2ff6a102.svg?t=1731924932",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/f3d2a2ecf658447dac746eb15158a989.svg?t=1731924932"
+    }
+  },
+  "C51118": {
+    "productCode": "C51118",
+    "productModel": "AP2112K-3.3TRG1",
+    "encapStandard": "SOT-25-5",
+    "brandNameEn": "DIODES",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/ed114c3e62d8498cbfcaae87b4acc871.svg?t=1732275701",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/7ec9305c6bfd40199d1dde43ba8e9df2.svg?t=1732275701"
+    }
+  },
+  "C72043": {
+    "productCode": "C72043",
+    "productModel": "19-217/GHC-YR1S2/3T",
+    "encapStandard": "0603",
+    "brandNameEn": "EVERLIGHT",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/303ea8960e30b8ac9e63b17d909c778d.svg?t=1734681938",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/7335dfa67b564d7988d09a073a20aa42.svg?t=1734681938"
+    }
+  },
+  "C7519": {
+    "productCode": "C7519",
+    "productModel": "USBLC6-2SC6",
+    "encapStandard": "SOT-23-6L",
+    "brandNameEn": "ST",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/500a3f7114117ba365957f7c04b0814c.svg?t=1709545275",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/9a066f903e65476fa74739d5e9b0ceb9.svg?t=1709545275"
+    }
+  },
+  "C81598": {
+    "productCode": "C81598",
+    "productModel": "1N4148W",
+    "encapStandard": "SOD-123",
+    "brandNameEn": "ST(Semtech)",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/4f3ab571bad286ee7cb84c878c7feb74.svg?t=1744296330",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/1ea2e7045b10400cba09c2b065998c9f.svg?t=1744296330"
+    }
+  },
+  "C8545": {
+    "productCode": "C8545",
+    "productModel": "2N7002",
+    "encapStandard": "SOT-23",
+    "brandNameEn": "JSCJ",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/8f5cae780c0a8ec7b7b995e1b2effd15.svg?t=1731923760",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/bade90667a6e4731855e9a223387b8a6.svg?t=1731923760"
+    }
+  },
+  "C919459": {
+    "productCode": "C919459",
+    "productModel": "TPS61023DRLR",
+    "encapStandard": "SOT-563",
+    "brandNameEn": "TI",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/18ca651bb59148e5ba9f416596dc3e39.svg?t=1744220071",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/12ec04a02cb54b98af05fc74f16c8bc5.svg?t=1744220071"
+    }
+  },
+  "C95562": {
+    "productCode": "C95562",
+    "productModel": "PJ-320D-4A",
+    "encapStandard": "SMD",
+    "brandNameEn": "Korean Hroparts Elec",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/e110fee530cb4e0193eec9fe67ffd11c.svg?t=1672792847",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/8418ae5f423a49b08f22ce6233e3666b.svg?t=1672792847"
+    }
+  },
+  "C964881": {
+    "productCode": "C964881",
+    "productModel": "BH-AAA-B5AA001",
+    "encapStandard": "-",
+    "brandNameEn": "MYOUNG",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/dcf88971736e4ec3958efbe12cdfbd61.svg?t=1722448863",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/100050a2d6504ef6b63b51fde352543f.svg?t=1722448863"
+    }
+  },
+  "C23242": {
+    "productCode": "C23242",
+    "productModel": "0603WAF7502T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/ec6b63f09390703cb8213de1df99ea5c.svg?t=1700616903",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1700616903"
+    }
+  },
+  "C23262": {
+    "productCode": "C23262",
+    "productModel": "0603WAF9093T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/10c0f5e5ef3580d88d5d55dcf19f3d1b.svg?t=1700719507",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1700719507"
+    }
+  },
+  "C325980": {
+    "productCode": "C325980",
+    "productModel": "SLO0520H1R0MTT",
+    "encapStandard": "SMD,5.4x5.1mm",
+    "brandNameEn": "Sunltech",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/fbb084ef2a7648fb9daeef81556f9203.svg?t=1751537419",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/76ed4f7f20a547d1945e05f2795ae701.svg?t=1751537419"
+    }
+  },
+  "C2693600": {
+    "productCode": "C2693600",
+    "productModel": "MVK16V100UF6.3*6",
+    "encapStandard": "SMD,D6.3xL6mm",
+    "brandNameEn": "SAMYOUNG",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/6e16134af72f4364b61e1fa8e7a00fa0.svg?t=1742385035",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/b9edaecb07714ba28f55fb154f740b16.svg?t=1742385035"
+    }
+  },
+  "C311622": {
+    "productCode": "C311622",
+    "productModel": "VZT101M1HTR-0607",
+    "encapStandard": "SMD,D6.3xL7.7mm",
+    "brandNameEn": "Lelon",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/e7b1a472f3614d12a4be762ad54ec94f.svg?t=1752144021",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/aa06f9df9ae0447ca7bceb647e7fd43b.svg?t=1752144021"
+    }
+  },
+  "C435273": {
+    "productCode": "C435273",
+    "productModel": "SPM4030T-1R0M-HZ",
+    "encapStandard": "SMD,4.2x4mm",
+    "brandNameEn": "TDK",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/42b36eee851f4f5eb10f127db743da23.svg?t=1683775240",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/21359a07119f4e77b4941296a773d136.svg?t=1683775240"
+    }
+  },
+  "C4211": {
+    "productCode": "C4211",
+    "productModel": "0603WAF3001T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/9226b2bc383bb7b5243b2546a8746f56.svg?t=1700720145",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1700720145"
+    }
+  },
+  "C137672": {
+    "productCode": "C137672",
+    "productModel": "RC0603FR-07910KL",
+    "encapStandard": "0603",
+    "brandNameEn": "YAGEO",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/d86a43ebf9ac403fa0b1f2c1c1932d45.svg?t=1673289904",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1673289904"
+    }
+  },
+  "C54531625": {
+    "productCode": "C54531625",
+    "productModel": "1RC0603F9103",
+    "encapStandard": "0603",
+    "brandNameEn": "SAE",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/d8ed1a5ed0364e49aefaed51bf0264d0.svg?t=1783495092",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1783495092"
+    }
+  },
+  "C3983001": {
+    "productCode": "C3983001",
+    "productModel": "CRCW0603887KFKEA",
+    "encapStandard": "0603",
+    "brandNameEn": "VISHAY",
+    "edaSvgInfo": null
+  },
+  "C351537": {
+    "productCode": "C351537",
+    "productModel": "PTFR1206B100RP9",
+    "encapStandard": "1206",
+    "brandNameEn": "RESI",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/c1129a96bd3046bebfcb0229e117c601.svg?t=1717041945",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/8e9b1be4bcb6420dbd1d09bf04b02792.svg?t=1717041945"
+    }
+  },
+  "C25905": {
+    "productCode": "C25905",
+    "productModel": "0402WGF5101TCE",
+    "encapStandard": "0402",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/9a1dab2264ee9c0dd27f0d885a0978e6.svg?t=1700720728",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/fafd024f554e426eb74cf4a204aa88b0.svg?t=1700720728"
+    }
+  },
+  "C6500828": {
+    "productCode": "C6500828",
+    "productModel": "AP2120N-3.2TRG1",
+    "encapStandard": "SOT-23",
+    "brandNameEn": "DIODES",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/4901810f4c7049be92a82465da61e9ca.svg?t=1736256699",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/bade90667a6e4731855e9a223387b8a6.svg?t=1736256699"
+    }
+  },
+  "C83935": {
+    "productCode": "C83935",
+    "productModel": "BAT54S",
+    "encapStandard": "SOT-23",
+    "brandNameEn": "ST(Semtech)",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/8110d76f51931ad8f09cea2e2c99f353.svg?t=1740748570",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/bade90667a6e4731855e9a223387b8a6.svg?t=1740748570"
+    }
+  },
+  "C370970": {
+    "productCode": "C370970",
+    "productModel": "EC11E15244G1",
+    "encapStandard": "Through Hole",
+    "brandNameEn": "ALPSALPINE",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/07310eedce5a43c98c4161eafcc9aef0.svg?t=1729275305",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/a5e1c98a3bb64075832f1f5ba4fc3881.svg?t=1729275305"
+    }
+  },
+  "C20526": {
+    "productCode": "C20526",
+    "productModel": "MMBT3904(RANGE:100-300)",
+    "encapStandard": "SOT-23",
+    "brandNameEn": "JSCJ",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/f96f91bdb8ffe7f0cee7810889cca21a.svg?t=1742925071",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/bade90667a6e4731855e9a223387b8a6.svg?t=1742925071"
+    }
+  },
+  "C5248081": {
+    "productCode": "C5248081",
+    "productModel": "HS91L02W2C01",
+    "encapStandard": "-",
+    "brandNameEn": "HS",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/333912d2af914b89a59f1086fd452842.svg?t=1705041603",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/47a89f7083cc4ae28e8c42ffc894fa62.svg?t=1705041603"
+    }
+  },
+  "C855559": {
+    "productCode": "C855559",
+    "productModel": "AT0603BRD07100KL",
+    "encapStandard": "0603",
+    "brandNameEn": "YAGEO",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/8c54e41b16f747bcb4b07ee9eb2f1ebd.svg?t=1749454558",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1749454558"
+    }
+  },
+  "C94514": {
+    "productCode": "C94514",
+    "productModel": "MMBT3904-7-F",
+    "encapStandard": "SOT-23",
+    "brandNameEn": "DIODES",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/ed370c4e92b94b5892d195b3650d5d7a.svg?t=1732284366",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/b3b82869fa924bae820e3a6cfb44d689.svg?t=1732284366"
+    }
+  },
+  "C2286": {
+    "productCode": "C2286",
+    "productModel": "KT-0603R",
+    "encapStandard": "0603",
+    "brandNameEn": "Hubei KENTO Elec"
+  },
+  "C7420": {
+    "productCode": "C7420",
+    "productModel": "NC7SZ125M5X",
+    "encapStandard": "SOT-23-5",
+    "brandNameEn": "onsemi",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/09346ef4ec22154d3a868fdd5875fa93.svg?t=1742882412",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/e7f085e4f71344109c090040716070ab.svg?t=1742882412"
+    }
+  },
+  "C95204": {
+    "productCode": "C95204",
+    "productModel": "RT0603BRD0710KL",
+    "encapStandard": "0603",
+    "brandNameEn": "YAGEO",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/4b1dfedb8a064ce580d79df53972c77a.svg?t=1706585734",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1706585734"
+    }
+  },
+  "C143790": {
+    "productCode": "C143790",
+    "productModel": "PEC11R-4215F-S0024",
+    "encapStandard": "Through Hole",
+    "brandNameEn": "BOURNS",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/0702b90b662b4472bdf9fa6fbea60a36.svg?t=1744297474",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/98bbfa61aee140e2a66d35bdba46dfe4.svg?t=1744297474"
+    }
+  },
+  "C23186": {
+    "productCode": "C23186",
+    "productModel": "0603WAF5101T5E",
+    "encapStandard": "0603",
+    "brandNameEn": "UNI-ROYAL",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/faac4ade3bc4e3dd5ad2239bdc7375c1.svg?t=1762842932",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/398691f1f785460098bbe5ee6590333c.svg?t=1762842932"
+    }
+  },
+  "C6359654": {
+    "productCode": "C6359654",
+    "productModel": "XC6206P322MR-G",
+    "encapStandard": "SOT-23",
+    "brandNameEn": "TOREX",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/2a4f0354cdf344cbaaa0a9a927c7c6bf.svg?t=1769868400",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/b3b82869fa924bae820e3a6cfb44d689.svg?t=1769868400"
+    }
+  },
+  "C37593": {
+    "productCode": "C37593",
+    "productModel": "ADS1115IDGSR",
+    "encapStandard": "VSSOP-10",
+    "brandNameEn": "TI",
+    "edaSvgInfo": {
+      "schSvg": "//image.easyeda.com/component_svgs/prod/63f0b60d1056997cd69901d2e08e92f5.svg?t=1710233476",
+      "pcbSvg": "//image.easyeda.com/component_svgs/prod/118a205096a1444195e08feff716c648.svg?t=1710233476"
+    }
+  }
+}

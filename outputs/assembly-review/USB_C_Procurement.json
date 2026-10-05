@@ -1,0 +1,14 @@
+{
+  "reference": "J1",
+  "part_number": "TYPE-C-31-M-12",
+  "lcsc": "C165948",
+  "requested_source": "JLCPCB public stock",
+  "assemble": true,
+  "quantity_per_board": 1,
+  "board_or_cpl_changes": false,
+  "public_stock": 423660,
+  "checked_at": "2026-10-05T18:57:49.479491+09:00",
+  "source_url": "https://jlcpcb.com/partdetail/C165948",
+  "account_source_changed": false,
+  "purchased_or_ordered": false
+}

@@ -1,0 +1,17 @@
+{
+  "complete": true,
+  "bytes_per_chip": 256,
+  "chips": 3,
+  "checks": 768,
+  "gpio_word_is_logical_byte": true,
+  "gpio_for_board_D0_to_D7": [
+    7,
+    6,
+    5,
+    4,
+    3,
+    2,
+    1,
+    0
+  ]
+}

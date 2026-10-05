@@ -1,0 +1,90 @@
+(footprint "Board_L1"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(descr "1uH; Isat 8A typ, Irms 5A typ; manufacturer drawing verified")
+	(property "Reference" "L1"
+		(at 0 -4.05 0)
+		(layer "F.Fab")
+		(uuid "27484899-5a17-46c9-ad22-0274bf5fa962")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.12)
+			)
+		)
+	)
+	(property "Value" "SLO0520H1R0MTT 1uH"
+		(at 0 4.05 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "17fce9b5-79c7-4e19-952c-2c50ee66f505")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.12)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "bd79820e-7b2f-4127-9b15-b9272bf6ab18")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "bb7642f6-ddbf-4937-8125-e8ebca6c50e0")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_rect
+		(start -3.2 -3.05)
+		(end 3.2 3.05)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "64500ceb-02f0-47da-ae4b-18365ac07378")
+	)
+	(fp_rect
+		(start -2.7 -2.55)
+		(end 2.7 2.55)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "bd30d861-36d3-40d4-9963-37c699b38777")
+	)
+	(pad "1" smd rect
+		(at -2.25 0)
+		(size 1.5 2.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "66fb4ef5-3b30-4fe3-b9fc-aaa8914fe01a")
+	)
+	(pad "2" smd rect
+		(at 2.25 0)
+		(size 1.5 2.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "3139c670-9696-440e-baa2-80a65b77055f")
+	)
+	(embedded_fonts no)
+)

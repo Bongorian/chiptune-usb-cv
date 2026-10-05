@@ -1,0 +1,42 @@
+References,Revised LCSC,Revised library,Decision reason,Source
+"C1,C2",C1644,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C1644
+"C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C28,C29,C30,C34,C36,C50,C51,C53,C54,C55,C56,C57,C58",C14663,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C14663
+"C14,C15,C16,C38,C39,C40,C41,C52",C15849,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C15849
+"C18,C19,C35",C45783,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C45783
+"C21,C22,C31,C32,C33,C37",C19666,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C19666
+"C42,C44",C1620,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C1620
+"C43,C45",C19702,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C19702
+"D1,D5,D6",C81598,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C81598
+"D3,D4",C83935,Extended,BAT54S二重直列クランプと端子配置を維持,https://jlcpcb.com/partdetail/C83935
+FB1,C22859,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C22859
+R4,C22859,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C22859
+J1,C165948,Extended,C165948を調達・実装。My Partsに使用可能在庫がある場合はその在庫も利用可能,https://jlcpcb.com/partdetail/C165948
+"J2,J3,J6,J7,J8,J9",C95562,Extended,6個共通。開口・位置決め穴・接点を維持,https://jlcpcb.com/partdetail/C95562
+L1,C325980,Extended,1uHの電流定格・抵抗・寸法を維持,https://jlcpcb.com/partdetail/C325980
+"Q3,Q4",C20526,Basic,Basic C20526へ交換。B1/E2/C3、SOT-23、ゲート用途に適合,https://jlcpcb.com/partdetail/C20526
+"R1,R5",C21190,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C21190
+"R2,R3,R32,R40,R41,R42,R49,R52,R66,R67,R78,R81,R82,R83,R84",C25804,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C25804
+"R6,R28,R29,R30,R31,R35,R36,R37,R51,R54,R61,R62,R63,R64,R76,R77,R79,R80",C25803,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C25803
+"R7,R45,R46,R47,R48",C31850,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C31850
+R8,C4211,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C4211
+"R11,R12",C25190,Extended,USBシリーズ抵抗27Ωを維持。安い33Ωへの値変更は行わない,https://jlcpcb.com/partdetail/C25190
+"R16,R17",C23162,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C23162
+"R26,R27",C23140,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C23140
+R38,C22962,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C22962
+"R39,R55,R74",C4190,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C4190
+"R43,R44",C22843,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C22843
+"R50,R53",C22775,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C22775
+"R58,R59",C23186,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C23186
+"R68,R70,R72",C855559,Extended,CVの100kΩ 0.1%を維持,https://jlcpcb.com/partdetail/C855559
+"R69,R71,R73",C95204,Extended,CVの10kΩ 0.1%を維持,https://jlcpcb.com/partdetail/C95204
+"SW5,SW6,SW7",C318884,Basic,既存のBasic品を維持,https://jlcpcb.com/partdetail/C318884
+U1,C2040,Extended,RP2040本体を維持,https://jlcpcb.com/partdetail/C2040
+U2,C131025,Extended,同じ208milのBasic候補も確認したが、価格と互換確認を踏まえて現行品を維持,https://jlcpcb.com/partdetail/C131025
+U3,C919459,Extended,昇圧制御・電流能力・ピン配置を維持,https://jlcpcb.com/partdetail/C919459
+U5,C6500828,Extended,GND1/VOUT2/VIN3、3.2Vを維持,https://jlcpcb.com/partdetail/C6500828
+U9,C7519,Extended,USB用ESDを維持。同名安価互換品もExtended,https://jlcpcb.com/partdetail/C7519
+U13,C191867,Extended,高速MIDIフォトカプラ・SMDIP幅を維持,https://jlcpcb.com/partdetail/C191867
+"U14,U15",C2058050,Extended,RRIO・電圧範囲・TSSOP14を維持,https://jlcpcb.com/partdetail/C2058050
+U16,C37593,Extended,ADC機能・VSSOP10を維持,https://jlcpcb.com/partdetail/C37593
+Y1,C20625731,Extended,CL10pF/ESR50Ωを維持。Basic C9002はCL20pF/ESR80Ω,https://jlcpcb.com/partdetail/C20625731
+D2,C2286,Basic,在庫不足。Basic赤0603 C2286へ交換。R55 2.2k維持,https://jlcpcb.com/partdetail/C2286

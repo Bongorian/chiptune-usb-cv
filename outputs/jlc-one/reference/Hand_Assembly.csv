@@ -1,0 +1,8 @@
+Designator,Component,LCSC reference only,Instructions
+J4,SWD,,"Hand solder, optional"
+U10,SAA1099 DIP18,,User supplied IC; hand solder DIP18 socket; GPIO0..7 word equals logical byte; reverse8 only for individual PIN_Dn writes
+U11,SN76489AN DIP16,,"User supplied IC; hand solder DIP16 socket; READY unused, firmware write wait >=10us at 4MHz"
+U12,SN76489AN DIP16,,"User supplied IC; hand solder DIP16 socket; READY unused, firmware write wait >=10us at 4MHz"
+J5,HS96L03W2C03 OLED INTERFACE,C5248080,"Manual assembly; 27.3x27.8mm SSD1315 module on 5mm M2 spacers, not SMT placed"
+JP1,BOOT,,Rear service pads; short briefly for BOOT/RESET
+JP2,RESET,,Rear service pads; short briefly for BOOT/RESET

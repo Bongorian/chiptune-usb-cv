@@ -1,0 +1,26 @@
+実装レビュー・調達方針（2026-10-05）
+D2: 赤0603 LED KT-0603R / C2286、Basic。R55=2.2kを維持。
+Q3/Q4: MMBT3904(RANGE:100-300) / C20526、Basic。SOT-23 B1/E2/C3を維持。
+USB-C J1: TYPE-C-31-M-12 / C165948、調達・表面実装対象、1基板1個。
+My Partsに使用可能在庫がある場合はその在庫を使用できる。
+新規調達時はJLCPCB公開在庫から同じC165948を選択する。
+調達元の選択は注文画面の設定で、BOM/CPLには含まれない。
+
+部品の基板座標・向き・パッド・配線・ビアはBasic交換前と同一。
+CPLには公開ライブラリに基づく部品別の角度・中心座標補正を適用。
+全9個の実装ICについて公開ライブラリの全パッド番号を照合。
+ジャックはメーカー接点図と位置決めペグ、USB-Cは8本の信号端子から照合。
+Placement_Audit.csvに照合記録、Placement_Pin1.svg/.pngにピン1・K位置を表示。
+新しい実装プレビューの外形・リード配置は整合。U1/U13/U16のピン1印は目視一致。
+U2/U3/U9/U14/U15のピン1印は画像から独立して判別できず、製造前に確認する。
+ビュワーの色付き点は必ずしも1番ピンを意味しない。
+
+DRC=0、未接続=0、回路図パリティ=0、ERC=0。実装対象141点。
+仕様が変わる水晶・精密抵抗・アナログICの安価品への交換は行っていない。
+実機ファームウェア・電源突入測定・音声検証・CV校正は未完了。
+在庫・価格は変動するため、注文時に再確認する。
+https://jlcpcb.com/partdetail/C2286
+https://jlcpcb.com/partdetail/C20526
+https://jlcpcb.com/partdetail/C165948
+https://jlcpcb.com/help/article/how-to-use-my-own-parts-for-pcb-assembly-order
+https://jlcpcb.com/help/article/pcb-assembly-faqs-part-2

@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="8.128mm" height="8.128mm" viewBox="3984.1 2984 32 32"><title></title><style type="text/css">
+*[layerid="1"] {stroke:#FF0000;fill:#FF0000;}
+*[layerid="2"] {stroke:#0000FF;fill:#0000FF;}
+*[layerid="3"] {stroke:#FFCC00;fill:#FFCC00;}
+*[layerid="4"] {stroke:#66CC33;fill:#66CC33;}
+*[layerid="5"] {stroke:#808080;fill:#808080;}
+*[layerid="6"] {stroke:#800000;fill:#800000;}
+*[layerid="7"] {stroke:#800080;fill:#800080;stroke-opacity:0.7;fill-opacity:0.7;}
+*[layerid="8"] {stroke:#AA00FF;fill:#AA00FF;stroke-opacity:0.7;fill-opacity:0.7;}
+*[layerid="9"] {stroke:#6464FF;fill:#6464FF;}
+*[layerid="10"] {stroke:#FF00FF;fill:#FF00FF;}
+*[layerid="11"] {stroke:#FFFFFF;fill:#FFFFFF;stroke-opacity:0.5;fill-opacity:0.5;}
+*[layerid="12"] {stroke:#FFFFFF;fill:#FFFFFF;}
+*[layerid="13"] {stroke:#33CC99;fill:#33CC99;}
+*[layerid="14"] {stroke:#5555FF;fill:#5555FF;}
+*[layerid="15"] {stroke:#F022F0;fill:#F022F0;}
+*[layerid="19"] {stroke:#66CCFF;fill:#66CCFF;}
+*[layerid="21"] {stroke:#800000;fill:#800000;}
+*[layerid="22"] {stroke:#008000;fill:#008000;}
+*[layerid="23"] {stroke:#00FF00;fill:#00FF00;}
+*[layerid="24"] {stroke:#BC8E00;fill:#BC8E00;}
+*[layerid="25"] {stroke:#70DBFA;fill:#70DBFA;}
+*[layerid="26"] {stroke:#00CC66;fill:#00CC66;}
+*[layerid="27"] {stroke:#9966FF;fill:#9966FF;}
+*[layerid="28"] {stroke:#800080;fill:#800080;}
+*[layerid="29"] {stroke:#008080;fill:#008080;}
+*[layerid="30"] {stroke:#15935F;fill:#15935F;}
+*[layerid="31"] {stroke:#000080;fill:#000080;}
+*[layerid="32"] {stroke:#00B400;fill:#00B400;}
+*[layerid="33"] {stroke:#2E4756;fill:#2E4756;}
+*[layerid="34"] {stroke:#99842F;fill:#99842F;}
+*[layerid="35"] {stroke:#FFFFAA;fill:#FFFFAA;}
+*[layerid="36"] {stroke:#99842F;fill:#99842F;}
+*[layerid="37"] {stroke:#2E4756;fill:#2E4756;}
+*[layerid="38"] {stroke:#3535FF;fill:#3535FF;}
+*[layerid="39"] {stroke:#8000BC;fill:#8000BC;}
+*[layerid="40"] {stroke:#43AE5F;fill:#43AE5F;}
+*[layerid="41"] {stroke:#C3ECCE;fill:#C3ECCE;}
+*[layerid="42"] {stroke:#728978;fill:#728978;}
+*[layerid="43"] {stroke:#39503F;fill:#39503F;}
+*[layerid="44"] {stroke:#0C715D;fill:#0C715D;}
+*[layerid="45"] {stroke:#5A8A80;fill:#5A8A80;}
+*[layerid="46"] {stroke:#2B937E;fill:#2B937E;}
+*[layerid="47"] {stroke:#23999D;fill:#23999D;}
+*[layerid="48"] {stroke:#45B4E3;fill:#45B4E3;}
+*[layerid="49"] {stroke:#215DA1;fill:#215DA1;}
+*[layerid="50"] {stroke:#4564D7;fill:#4564D7;}
+*[layerid="51"] {stroke:#6969E9;fill:#6969E9;}
+*[layerid="52"] {stroke:#9069E9;fill:#9069E9;}
+*[layerid="99"] {stroke:#00CCCC;fill:#00CCCC;stroke-opacity:0.6;fill-opacity:0.6;}
+*[layerid="100"] {stroke:#CC9999;fill:#CC9999;}
+*[layerid="101"] {stroke:#66FFCC;fill:#66FFCC;}
+*[layerid="Hole"] {stroke:#222222;fill:#222222;}
+*[layerid="DRCError"] {stroke:#FAD609;fill:#FAD609;}
+*[fill="none"] {fill: none;}
+*[stroke="none"] {stroke: none;}
+path, polyline, polygon, line {stroke-linecap:round;}
+g[c_partid="part_pad"][layerid="1"] ellipse:not([c_padid]) {fill:#FF0000;}
+g[c_partid="part_pad"][layerid="1"]  polygon:not([c_padid]) {fill:#FF0000;}
+g[c_partid="part_pad"][layerid="1"]  polyline:not([c_padid]) {stroke:#FF0000;}
+g[c_partid="part_pad"][layerid="1"]  circle {fill:#FF0000;}
+g[c_partid="part_pad"][layerid="2"]  ellipse:not([c_padid]) {fill:#0000FF;}
+g[c_partid="part_pad"][layerid="2"]  polygon:not([c_padid]) {fill:#0000FF;}
+g[c_partid="part_pad"][layerid="2"]  polyline:not([c_padid]) {stroke:#0000FF;}
+g[c_partid="part_pad"][layerid="2"]  circle {fill:#0000FF;}
+g[c_partid="part_pad"][layerid="11"]  ellipse:not([c_padid]) {fill:#FFFFFF;}
+g[c_partid="part_pad"][layerid="11"]  polygon:not([c_padid]) {fill:#FFFFFF;}
+g[c_partid="part_pad"][layerid="11"]  polyline:not([c_padid]) {stroke:#FFFFFF;}
+g[c_partid="part_pad"][layerid="11"]  circle {fill:#FFFFFF;}
+g[c_partid="part_pad"][layerid] > circle[c_padhole] {fill: #222222;}
+g[c_partid="part_pad"][layerid] > polyline[c_padhole] {stroke:#222222;}
+g[c_partid="part_via"][layerid] > * + circle {fill: #222222;}
+g[c_partid="part_pad"] > polygon[c_padid] {stroke-linejoin: miter;stroke-miterlimit: 100;}
+g[c_partid="part_hole"] > circle {fill: #222222;}path, polyline, polygon {stroke-linejoin:round;}
+rect, circle, ellipse, polyline, line, polygon, path {shape-rendering:crispEdges;}
+</style>
+<rect x="3984.1" y="2984" width="32" height="32" fill="#000000" stroke="none"/><g c_origin="4000,3000" c_para="pre`U?`package`SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR`link`https://www.diodes.com/assets/Package-Files/SOT23.pdf`Contributor`lcsc`3DModel`SOT-23-3P_L2.9-W1.3-H1.0-LS2.4-P0.95`" c_transformList=""  xmlns="http://www.w3.org/2000/svg"><g c_partid="part_pad" c_etype="pinpart" c_origin="4003.94,3003.74" layerid="1" number="1" net="" plated ="Y" c_shapetype="group" id="gge1002" locked="0" c_rotation="0" c_width="3.937" c_height="2.5591" title="" c_shape="RECT" pasteExpansion="0.0000" solderExpansion="0.2000"><polygon points="4001.969 3002.461 4005.906 3002.461 4005.906 3005.02 4001.969 3005.02" layerid="7" stroke-width="0.4" c_padid="gge1002" /><polygon points="4001.969 3002.461 4005.906 3002.461 4005.906 3005.02 4001.969 3005.02" layerid="5" stroke-width="0" c_padid="gge1002" /><polygon points="4001.969 3002.461 4005.906 3002.461 4005.906 3005.02 4001.969 3005.02" stroke-width="0" /><circle c_padhole="1" cx="4003.9368" cy="3003.7402" r="0" stroke-width="0" /></g><g c_partid="part_pad" c_etype="pinpart" c_origin="4003.94,2996.26" layerid="1" number="2" net="" plated ="Y" c_shapetype="group" id="gge1005" locked="0" c_rotation="0" c_width="3.937" c_height="2.5591" title="" c_shape="RECT" pasteExpansion="0.0000" solderExpansion="0.2000"><polygon points="4001.969 2994.981 4005.906 2994.981 4005.906 2997.54 4001.969 2997.54" layerid="7" stroke-width="0.4" c_padid="gge1005" /><polygon points="4001.969 2994.981 4005.906 2994.981 4005.906 2997.54 4001.969 2997.54" layerid="5" stroke-width="0" c_padid="gge1005" /><polygon points="4001.969 2994.981 4005.906 2994.981 4005.906 2997.54 4001.969 2997.54" stroke-width="0" /><circle c_padhole="1" cx="4003.9368" cy="2996.2598" r="0" stroke-width="0" /></g><g c_partid="part_pad" c_etype="pinpart" c_origin="3996.06,3000" layerid="1" number="3" net="" plated ="Y" c_shapetype="group" id="gge1008" locked="0" c_rotation="0" c_width="3.937" c_height="2.5591" title="" c_shape="RECT" pasteExpansion="0.0000" solderExpansion="0.2000"><polygon points="3994.095 2998.721 3998.032 2998.721 3998.032 3001.28 3994.095 3001.28" layerid="7" stroke-width="0.4" c_padid="gge1008" /><polygon points="3994.095 2998.721 3998.032 2998.721 3998.032 3001.28 3994.095 3001.28" layerid="5" stroke-width="0" c_padid="gge1008" /><polygon points="3994.095 2998.721 3998.032 2998.721 3998.032 3001.28 3994.095 3001.28" stroke-width="0" /><circle c_padhole="1" cx="3996.0632" cy="3000" r="0" stroke-width="0" /></g><polyline points="4002.859 2993.991 3997.141 2993.991 3997.141 2998.053" stroke-width="0.6" c_shapetype="line" stroke-linecap="round" fill="none" layerid="3" net="" id="gge1009" /><polyline points="4002.859 3006.009 3997.141 3006.009 3997.141 3001.947" stroke-width="0.6" c_shapetype="line" stroke-linecap="round" fill="none" layerid="3" net="" id="gge1010" /><polyline points="4002.859 2998.207 4002.859 3001.793" stroke-width="0.6" c_shapetype="line" stroke-linecap="round" fill="none" layerid="3" net="" id="gge1011" /><circle cx="4005.75" cy="3004.33" r="0.39" stroke-width="0.7874" fill="none" layerid="12" id="gge1012" c_shapetype="line" /></g></svg>

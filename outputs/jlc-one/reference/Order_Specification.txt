@@ -1,0 +1,38 @@
+CHIPTUNE USB/CV — routed four-layer revision, prototype build
+
+PCB: single board, 85 x 54 mm, corner radius 3 mm; FR-4, 1.6 mm.
+Four copper layers: F.Cu / In1.Cu (signal) / In2.Cu (GND) / B.Cu.
+Target copper: outer 1 oz / inner 0.5 oz, standard manufacturer stackup.
+Solder mask: green. Surface finish: lead-free HASL as a cost-conscious
+option; select available finish in the quote. No controlled impedance specified.
+Assembly: TOP ONLY, 141 placements. Quote Economic PCBA first; actual
+part/service eligibility must be checked in JLCONE. Board quantity and
+assembled quantity are customer order choices, not encoded in the files.
+Files describe ONE PCB, not a panel. Any manufacturing rails, tooling holes,
+fiducials and panel repetition must be handled in the manufacturer preview.
+RS-274X Gerbers, separate Excellon PTH/NPTH drill files with routed slots.
+CPL: mm, lower-left board origin, +X right, +Y up, Top side.
+Explicit supplier-library rotation/anchor offsets applied; see Placement_Audit.csv.
+These offsets fit supplier footprint pads/pegs and still need fresh online preview.
+All board component coordinates and orientations are preserved.
+
+J1 USB-C TYPE-C-31-M-12 / C165948: source from JLCPCB public stock and
+assemble on TOP, one per board. Select JLCPCB source instead of My Parts
+in component matching. BOM/CPL do not encode the account inventory source.
+
+Do not fit J4, J5, U10, U11, U12, JP1, JP2 at JLCPCB; see hand assembly list.
+Fit user-supplied SAA1099 DIP18 and two SN76489AN DIP16 via sockets later.
+OLED module HS96L03W2C03 (C5248080) is purchased/fitted separately using
+5 mm M2 spacers. J4 SWD header optional; JP1/JP2 are rear service pads,
+normally OPEN, and are not discrete parts. Mounting holes are not placements.
+FB1 is a 10-ohm 0603 resistor, C22859 (same part as R4), not a ferrite bead.
+FB1 has a separate BOM row to preserve reference prefixes; a duplicate-part
+matching warning for C22859 can be reviewed using Assembly_Details.csv.
+
+Verification: KiCad DRC 0, unconnected 0, ERC 0, schematic parity 0.
+Replacement C20526 and C2286 stock/Basic classification checked on 2026-10-05.
+Not yet verified: all remaining stock, final quote, live JLCONE model/reference
+frame, online assembly preview, prototype electrical tests.
+Review pin 1, polarity, USB/jack openings against Assembly_Top.svg in the
+online preview BEFORE approving fabrication/assembly. Firmware programming
+and functional testing are not supplied with this manufacturing package.

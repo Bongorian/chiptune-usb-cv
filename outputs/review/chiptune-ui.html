@@ -1,0 +1,88 @@
+<div id="chiptune-ui-proposal" class="viz-dotted-background">
+ <div class="instrument" aria-label="チップチューン設定UIの操作見本">
+  <div class="brand">CHIPTUNE <span>USB / CV</span></div>
+  <div class="oled"><canvas width="128" height="64" aria-label="128×64 OLED設定画面"></canvas></div>
+  <div class="keys">
+   <button type="button" class="cursor-interaction" data-key="minus" aria-label="前の項目、値を減らす。長押しで戻る">−</button>
+   <button type="button" class="cursor-interaction" data-key="ok" aria-label="決定、値の編集">決定</button>
+   <button type="button" class="cursor-interaction" data-key="plus" aria-label="次の項目、値を増やす。長押しで全音停止">＋</button>
+  </div>
+  <div class="key-labels"><span>長押し：戻る</span><span>選択／編集</span><span>長押し：全音停止</span></div>
+  <div class="state" aria-live="polite">メニューを選択</div>
+ </div>
+</div>
+<style>
+#chiptune-ui-proposal {padding:24px 12px;display:flex;justify-content:center;}
+#chiptune-ui-proposal .instrument {width:352px;max-width:100%;box-sizing:border-box;background:#143b33;color:#e7f0e8;padding:24px;border-radius:16px;font:14px/1.5 system-ui,sans-serif;}
+#chiptune-ui-proposal .brand {display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-weight:500;letter-spacing:.1em;}
+#chiptune-ui-proposal .brand span {font-size:11px;color:#bdcfc5;letter-spacing:.04em;}
+#chiptune-ui-proposal .oled {background:#050808;padding:12px;border-radius:4px;}
+#chiptune-ui-proposal canvas {display:block;width:100%;aspect-ratio:2;image-rendering:pixelated;background:#050808;}
+#chiptune-ui-proposal .keys {display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px;}
+#chiptune-ui-proposal button {font:500 16px/1 system-ui,sans-serif;background:#bac6bf;color:#152c24;border:0;border-radius:6px;min-height:48px;}
+#chiptune-ui-proposal button:active {background:#edf6ed;}
+#chiptune-ui-proposal .key-labels {display:grid;grid-template-columns:repeat(3,1fr);gap:4px;text-align:center;color:#c7d7cb;font-size:11px;margin-top:8px;}
+#chiptune-ui-proposal .state {margin-top:16px;min-height:42px;color:#d5e6d9;}
+@media (max-width:380px) {#chiptune-ui-proposal .instrument {padding:18px 14px;} #chiptune-ui-proposal .keys {gap:10px;} }
+</style>
+<script>
+(() => {
+ const root=document.getElementById('chiptune-ui-proposal');
+ const canvas=root.querySelector('canvas'),ctx=canvas.getContext('2d'),status=root.querySelector('.state');
+ const targets=['SAA V1','SAA V2','SAA V3','SAA V4','SAA V5','SAA V6','SN1 V1','SN1 V2','SN1 V3','SN2 V1','SN2 V2','SN2 V3'];
+
+ const glyph={
+ A:['01110','10001','10001','11111','10001','10001','10001'],B:['11110','10001','10001','11110','10001','10001','11110'],C:['01111','10000','10000','10000','10000','10000','01111'],D:['11110','10001','10001','10001','10001','10001','11110'],E:['11111','10000','10000','11110','10000','10000','11111'],F:['11111','10000','10000','11110','10000','10000','10000'],G:['01111','10000','10000','10111','10001','10001','01111'],H:['10001','10001','10001','11111','10001','10001','10001'],I:['11111','00100','00100','00100','00100','00100','11111'],J:['00111','00010','00010','00010','10010','10010','01100'],K:['10001','10010','10100','11000','10100','10010','10001'],L:['10000','10000','10000','10000','10000','10000','11111'],M:['10001','11011','10101','10101','10001','10001','10001'],N:['10001','11001','10101','10011','10001','10001','10001'],O:['01110','10001','10001','10001','10001','10001','01110'],P:['11110','10001','10001','11110','10000','10000','10000'],Q:['01110','10001','10001','10001','10101','10010','01101'],R:['11110','10001','10001','11110','10100','10010','10001'],S:['01111','10000','10000','01110','00001','00001','11110'],T:['11111','00100','00100','00100','00100','00100','00100'],U:['10001','10001','10001','10001','10001','10001','01110'],V:['10001','10001','10001','10001','10001','01010','00100'],W:['10001','10001','10001','10101','10101','10101','01010'],X:['10001','10001','01010','00100','01010','10001','10001'],Y:['10001','10001','01010','00100','00100','00100','00100'],Z:['11111','00001','00010','00100','01000','10000','11111'],
+ '0':['01110','10001','10011','10101','11001','10001','01110'],'1':['00100','01100','00100','00100','00100','00100','01110'],'2':['01110','10001','00001','00010','00100','01000','11111'],'3':['11110','00001','00001','01110','00001','00001','11110'],'4':['00010','00110','01010','10010','11111','00010','00010'],'5':['11111','10000','10000','11110','00001','00001','11110'],'6':['01110','10000','10000','11110','10001','10001','01110'],'7':['11111','00001','00010','00100','01000','01000','01000'],'8':['01110','10001','10001','01110','10001','10001','01110'],'9':['01110','10001','10001','01111','00001','00001','01110'],
+ '/':['00001','00001','00010','00100','01000','10000','10000'],'>':['10000','01000','00100','00010','00100','01000','10000'],'-':['00000','00000','00000','11111','00000','00000','00000'],'+':['00000','00100','00100','11111','00100','00100','00000'],':':['00000','00100','00100','00000','00100','00100','00000'],'%':['11001','11010','00100','01000','10110','00110','00000'],'*':['00000','10101','01110','11111','01110','10101','00000']};
+ function pixels(text,x,y){[...text].forEach((ch,i)=>{const g=glyph[ch];if(g)g.forEach((row,dy)=>[...row].forEach((bit,dx)=>{if(bit==='1')ctx.fillRect(x+i*6+dx,y+dy,1,1);}));});}
+ const item=(label,values,index=0)=>({label,values,index});
+ const pct=Array.from({length:21},(_,i)=>String(i*5)+'%');
+ const pages=[
+  {name:'MIX',items:[item('SAA',pct,15),item('SN1',pct,12),item('SN2',pct,12),item('MASTER',pct,20)]},
+  {name:'CV / GATE 1',items:[item('TARGET',targets,0),item('VOICE',['LEAD','BASS','BELL','NOISE']),item('0V NOTE',['C1','C2','C3','C4','C5'],2),item('ENV',['PLUCK','HOLD','PAD']),item('ENABLE',['ON','OFF'])]},
+  {name:'CV / GATE 2',items:[item('TARGET',targets,1),item('VOICE',['LEAD','BASS','BELL','NOISE'],1),item('0V NOTE',['C1','C2','C3','C4','C5'],2),item('ENV',['PLUCK','HOLD','PAD'],1),item('ENABLE',['ON','OFF'])]},
+  {name:'MIDI ROUTING',items:[item('USB CH',Array.from({length:16},(_,i)=>String(i+1))),item('USB TO',['SAA','SN1','SN2','LAYER']),item('TRS CH',Array.from({length:16},(_,i)=>String(i+1)),1),item('TRS TO',['SAA','SN1','SN2','LAYER'],1),item('TRS>USB',['OFF','ON']),item('CV SLOTS',['RESERVE','LAST NOTE'])]},
+  {name:'PRESET',items:[item('SLOT',['01','02','03','04','05','06','07','08']),{label:'SAVE',action:'save'},{label:'LOAD',action:'load'},{label:'INIT',action:'init'}]},
+  {name:'CV CALIBRATE',items:[{label:'CV1 ZERO / 0V',action:'cal1z'},{label:'CV1 GAIN / 1V',action:'cal1g'},{label:'CV2 ZERO / 0V',action:'cal2z'},{label:'CV2 GAIN / 1V',action:'cal2g'}]}
+ ];
+ let page=-1,selected=0,editing=false,message='メニューを選択';const presets={};
+ const defaults=pages.map(p=>p.items.map(i=>i.index));
+ function paint(){
+  ctx.fillStyle='#050808';ctx.fillRect(0,0,128,64);ctx.fillStyle='#edf7e9';ctx.font='8px monospace';ctx.textBaseline='top';
+  const title=page<0?'CHIPTUNE / MENU':pages[page].name;pixels(title,1,0);ctx.fillRect(0,9,128,1);
+  const items=page<0?pages.map(p=>({label:p.name})):pages[page].items;const start=Math.max(0,Math.min(selected-3,items.length-4));
+  items.slice(start,start+4).forEach((i,j)=>{const n=start+j,y=12+j*10;const active=n===selected;
+   if(active){ctx.fillStyle='#edf7e9';ctx.fillRect(0,y-1,128,10);ctx.fillStyle='#050808';}else ctx.fillStyle='#edf7e9';
+   const value=i.values?i.values[i.index]:'';const line=(active?(editing?'*':'>'):' ')+i.label;
+   pixels(line,1,y);if(value)pixels(value,127-value.length*6,y);
+  });ctx.fillStyle='#edf7e9';pixels(editing?'EDIT: - / +   OK':'- / + SELECT  OK',1,56);
+  canvas.setAttribute('aria-label',title+'、'+items[selected].label+(items[selected].values?' '+items[selected].values[items[selected].index]:'')+(editing?'、編集中':''));status.textContent=message;
+ }
+ function snapshot(){return pages.map(p=>p.items.map(i=>i.index===undefined?null:i.index));}
+ function apply(values){if(!Array.isArray(values))return;pages.forEach((p,a)=>p.items.forEach((i,b)=>{const v=values[a]?.[b];if(i.values&&Number.isInteger(v)&&v>=0&&v<i.values.length)i.index=v;}));}
+ function remember(){if(window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{mix:pages[0].items.map(i=>i.values[i.index]),cv:pages.slice(1,3).map(p=>p.items.map(i=>({label:i.label,value:i.values[i.index]}))),midi:pages[3].items.map(i=>({label:i.label,value:i.values[i.index]}))},privateContent:{values:snapshot(),page,selected}}).catch(()=>{});}
+ function action(key,long=false){
+  if(long&&key==='plus'){message='全音停止（操作見本）';paint();return;}
+  if(long&&key==='minus'){if(editing)editing=false;else {page=-1;selected=0;}message='戻りました';paint();remember();return;}
+  const items=page<0?pages:pages[page].items;
+  if(key==='ok'){
+   if(page<0){page=selected;selected=0;message='項目を選んで決定';}
+   else {const i=items[selected];if(i.values){editing=!editing;message=editing?'−／＋で変更、決定で確定':'設定を確定（プリセット保存は別操作）';}
+    else if(i.action==='save'){presets[pages[4].items[0].index]=snapshot();message='プリセットを保存（この操作見本内）';}
+    else if(i.action==='load'){const v=presets[pages[4].items[0].index];if(v){apply(v);message='プリセットを読み込みました';}else message='このスロットには保存がありません';}
+    else if(i.action==='init'){apply(defaults);message='初期設定に戻しました';}
+    else message=i.label+'を取得（校正の操作見本）';
+   }
+  }else if(editing){const i=items[selected];i.index=(i.index+(key==='plus'?1:-1)+i.values.length)%i.values.length;message=i.label+' = '+i.values[i.index];}
+  else {selected=(selected+(key==='plus'?1:-1)+items.length)%items.length;message='決定で開く／編集する';}
+  paint();remember();
+ }
+ root.querySelectorAll('button[data-key]').forEach(button=>{let timer=null,didLong=false;button.addEventListener('pointerdown',()=>{didLong=false;timer=setTimeout(()=>{didLong=true;action(button.dataset.key,true);},700);});['pointerup','pointerleave','pointercancel'].forEach(e=>button.addEventListener(e,()=>clearTimeout(timer)));button.addEventListener('click',()=>{if(!didLong)action(button.dataset.key);didLong=false;});});
+ root.addEventListener('keydown',e=>{const k={ArrowLeft:'minus',ArrowUp:'minus',ArrowRight:'plus',ArrowDown:'plus'}[e.key];if(k){e.preventDefault();action(k);}else if(e.key==='Escape'){e.preventDefault();action('minus',true);}});
+ const saved=window.openai?.widgetState?.privateContent;if(saved){apply(saved.values);if(Number.isInteger(saved.page)&&saved.page>=-1&&saved.page<pages.length)page=saved.page;}
+ window.addEventListener('openai:set_globals',e=>{const s=e.detail?.globals?.widgetState?.privateContent;if(s){apply(s.values);paint();}});
+ paint();
+ if(globalThis.Tweak){const option={page:'MENU'};const tweak=new Tweak({container:root.querySelector('.instrument'),onChange:()=>{page=option.page==='MENU'?-1:pages.findIndex(p=>p.name===option.page);selected=0;editing=false;paint();}});tweak.addSelect(option,'page',{label:'確認する画面',options:['MENU',...pages.map(p=>p.name)]});}
+})();
+</script>
