@@ -5,4 +5,3 @@ KiCad由来のライブラリに関する条件は[KiCadライブラリの案内
 
 LCSC/EasyEDAの部品図は、実装座標の照合に使用した技術資料です。
 取得元は `outputs/assembly-review/Supplier_Pad_References.json` と部品番号のリンクに記録しています。
-メーカーのデータシート本文、注文表、ログイン情報、取得したWebページは含めていません。
