@@ -99,6 +99,7 @@ kicad-cli sch erc --format json --exit-code-violations \
 
 ## 設計資料
 
+- [基板説明資料（日本語・8ページPDF）](output/pdf/Chiptune_USB_CV_Guide_JA.pdf)
 - [回路仕様・操作設計](docs/USB-CV-design-notes.txt)
 - [配線方針・線幅](docs/routing-notes.txt)
 - [実装ライブラリの照合記録](outputs/assembly-review/Assembly_Review.txt)

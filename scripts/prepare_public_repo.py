@@ -47,6 +47,10 @@ for name in ['assembled.png', 'top.png', 'exploded.png', 'base_inside.png',
              'mechanical_drawing.svg', 'mechanical_drawing.png', 'mechanical_drawing.pdf']:
     copy_file(mechanical / 'previews' / name)
 
+# Public board guide and its source-verification record.
+for name in ['Chiptune_USB_CV_Guide_JA.pdf', 'Guide_Verification.json']:
+    copy_file(ROOT / 'output/pdf' / name)
+
 # Only portable public part attributes, not complete scraped responses or signed URLs.
 catalog = json.loads((ROOT / 'research/catalog.json').read_text())
 for path in (ROOT / 'research').glob('catalog-C*.json'):
