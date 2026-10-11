@@ -18,10 +18,11 @@ def copy_file(src, relative=None):
     shutil.copy2(src, target)
 
 
-for folder in ['routed', 'hardware', 'firmware', 'scripts', 'docs']:
+for folder in ['routed', 'hardware', 'firmware', 'scripts', 'docs', '.github']:
     for path in (ROOT / folder).rglob('*'):
-        if path.is_file() and '__pycache__' not in path.parts and path.suffix not in {'.pyc', '.kicad_prl', '.lck'}:
+        if path.is_file() and not set(path.parts).intersection({'__pycache__', '.deps', '.tools', '.build', 'build'}) and path.suffix not in {'.pyc', '.kicad_prl', '.lck'}:
             copy_file(path)
+copy_file(ROOT / '.gitattributes')
 for name in ['engineering_bom.csv', 'routing-verification.json', 'drc-routed.json',
              'erc-routing.json', 'bus-encoding-verification.json', 'routing-widths.csv']:
     copy_file(ROOT / 'outputs' / name)
@@ -139,6 +140,10 @@ with zipfile.ZipFile(native_zip, 'w', zipfile.ZIP_DEFLATED) as archive:
 (DEST / '.gitignore').write_text('''__pycache__/
 *.py[cod]
 .venv/
+.deps/
+.tools/
+.build/
+build/
 *.kicad_prl
 *.lck
 *-backups/
@@ -157,6 +162,8 @@ KiCad由来のライブラリに関する条件は[KiCadライブラリの案内
 
 LCSC/EasyEDAの部品図は、実装座標の照合に使用した技術資料です。
 取得元は `outputs/assembly-review/Supplier_Pad_References.json` と部品番号のリンクに記録しています。
+
+ファームウェアのPico SDK・TinyUSB・newlib・GCCランタイムに関する出典と配布条件は、`firmware/DEPENDENCIES.md`と`firmware/LICENSES/`を参照してください。
 ''')
 
 readme = (ROOT / 'README.md').read_text()

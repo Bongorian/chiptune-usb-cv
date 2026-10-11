@@ -10,3 +10,7 @@ research/*.pdf
 research/*.html
 research/jlc-review/*.html
 research/jlc-review/*-jlc.json
+.deps/
+.tools/
+.build/
+build/

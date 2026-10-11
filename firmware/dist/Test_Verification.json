@@ -1,0 +1,52 @@
+{
+  "firmware": "v0.1.0-alpha",
+  "hardware_tested": false,
+  "host_tests": {
+    "passed": true,
+    "assertions_enabled": true,
+    "sanitizers": [
+      "AddressSanitizer",
+      "UndefinedBehaviorSanitizer"
+    ],
+    "midi_stress_events": 30000,
+    "ui_stress_gestures": 5000,
+    "command": "ctest --test-dir build/tests --output-on-failure"
+  },
+  "data_bus_checks": {
+    "passed": true,
+    "checks": 768,
+    "command": "python3 scripts/check_bus_encoding.py"
+  },
+  "dependencies": {
+    "pico_sdk": "079c6f39023649b154152db30f1d781e884879bc",
+    "tinyusb": "86ad6e56c1700e85f1c5678607a762cfe3aa2f47",
+    "picotool": "2041936441b48a3cc53ae3da9e805229fe8f4e18",
+    "arm_gcc": "13.2.1",
+    "newlib": "4.4.0"
+  },
+  "source_sha256": {
+    "CMakeLists.txt": "db2283ebe4e752e1e505275d475974a40e16b00ebf10140ccc2b1f8402d62bf7",
+    "boards/chiptune_rp2040.h": "211560b6387295a4b6d0e3a3daea8b8b86e59159d4d3f1362466854c0b3e2a74",
+    "pinmap.h": "be2ef804e9b54dbd5ada5ff2d57318dfa7d6790924e1df25ef403ad52369cc9e",
+    "sound_bus.h": "6902f063e6bed3010e598a995e57949fbdc4458eed4942a4a23ad6bd0ff21c72",
+    "src/cv.c": "0a7257322f4faa0edd24b620e37378d2df663c194a96756c9577200ea0950f32",
+    "src/cv.h": "9c4520cf733bbf6f965a05a375d71a84ac257c75f5ac63efc401a898af8cfc82",
+    "src/engine.c": "70576d97cf03ce35008c657022222f9dfd2c48b41bc80e58062745141df3bbcf",
+    "src/engine.h": "2a42a9b21b1809fb40ad1167982b1234768f4983d1e857c5dca5c813598b2b75",
+    "src/main.c": "5fe2c07d565a4cbe4bc496d20287c9df2bad591834ec47403e92e621ea0a21ec",
+    "src/midi.c": "7820d3ea85f9639b065ea62402c5f2dab1ec40a58b05f7ae2a4a9a568f48db14",
+    "src/midi.h": "35c50e0812d9ae06f5d609cec957d4eeb69639c4ed603a45623fb95accdedc63",
+    "src/power.c": "193e22d97e46752a7da0d2b98ced4bc2b12b81de02be65d8574bce815b4731e9",
+    "src/power.h": "995035b317667e07a2d3f0e5215a02e010afe5a156f6c6353227331270756e37",
+    "src/store.c": "5072f40af8ecf84c0825acfeb9b2b7e97bf665e78890b69560d8829463580f0e",
+    "src/store.h": "9bad3972b1b3fae78e978218ea19f8135cdfa260c5c5e690b55d087f75626449",
+    "src/ui.c": "c4f92a9cd8cca43a7b72f56b15ef3bc687b0b971425004d585e0112853e12b78",
+    "src/ui.h": "3abe8b6071540699761309a9392348a575def961a359953bef34e6c648193ff8",
+    "src/usb_descriptors.c": "83e079e2789cf328233aad72ca4258a137bf88f8cdcefade838aeb75db9ce4a0",
+    "tests/test_engine.c": "b9927870f3cf8f8e1c1c92a90a82cac54631aa6e36bfccd40a59a36e5deed564",
+    "tests/ui_preview.c": "53f79df1b0e35eebe801589a3e5ad0b39aa8ea45448c05ab14a4b44ce5c5a993",
+    "tools/bootstrap_sdk.sh": "7a001383add70295945651203c991869eaefa9db10bf62780ec1e743f6b19053",
+    "tools/verify_build.py": "be9b806a012a1a76b21efae17bc17316f25e988dfcc72700b96e2ad105df03e6",
+    "tusb_config.h": "933218e4a227f92efe679460534c006e50f29913d88609924011b473d462a57a"
+  }
+}

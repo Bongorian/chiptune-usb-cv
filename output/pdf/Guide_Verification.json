@@ -2,13 +2,17 @@
   "document": "Chiptune USB/CV Japanese board guide",
   "date": "2026-10-12",
   "pages": 8,
-  "pdf_sha256": "e9f54f2a97643b4c67aa9e51e1dc2ae698dba96010e47d05392e3ab2a9fb7b76",
+  "pdf_sha256": "104d8aea4062ee55663df8e564be4fffa606b645deeb1df9066038fb5d7c7863",
   "source_files_sha256": {
     "routed/Chiptune_USB_CV.kicad_pcb": "55ab595f397bca30c0f537f32063af6ece6441c61c2f6eb9e14c219f94813180",
     "routed/design.json": "fdfa1ae67e401247713fbb74d0f292cdb214ea273aff41a863e5fb2fb3eeb536",
     "firmware/pinmap.h": "be2ef804e9b54dbd5ada5ff2d57318dfa7d6790924e1df25ef403ad52369cc9e",
     "firmware/sound_bus.h": "6902f063e6bed3010e598a995e57949fbdc4458eed4942a4a23ad6bd0ff21c72",
-    "docs/USB-CV-design-notes.txt": "ae6f1d491c2851cbe0508fec269a977be19c07009b6f2c8e57904bc29a6ce032",
+    "firmware/README.md": "713033ef22dea0e07d1064b9b639b6cf3e464d89bc7f441c794e5727b98e3475",
+    "firmware/src/main.c": "5fe2c07d565a4cbe4bc496d20287c9df2bad591834ec47403e92e621ea0a21ec",
+    "firmware/src/engine.c": "70576d97cf03ce35008c657022222f9dfd2c48b41bc80e58062745141df3bbcf",
+    "firmware/dist/Verification.json": "ba349306b11c4500ebfef47befcdefce401ad7574507e75b88006b516fc05fe7",
+    "docs/USB-CV-design-notes.txt": "1b186b1ef8edcb769c1ea2b8ebd9f609bfe7526f06f6588124703a45a70dc045",
     "docs/routing-notes.txt": "6290a284078718974c68cbf97cd62b0c04ef6093fb7169052eabbddb5e8a8b71",
     "mechanical/parameters.json": "6c004773447e72a1c1f742d231e88a503bfe0c3b1583e019730c56ebdb5ad56d",
     "mechanical/mechanical_verification.json": "a5d3f1a3965f97576b4bac56df0f8fef89464b844dd423d53497eafa29658404",
@@ -39,7 +43,7 @@
       1,
       677.05,
       706.12,
-      "開発状況：基板の配線・製造データ・設計検査は完了。USB MIDI、C"
+      "開発状況：基板の配線・製造データ・設計検査は完了。ファームウェアv0."
     ],
     [
       2,
@@ -183,7 +187,7 @@
       3,
       649.46,
       678.53,
-      "電源投入時は音源電源を無効にし、USBの状態を判定後に音源を初期化する"
+      "ファームウェアはUSBで500 mAを要求し、USB構成後またはCCで"
     ],
     [
       4,
@@ -231,7 +235,7 @@
       5,
       499.37,
       546.65,
-      "系統ごとに既知の0 Vと1 Vを入力して、オフセットとゲインを保存する"
+      "系統ごとに既知の0 Vと1 Vを入力して、オフセットとゲインを保存しま"
     ],
     [
       5,
@@ -249,7 +253,7 @@
       6,
       85,
       99.08,
-      "以下は画面・操作の設計仕様です。現在のリポジトリに実機UIファームウェ"
+      "v0.1.0-alphaに設定画面を実装。描画コードをPCで検査してい"
     ],
     [
       6,
@@ -259,15 +263,15 @@
     ],
     [
       6,
-      583.82,
-      629.72,
-      "OLEDは低頻度の分割描画とし、CV取得とゲート処理を長時間ブロックし"
+      611.59,
+      642.19,
+      "OLEDは16バイトごとの分割転送で、ADC・音源更新を優先します。M"
     ],
     [
       6,
-      646.72,
-      660.49,
-      "画面モック：outputs/review/chiptune-ui.ht"
+      659.19,
+      672.96,
+      "実装済み画面のPCレンダリング：firmware/assets/ole"
     ],
     [
       7,
@@ -327,73 +331,55 @@
       8,
       429.77,
       458.54,
-      "未完了：動作するUSB MIDI／CV／UIファームウェア、USB電流"
+      "ソフトウェア：UF2ビルド、ASan／UBSan付きPCテストを通過。"
     ],
     [
       8,
       499.54,
       527.69,
-      "3.2 V電源確認 → 電源OFFで手実装 → 開発用ファームウェアで"
+      "3.2 V電源確認 → 電源OFFで手実装 → UF2を書き込み、消音"
     ],
     [
       8,
       536.69,
-      564.84,
+      578.92,
       "JP1=BOOT、JP2=RESETは裏面のサービス用銅パッドです。B"
     ],
     [
       8,
-      603.84,
-      616.85,
+      617.92,
+      630.92,
       "<link href=\"https://github.com/Bong"
     ],
     [
       8,
-      619.85,
-      632.85,
+      633.92,
+      646.93,
       "<link href=\"https://github.com/Bong"
     ],
     [
       8,
-      635.85,
-      648.86,
+      649.93,
+      662.93,
       "<link href=\"https://github.com/Bong"
     ],
     [
       8,
-      651.86,
-      664.86,
+      665.93,
+      678.94,
       "<link href=\"https://github.com/Bong"
     ],
     [
       8,
-      667.86,
-      680.87,
+      681.94,
+      694.94,
       "<link href=\"https://github.com/Bong"
     ],
     [
       8,
-      687.87,
-      711.73,
+      701.94,
+      725.81,
       "基準：配線済みRev C、2026-10-05の設計検査、2026-1"
     ]
-  ],
-  "quality_checks": {
-    "page_count": 8,
-    "text_and_numeric_content_verified": true,
-    "japanese_and_latin_fonts_embedded": true,
-    "visually_reviewed_pages": [
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8
-    ],
-    "visual_findings": [],
-    "layout_bounds_pass": true,
-    "source_hashes_match": true
-  }
+  ]
 }
