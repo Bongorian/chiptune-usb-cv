@@ -1,11 +1,12 @@
 #pragma once
 #include <stdbool.h>
 #include <stdint.h>
+#include "sn_clock.h"
 #define VOICES 14
 #define PATCHES 16
 #define PRESETS 8
 #define SOURCES 2
-#define SETTINGS_VERSION 1
+#define SETTINGS_VERSION 2
 
 typedef enum { TARGET_AUTO, TARGET_SAA, TARGET_SN1, TARGET_SN2, TARGET_LAYER, TARGET_COUNT } Target;
 typedef struct {
@@ -20,6 +21,7 @@ typedef struct {
     CvConfig cv[2];
     uint8_t reserve_cv, arp_mode, arp_rate,
         clock_source; /* arp_mode 0=off/1=major/2=minor/3=octave */
+    SnClockConfig sn_clock;
 } Preset;
 typedef struct {
     uint32_t version;
@@ -62,6 +64,7 @@ typedef struct {
     uint8_t sn_atten[2][4], sn_noise[2];
     uint32_t now, age, steals, refused, pitch_clamps, clocks, last_clock;
     float midi_hz;
+    uint32_t sn_note_trigger, sn_manual_trigger, sn_frequency_updated;
     bool clock_seen, clock_running;
     SoundSink sink;
 } Engine;

@@ -76,7 +76,7 @@ def verify(build: Path, nm: str):
     bss = symbols['__bss_end__'][0] - symbols['__bss_start__'][0]
     assert bss < 200 * 1024, 'Insufficient RP2040 RAM margin'
     return {
-        'firmware': 'v0.1.0-alpha', 'target': 'RP2040 dedicated Chiptune USB/CV board',
+        'firmware': 'v0.2.0-alpha', 'target': 'RP2040 dedicated Chiptune USB/CV board',
         'hardware_tested': False, 'checks_passed': True,
         'application_bytes': len(binary), 'bss_bytes': bss, 'uf2_bytes': len(uf2),
         'uf2_blocks': count, 'uf2_family_id': hex(FAMILY),

@@ -176,7 +176,7 @@ y=table(['項目','基板の仕様'],[
  ['入力','USB MIDIデバイス、TRS Type A MIDI IN、CV × 2、GATE × 2'],
  ['出力・操作','3.5 mmステレオライン出力、0.96インチOLED、3ボタン'],
  ['電源・寸法','USB-C給電、85 × 54 mm、4層FR-4、厚さ1.6 mm']], [93,CW-93],y+32,9.4)
-note('開発状況：基板の配線・製造データ・設計検査は完了。ファームウェアv0.1.0-alphaはUF2ビルドとPCテストを通過。実基板での動作確認は未完了です。',y+3,61)
+note('開発状況：基板の配線・製造データ・設計検査は完了。ファームウェアv0.2.0-alphaはUF2ビルドとPCテストを通過。実基板での動作確認は未完了です。',y+3,61)
 
 heading(2,'端子と部品配置','上から見て音源ICの列を奥、USB-Cとボタンを手前に置いた方向で説明します。')
 y=boardmap(X+26,133,CW-52)
@@ -232,10 +232,10 @@ y=para('SAA1099のL/Rと、SN1・SN2のモノラル出力をTLV9004で混ぜ、A
 y=note('接続先：入力インピーダンス10 kΩ以上のアンプ、ミキサー、オーディオインターフェース等。ヘッドホン駆動用アンプとPCM5102は搭載していません。',y+14,58)
 y=section('クロックと音程の制約',y+1)
 y=table(['項目','設計値／実装上の扱い'],[
- ['クロック','SAA1099：8 MHz、SN76489AN：4 MHz、RP2040：128 MHzを想定'],
+ ['クロック','SAA1099：8 MHz、SN76489AN：通常4 MHz、変調250 kHz–4 MHz、RP2040：128 MHzを想定'],
  ['SNの音程','f = clock / (32 × N)、N=1…1023。4 MHz時の最低音程は約122.2 Hz'],
  ['低音の割当','SNの下限と整数分周の誤差を考慮し、低音向けにはSAA1099を割り当てる設計'],
- ['書き込み間隔','SNのREADY端子は未接続。4 MHz時は10 µs以上の待ちをファームウェアで確保']], [112,CW-112],y,9.3)
+ ['書き込み間隔','SNのREADY端子は未接続。クロックに合わせ16–136 µsの待ちを確保']], [112,CW-112],y,9.3)
 y=section('共有データバスのビット順',y+5)
 para('GPIO0…7に8bitをまとめて出力するAPIでは、論理バイトをそのまま渡します。PIN_D0…PIN_D7へ個別に書くAPIではビット順を反転します。firmware/sound_bus.hに両方式のヘルパーがあり、768ケースの対応検査を保存しています。',X,y,CW,9.5)
 
@@ -254,7 +254,7 @@ y=para('系統ごとに既知の0 Vと1 Vを入力して、オフセットとゲ
 y=note('用途は音程CVと低速の変調です。ADCの取得速度と入力フィルタにより、オーディオレート変調向けの構成ではありません。',y+16,49)
 para('ADC仕様の参照：<link href="https://www.ti.com/lit/ds/symlink/ads1115.pdf" color="#127c7f">TI ADS1115データシート</link>。入力換算の分解能はPGA設定と本基板の1/11減衰比から算出。',X,y+2,CW,8.2,MUTED)
 
-heading(6,'OLEDと3ボタンで設定するUI','v0.1.0-alphaに設定画面を実装。描画コードをPCで検査しています。実OLEDの表示確認は未完了です。')
+heading(6,'OLEDと3ボタンで設定するUI','v0.2.0-alphaに設定画面を実装。描画コードをPCで検査しています。実OLEDの表示確認は未完了です。')
 rect(X,135,CW,60,HexColor('#fbf0e8'),5)
 para('表示器：HS96L03W2C03、SSD1315、0.96インチ、128 × 64、白OLED。J5のGND / VCC / SCL / SDAへ接続し、3.2 Vで給電します。I2Cアドレスは0x3Cです。',X+12,145,CW-24,10)
 y=table(['ボタン','短押し','長押し'],[
@@ -268,6 +268,7 @@ y=table(['メニュー','設定する内容'],[
  ['MIDI','USB／TRSの受信チャンネルと割当、TRS → USB転送、CV声との競合規則'],
  ['PRESET','8枠への保存・読込・初期化。SAVE操作で明示的にフラッシュへ保存'],
  ['CAL','CV1 / CV2を個別に0 V・1 Vで校正'],
+ ['SN CLOCK', '共有SNクロックの低下、周期・ランダム・RISE / DIVE変調、MIDI同期'],
  ['ARP / DIAGNOSTICS','クロック同期の音程変化、声の予約、CV生値・エラー・更新遅れ']], [108,CW-108],y,9.3)
 y=section('演奏を止めないための実装方針',y+5)
 y=para('OLEDは16バイトごとの分割転送で、ADC・音源更新を優先します。MIXは発音中に変更でき、保存操作で設定をまとめて書き込みます。USB／TRSのNote Off追跡と、CV用の声の予約・競合処理を実装しています。',X,y,CW,10)
@@ -305,15 +306,15 @@ y=para('検査済み：DRC 0、未接続0、ERC 0、回路図との不一致0。
 y=para('ソフトウェア：UF2ビルド、ASan／UBSan付きPCテストを通過。実機ではUSB列挙・電流、音声レベル・雑音、CV精度・校正、ゲート応答、温度、印刷後の嵌め合いが未確認です。',X,y+10,CW,9.4)
 y=section('初回起動・書き込みの確認順',y+15)
 y=para('3.2 V電源確認 → 電源OFFで手実装 → UF2を書き込み、消音・クロック・音源電源を確認 → 音源ごとの試験音 → MIDI → CV／ゲート → 校正・保存の順で検証します。実機評価用UF2をfirmware/distに収録しています。',X,y,CW,9.2)
-y=para('JP1=BOOT、JP2=RESETは裏面のサービス用銅パッドです。BOOTを短絡保持し、RESETを短絡して解放するとUSB書き込みモードに入る構成です。通常操作の3ボタンとは別です。v0.1.0-alphaは−と＋を押しながらUSB接続しても書き込みモードに入ります。',X,y+9,CW,9.2)
+y=para('JP1=BOOT、JP2=RESETは裏面のサービス用銅パッドです。BOOTを短絡保持し、RESETを短絡して解放するとUSB書き込みモードに入る構成です。通常操作の3ボタンとは別です。v0.2.0-alphaは−と＋を押しながらUSB接続しても書き込みモードに入ります。',X,y+9,CW,9.2)
 y=section('設計ファイル・参照先',y+13)
 links=[('GitHub: Bongorian/chiptune-usb-cv','https://github.com/Bongorian/chiptune-usb-cv'),('回路仕様・操作設計','https://github.com/Bongorian/chiptune-usb-cv/blob/main/docs/USB-CV-design-notes.txt'),('ファームウェア・操作資料','https://github.com/Bongorian/chiptune-usb-cv/tree/main/firmware'),('製造データ・手実装一覧','https://github.com/Bongorian/chiptune-usb-cv/tree/main/outputs/jlc-one'),('ケースCAD・印刷手順','https://github.com/Bongorian/chiptune-usb-cv/tree/main/mechanical')]
 for label,url in links:
  y=para(f'<link href="{url}" color="#127c7f">{label}</link>',X,y,CW,8.5)+3
-para('基準：配線済みRev C、2026-10-05の設計検査、2026-10-12時点のリポジトリ。音源仕様はPhilips SAA1099とTI SN76489ANのメーカー資料を確認。ファームウェアはv0.1.0-alpha。実機動作とUSB適合性は未検証です。',X,y+4,CW,7.8,MUTED)
+para('基準：配線済みRev C、2026-10-05の設計検査、2026-10-12時点のリポジトリ。音源仕様はPhilips SAA1099とTI SN76489ANのメーカー資料を確認。ファームウェアはv0.2.0-alpha。実機動作とUSB適合性は未検証です。',X,y+4,CW,7.8,MUTED)
 assert page==8
 C.save()
-inputs=['routed/Chiptune_USB_CV.kicad_pcb','routed/design.json','firmware/pinmap.h','firmware/sound_bus.h','firmware/README.md','firmware/src/main.c','firmware/src/engine.c','firmware/dist/Verification.json','docs/USB-CV-design-notes.txt','docs/routing-notes.txt','mechanical/parameters.json','mechanical/mechanical_verification.json','outputs/routing-verification.json','outputs/bus-encoding-verification.json','outputs/jlc-one/reference/Hand_Assembly.csv']
+inputs=['routed/Chiptune_USB_CV.kicad_pcb','routed/design.json','firmware/pinmap.h','firmware/sound_bus.h','firmware/README.md','firmware/src/main.c','firmware/src/engine.c', 'firmware/src/sn_clock.c', 'firmware/pio/sn_clock.pio','firmware/dist/Verification.json','docs/USB-CV-design-notes.txt','docs/routing-notes.txt','mechanical/parameters.json','mechanical/mechanical_verification.json','outputs/routing-verification.json','outputs/bus-encoding-verification.json','outputs/jlc-one/reference/Hand_Assembly.csv']
 manifest=dict(document='Chiptune USB/CV Japanese board guide',date='2026-10-12',pages=8,pdf_sha256=hashlib.sha256(PDF.read_bytes()).hexdigest(),source_files_sha256={p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs},layout_paragraph_bounds=bounds)
 (OUT/'Guide_Verification.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
 print(PDF)

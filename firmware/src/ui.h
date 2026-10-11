@@ -2,7 +2,7 @@
 #include "engine.h"
 typedef struct {
     bool power, usb, suspended, adc_ok;
-    uint32_t uart_overflow, usb_dropped, tick_us, tick_overruns;
+    uint32_t uart_overflow, usb_dropped, tick_us, tick_overruns, clock_hz;
     int16_t cv_raw[2];
     bool gates[2];
 } UiStatus;

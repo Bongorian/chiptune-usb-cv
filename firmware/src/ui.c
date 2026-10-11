@@ -1,10 +1,13 @@
 #include "ui.h"
 #include <stdio.h>
 #include <string.h>
-static const char *groups[] = {"MIX",    "USB MIDI", "TRS MIDI",  "CV/GATE 1",  "CV/GATE 2",
-                               "PRESET", "ARPEGGIO", "CALIBRATE", "DIAGNOSTICS"};
+static const char *groups[] = {"MIX",    "USB MIDI", "TRS MIDI",  "CV/GATE 1",   "CV/GATE 2",
+                               "PRESET", "ARPEGGIO", "CALIBRATE", "DIAGNOSTICS", "SN CLOCK"};
+#define GROUPS (sizeof(groups) / sizeof(groups[0]))
+static const char *clock_modes[] = {"OFF",    "MANUAL", "RISE",     "TRIANGLE",
+                                    "SQUARE", "RANDOM", "SEQUENCE", "DIVE"};
 static const char *targets[] = {"AUTO", "SAA1099", "SN1 LEFT", "SN2 RIGHT", "LAYER"};
-static const uint8_t counts[] = {4, 3, 4, 4, 4, 4, 3, 4, 5};
+static const uint8_t counts[] = {4, 3, 4, 4, 4, 4, 3, 4, 5, 8};
 /* A small 5x7 alphabet, column bits from top to bottom. */
 static const uint8_t glyph[36][5] = {
     {0x3e, 0x51, 0x49, 0x45, 0x3e}, {0, 0x42, 0x7f, 0x40, 0},       {0x42, 0x61, 0x51, 0x49, 0x46},
@@ -145,6 +148,36 @@ static uint8_t *value(Ui *u, uint8_t *maximum, const char **label) {
         *label = f == 0 ? "CHORD" : "CLOCKS/STEP";
         return f == 0 ? &p->arp_mode : &p->arp_rate;
     }
+    if (u->group == 9) {
+        SnClockConfig *clock = &p->sn_clock;
+        static const char *names[] = {
+            "MODE",           "BASE DROP",       "DEPTH",  "RATE", "MIDI CLOCKS/CYCLE",
+            "NOTE RETRIGGER", "CLOCK/CC SOURCE", "TRIGGER"};
+        *label = names[f];
+        *maximum = f == 0             ? SN_CLOCK_MODES - 1
+                   : f == 1 || f == 2 ? 48
+                   : f == 3           ? SN_CLOCK_RATES - 1
+                   : f == 4           ? 8
+                                      : 1;
+        switch (f) {
+        case 0:
+            return &clock->mode;
+        case 1:
+            return &clock->base;
+        case 2:
+            return &clock->depth;
+        case 3:
+            return &clock->rate;
+        case 4:
+            return &clock->sync;
+        case 5:
+            return &clock->retrigger;
+        case 6:
+            return &p->clock_source;
+        default:
+            return NULL;
+        }
+    }
     *label = "ACTION";
     return NULL;
 }
@@ -202,7 +235,7 @@ static void change(Ui *u, int delta, uint32_t now) {
             }
         }
     }
-    if (u->group != 0 && u->group != 6)
+    if (u->group != 0 && u->group != 6 && u->group != 9)
         engine_panic(u->engine, -1);
     *v = (uint8_t)next;
     if (u->group == 3 || u->group == 4) {
@@ -215,6 +248,11 @@ static void change(Ui *u, int delta, uint32_t now) {
             u->engine->channel[u->group - 1][c].program = *v;
 }
 static void action(Ui *u, uint32_t now) {
+    if (u->group == 9 && u->field == 7) {
+        u->engine->sn_manual_trigger++;
+        toast(u, "CLOCK TRIGGERED", now);
+        return;
+    }
     if (u->group == 5 && u->field > 0) {
         unsigned slot = u->settings->selected;
         if (u->field == 1) {
@@ -259,7 +297,7 @@ static void short_press(Ui *u, int b, uint32_t now) {
             u->menu = true;
             u->field = 0;
         } else
-            u->group = (uint8_t)((u->group + (b == 0 ? 8 : 1)) % 9);
+            u->group = (uint8_t)((u->group + (b == 0 ? GROUPS - 1 : 1)) % GROUPS);
         return;
     }
     if (b == 1) {
@@ -359,7 +397,10 @@ void ui_render(Ui *u, const UiStatus *s, uint32_t now) {
         const char *label;
         uint8_t *v = value(u, &max, &label);
         (void)max;
-        if (u->group == 5 && u->field > 0) {
+        if (u->group == 9 && u->field == 7) {
+            text(u, 0, 23, "TRIGGER CLOCK");
+            text(u, 0, 36, "OK TO EXECUTE");
+        } else if (u->group == 5 && u->field > 0) {
             static const char *actions[] = {"SLOT", "SAVE ALL TO FLASH", "LOAD SLOT",
                                             "INIT SLOT IN RAM"};
             text(u, 0, 23, actions[u->field]);
@@ -399,6 +440,28 @@ void ui_render(Ui *u, const UiStatus *s, uint32_t now) {
                 }
                 if (u->group == 6 && u->field == 2)
                     snprintf(line, sizeof(line), "%s", *v ? "TRS" : "USB");
+                if (u->group == 9) {
+                    if (u->field == 0)
+                        snprintf(line, sizeof(line), "%s", clock_modes[*v]);
+                    if (u->field == 1)
+                        snprintf(line, sizeof(line), "%u SEMI %luKHZ", *v,
+                                 (unsigned long)(sn_clock_hz(sn_clock_half((uint16_t)(*v * 256))) /
+                                                 1000));
+                    if (u->field == 2)
+                        snprintf(line, sizeof(line), "%u SEMITONES", *v);
+                    if (u->field == 3) {
+                        uint32_t rate = sn_clock_rate_millihz[*v];
+                        snprintf(line, sizeof(line), "%lu.%02lu HZ", (unsigned long)(rate / 1000),
+                                 (unsigned long)((rate % 1000) / 10));
+                    }
+                    if (u->field == 4)
+                        snprintf(line, sizeof(line), "%s%u", *v ? "CLOCKS " : "FREE ",
+                                 sn_clock_sync_clocks[*v]);
+                    if (u->field == 5)
+                        snprintf(line, sizeof(line), "%s", *v ? "ON" : "OFF");
+                    if (u->field == 6)
+                        snprintf(line, sizeof(line), "%s", *v ? "TRS" : "USB");
+                }
                 text(u, 0, 34, line);
             }
             text(u, 0, 45, u->edit ? "> EDIT -/+  OK DONE" : "OK EDIT  -/+ SELECT");
@@ -408,6 +471,9 @@ void ui_render(Ui *u, const UiStatus *s, uint32_t now) {
         for (int i = 7 * 128; i < 1024; i++)
             u->frame[i] = 0;
         text(u, 0, 56, u->toast);
+    } else if (u->menu && u->group == 9) {
+        snprintf(line, sizeof(line), "SN1+SN2 %luKHZ", (unsigned long)(s->clock_hz / 1000));
+        text(u, 0, 56, line);
     } else
         text(u, 0, 56, "HOLD OK BACK - PANIC");
 }

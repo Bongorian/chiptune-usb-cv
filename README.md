@@ -4,7 +4,7 @@ SAA1099 × 1、SN76489AN × 2、RP2040を搭載した小型チップチューン
 USB MIDI、TRS MIDI、2系統のCV／ゲート入力と、OLED・3ボタンによる操作を想定しています。
 回路図、配線済みPCB、JLCPCB向け製造データ、設計資料を収録しています。
 
-**開発状況:** PCBの配線と設計ルール検査は完了しています。ファームウェアv0.1.0-alphaはUF2のビルドとPCテストを通過しています。組み立て後の実機検証は未完了です。
+**開発状況:** PCBの配線と設計ルール検査は完了しています。ファームウェアv0.2.0-alphaはUF2のビルドとPCテストを通過しています。組み立て後の実機検証は未完了です。
 
 ![PCB配線図](outputs/review/routing-traces-all.png)
 
@@ -73,8 +73,8 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 
 ## ファームウェア
 
-[RP2040用ファームウェアと操作資料](firmware/README.md)に、SAAのステレオ・ハードウェア包絡、SNの矩形波・周期／白色ノイズを使う16音色を収録しています。
-[実機評価用UF2](firmware/dist/chiptune-v0.1.0-alpha.uf2)、[初回動作確認手順](firmware/BRINGUP.md)、[検証記録](firmware/dist/Verification.json)を参照してください。
+[RP2040用ファームウェアと操作資料](firmware/README.md)に、SAAのステレオ・ハードウェア包絡、SNの矩形波・周期／白色ノイズを使う16音色と、[SNの実クロック変調](firmware/SN_CLOCK.md)を収録しています。
+[実機評価用UF2](firmware/dist/chiptune-v0.2.0-alpha.uf2)、[初回動作確認手順](firmware/BRINGUP.md)、[検証記録](firmware/dist/Verification.json)を参照してください。
 −と＋を押しながらUSBを接続すると、ファームウェアからUSB ROMブートローダーへ入れます。
 音源電源・クロック・消費電流を確認してから演奏してください。
 
@@ -82,7 +82,7 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 
 - 基板検査: DRC 0、未接続0、回路図との一致問題0、ERC 0。
 - 設計照合: 152フットプリントの配置・端子接続と、音源バスの768ケースを検査済み。
-- ファームウェア: v0.1.0-alpha。16音色、USB／TRS MIDI、独立したCV／ゲート2系統、OLED設定、8枠保存を実装。ARMビルドとASan／UBSan付きPCテストを通過。実機評価は未完了。
+- ファームウェア: v0.2.0-alpha。16音色、共有SNクロック変調、USB／TRS MIDI、独立したCV／ゲート2系統、OLED設定、8枠保存を実装。ARMビルドとASan／UBSan付きPCテストを通過。実機評価は未完了。
 - 実機検証: 電源電流・突入電流、音声出力、CV校正、取り付け公差の評価は未完了。
 
 [`UIモックアップ`](outputs/review/chiptune-ui.html) は画面構成と操作の確認用です。

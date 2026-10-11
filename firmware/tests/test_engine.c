@@ -416,11 +416,12 @@ static void test_ui_controls(void) {
     press(u, 1, &now, false);
     assert(cal_calls == 1);
     UiStatus status = {.power = true, .usb = true, .adc_ok = true};
-    for (int g = 0; g < 9; g++)
-        for (int f = 0; f < 5; f++) {
+    for (int g = 0; g < 10; g++)
+        for (int f = 0; f < 8; f++) {
             u->group = (uint8_t)g;
-            u->field = (uint8_t)(f % (g == 0 || g == 2 || g == 3 || g == 4 || g == 5 || g == 7 ? 4
-                                      : g == 1 || g == 6                                       ? 3
+            u->field = (uint8_t)(f % (g == 9                                                     ? 8
+                                      : g == 0 || g == 2 || g == 3 || g == 4 || g == 5 || g == 7 ? 4
+                                      : g == 1 || g == 6                                         ? 3
                                                          : 5));
             u->edit = false;
             ui_render(u, &status, now);
@@ -433,7 +434,195 @@ static void test_ui_controls(void) {
     settings.preset[settings.selected] = e.preset;
     assert(settings_valid(&settings));
 }
+static void test_sn_clock(void) {
+    SnClockConfig c = {SN_CLOCK_OFF, 0, 24, 3, 0, 1};
+    SnClock s;
+    sn_clock_init(&s, &c);
+    assert(sn_clock_sample(&s) == 16 && sn_clock_hz(16) == 4000000);
+    for (unsigned drop = 0; drop <= 48 * 256; drop++) {
+        uint16_t half = sn_clock_half((uint16_t)drop);
+        assert(half >= 16 && half <= 256);
+        if (drop)
+            assert(half >= sn_clock_half((uint16_t)(drop - 1)));
+        float actual = (float)sn_clock_hz(half);
+        float desired = 4000000 * exp2f(-(float)drop / (256 * 12));
+        assert(fabsf(actual / desired - 1) < 0.0315f);
+    }
+    assert(sn_clock_half(12 * 256) == 32 && sn_clock_half(48 * 256) == 256);
+    assert(sn_clock_hz(256) == 250000 && sn_clock_hz(0) == 0);
+    c.mode = SN_CLOCK_MANUAL;
+    c.base = 12;
+    sn_clock_configure(&s, &c);
+    assert(sn_clock_sample(&s) == 32);
+    c.mode = SN_CLOCK_SWEEP;
+    c.base = 0;
+    sn_clock_configure(&s, &c);
+    assert(sn_clock_sample(&s) == 16); /* idle sweep has no modulation */
+    sn_clock_trigger(&s);
+    assert(sn_clock_sample(&s) == 64);
+    uint16_t before = 64;
+    for (int tick = 0; tick < 2001; tick++) {
+        uint16_t half = sn_clock_tick(&s);
+        assert(half <= before);
+        before = half;
+    }
+    assert(before == 16 && s.sweep == 0);
+    c.mode = SN_CLOCK_DIVE;
+    sn_clock_configure(&s, &c);
+    sn_clock_trigger(&s);
+    assert(sn_clock_sample(&s) == 16);
+    for (int tick = 0; tick < 2001; tick++)
+        sn_clock_tick(&s);
+    assert(sn_clock_sample(&s) == 64);
+    for (unsigned mode = SN_CLOCK_TRIANGLE; mode <= SN_CLOCK_SEQUENCE; mode++) {
+        c.mode = (uint8_t)mode;
+        c.rate = 15;
+        c.depth = 48;
+        sn_clock_configure(&s, &c);
+        uint16_t min = 256, max = 16;
+        for (int tick = 0; tick < 2000; tick++) {
+            uint16_t half = sn_clock_tick(&s);
+            if (half < min)
+                min = half;
+            if (half > max)
+                max = half;
+            assert(half >= 16 && half <= 256);
+            assert(sn_clock_write_us(&c) >= half / 2u + 8u);
+        }
+        assert(max > min);
+    }
+    c = (SnClockConfig){SN_CLOCK_TRIANGLE, 0, 24, 3, 4, 1};
+    sn_clock_configure(&s, &c);
+    sn_clock_midi(&s, 1);
+    assert(sn_clock_sample(&s) == 32);
+    sn_clock_midi(&s, 2);
+    assert(sn_clock_sample(&s) == 64);
+    sn_clock_trigger(&s);
+    assert(sn_clock_sample(&s) == 16);
+    sn_clock_midi(&s, 3);
+    assert(sn_clock_sample(&s) == 32);
+    uint32_t phase = s.phase;
+    for (int n = 0; n < 100; n++)
+        sn_clock_tick(&s);
+    assert(s.phase == phase); /* no free-running drift with MIDI sync or Stop */
+    sn_clock_midi(&s, 0);
+    assert(s.phase == 0); /* Start counter reset */
+    s.clocks = UINT32_MAX;
+    sn_clock_midi(&s, 0);
+    assert(s.sync_step == 1); /* counter wrap is one clock, not a transport reset */
+    c.base = 49;
+    assert(!sn_clock_valid(&c));
+    c.base = 0;
+    c.depth = 49;
+    assert(!sn_clock_valid(&c));
+    c.depth = 24;
+    c.mode = 8;
+    assert(!sn_clock_valid(&c));
+    c.mode = 1;
+    c.rate = 16;
+    assert(!sn_clock_valid(&c));
+    c.rate = 4;
+    c.sync = 9;
+    assert(!sn_clock_valid(&c));
+    c.sync = 0;
+    c.retrigger = 2;
+    assert(!sn_clock_valid(&c));
+    setup();
+    msg(1, 0xb0, 20, 5);
+    assert(e.preset.sn_clock.mode == SN_CLOCK_OFF);
+    msg(0, 0xb0, 20, 127);
+    assert(e.preset.sn_clock.mode == SN_CLOCK_DIVE);
+    msg(0, 0xb0, 21, 127);
+    assert(e.preset.sn_clock.base == 48);
+    msg(0, 0xb0, 22, 0);
+    assert(e.preset.sn_clock.depth == 0);
+    msg(0, 0xb0, 23, 127);
+    assert(e.preset.sn_clock.rate == 15);
+    msg(0, 0xb0, 24, 127);
+    assert(e.preset.sn_clock.sync == 8);
+    msg(0, 0xb0, 25, 0);
+    assert(!e.preset.sn_clock.retrigger);
+    msg(0, 0xb0, 26, 127);
+    assert(e.sn_manual_trigger == 1);
+    msg(0, 0x90, 69, 100);
+    assert(e.sn_note_trigger == 0); /* SAA doesn't trigger SN clock */
+    e.preset.route[0].target = TARGET_SN1;
+    msg(0, 0x90, 69, 100);
+    assert(e.sn_note_trigger == 1);
+    engine_tick(&e, 10);
+    assert(e.sn_div[0][1] == 284); /* clock FX never compensates away the clock-induced pitch */
+    setup();
+    e.preset.route[0].target = TARGET_SN1;
+    e.preset.sn_clock = (SnClockConfig){SN_CLOCK_MANUAL, 48, 24, 4, 0, 1};
+    msg(0, 0x90, 69, 100);
+    engine_tick(&e, 1);
+    assert(e.sn_div[0][1] == 284); /* fresh attacks don't wait for the slow-bus refresh */
+    msg(0, 0xe0, 127, 127);
+    engine_tick(&e, 1);
+    assert(e.sn_div[0][1] == 284);
+    engine_tick(&e, 2);
+    assert(e.sn_div[0][1] < 284);
+    Settings copy = settings;
+    copy.preset[0].sn_clock.mode = 8;
+    assert(!settings_valid(&copy));
+}
+static void test_v1_migration(void) {
+    /* Construct the persisted bytes, independent of the current C struct layout. */
+    uint8_t raw[236] = {0};
+    setup();
+    settings.selected = 3;
+    settings.cv_zero[0] = 15;
+    uint32_t n = STORE_COMMIT;
+    memcpy(raw, &n, 4);
+    n = 1;
+    memcpy(raw + 4, &n, 4);
+    memcpy(raw + 20, &n, 4);
+    n = 99;
+    memcpy(raw + 8, &n, 4);
+    n = 216;
+    memcpy(raw + 12, &n, 4);
+    for (int i = 0; i < PRESETS; i++) {
+        memcpy(raw + 24 + i * 24, &settings.preset[i], 24);
+    }
+    memcpy(raw + 216, settings.cv_zero, 8);
+    memcpy(raw + 224, settings.cv_codes_per_volt, 8);
+    raw[232] = settings.selected;
+    n = store_crc(raw + 4, sizeof(raw) - 4);
+    memcpy(raw + 16, &n, 4);
+    Settings migrated;
+    uint32_t seq;
+    assert(store_load(raw, &migrated, &seq) && seq == 99 && migrated.selected == 3);
+    assert(migrated.cv_zero[0] == 15 && settings_valid(&migrated));
+    for (int i = 0; i < PRESETS; i++) {
+        assert(!memcmp(&migrated.preset[i], &settings.preset[i], 24));
+        assert(migrated.preset[i].sn_clock.mode == SN_CLOCK_OFF);
+    }
+    StoreRecord current;
+    store_record(&current, &migrated, 100);
+    assert(store_load(&current, &migrated, &seq) && seq == 100);
+    assert(store_select((const StoreRecord *)raw, &current) == 1);
+    for (unsigned i = 0; i < sizeof(raw); i++) {
+        raw[i] ^= 1;
+        assert(!store_load(raw, &migrated, &seq));
+        raw[i] ^= 1;
+    }
+    setup();
+    Ui u;
+    uint32_t now = 0;
+    ui_init(&u, &settings, &e, NULL, NULL, NULL);
+    u.group = 9;
+    u.menu = true;
+    press(&u, 1, &now, false);
+    press(&u, 2, &now, false);
+    assert(e.preset.sn_clock.mode == SN_CLOCK_MANUAL);
+    press(&u, 1, &now, false);
+    u.field = 7;
+    press(&u, 1, &now, false);
+    assert(e.sn_manual_trigger == 1);
+}
 int main(void) {
+    test_sn_clock();
+    test_v1_migration();
     test_pitch();
     test_midi_engine();
     test_resources();
@@ -444,6 +633,7 @@ int main(void) {
     test_ui_controls();
     test_cv_calibration();
     puts("PASS: pitch, MIDI ownership, sustain, steals, shared resources, CV, parser, flash "
-         "journal, clock, power, UI; 30000 MIDI events / 5000 button gestures");
+         "journal, SN clock FX, v1 migration, MIDI clock, power, UI; 30000 MIDI events / 5000 "
+         "button gestures");
     return 0;
 }

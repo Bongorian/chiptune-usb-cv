@@ -36,6 +36,17 @@ void settings_default(Settings *s) {
         p->cv[1] = (CvConfig){1, 6, 2, 48};
         p->reserve_cv = 1;
         p->arp_rate = 4;
+        p->sn_clock = (SnClockConfig){SN_CLOCK_OFF, 0, 24, 4, 0, 1};
+        if (i >= 4) {
+            static const SnClockConfig recipes[4] = {{SN_CLOCK_DIVE, 0, 36, 3, 0, 1},
+                                                     {SN_CLOCK_TRIANGLE, 12, 24, 6, 0, 0},
+                                                     {SN_CLOCK_RANDOM, 0, 36, 12, 0, 0},
+                                                     {SN_CLOCK_SEQUENCE, 0, 24, 4, 4, 0}};
+            static const uint8_t programs[4] = {10, 9, 14, 15};
+            p->sn_clock = recipes[i - 4];
+            p->route[0].target = i == 7 ? TARGET_LAYER : i == 6 ? TARGET_SN2 : TARGET_SN1;
+            p->route[0].program = programs[i - 4];
+        }
     }
     s->cv_codes_per_volt[0] = s->cv_codes_per_volt[1] = 1.0f / 0.0006875f;
 }
@@ -54,7 +65,7 @@ static bool preset_valid(const Preset *p) {
     if (p->cv[0].enabled && p->cv[1].enabled && p->cv[0].voice == p->cv[1].voice)
         return false;
     return p->reserve_cv <= 1 && p->arp_mode <= 3 && p->arp_rate >= 1 && p->arp_rate <= 16 &&
-           p->clock_source < SOURCES;
+           p->clock_source < SOURCES && sn_clock_valid(&p->sn_clock);
 }
 bool settings_valid(const Settings *s) {
     if (s->version != SETTINGS_VERSION || s->selected >= PRESETS)
@@ -240,6 +251,8 @@ static void start(Engine *e, int v, int source, int ch, int note, int vel, int p
                           .age = ++e->age,
                           .pitch = pitch};
     const Patch *p = &patches[program];
+    if (chip_for(v))
+        e->sn_note_trigger++;
     int buddy = companion(v);
     if ((p->hw_env || (v >= 12 && p->noise_rate == 3)) && buddy >= 0 && e->voice[buddy].active) {
         e->voice[buddy].active = false;
@@ -382,6 +395,23 @@ void engine_message(Engine *e, uint8_t s, const uint8_t *m, uint8_t len) {
     }
     if (kind != 0xb)
         return;
+    if (s == e->preset.clock_source && a >= 20 && a <= 26) {
+        SnClockConfig *clock = &e->preset.sn_clock;
+        if (a == 20)
+            clock->mode = (uint8_t)(b < (int)SN_CLOCK_MODES ? b : (int)SN_CLOCK_MODES - 1);
+        if (a == 21)
+            clock->base = (uint8_t)((b * 48 + 63) / 127);
+        if (a == 22)
+            clock->depth = (uint8_t)((b * 48 + 63) / 127);
+        if (a == 23)
+            clock->rate = (uint8_t)((b * 15 + 63) / 127);
+        if (a == 24)
+            clock->sync = (uint8_t)((b * 8 + 63) / 127);
+        if (a == 25)
+            clock->retrigger = (uint8_t)(b >= 64);
+        if (a == 26 && b >= 64)
+            e->sn_manual_trigger++;
+    }
     if (a == 7)
         ch->volume = (uint8_t)b;
     if (a == 11)
@@ -495,6 +525,11 @@ void engine_tick(Engine *e, uint32_t dt) {
     if (dt > 100)
         dt = 100;
     e->now += dt;
+    /* Slow external clocks also slow the SN bus. Keep the shared bus available to MIDI/ADC/UI. */
+    bool sn_frequency_due =
+        sn_clock_write_us(&e->preset.sn_clock) <= 40 || e->now - e->sn_frequency_updated >= 4;
+    if (sn_frequency_due)
+        e->sn_frequency_updated = e->now;
     uint8_t tone = 0, noise = 0, colour = 0, oct[3] = {0};
     uint8_t amplitude[6] = {0};
     for (int v = 0; v < VOICES; v++) {
@@ -556,7 +591,8 @@ void engine_tick(Engine *e, uint32_t dt) {
                 uint16_t divider =
                     sn_divider(hz * (v >= 12 && x->program == 9 ? 15.0f : 1.0f), &clamp);
                 int dest = chidx < 3 ? chidx : 2;
-                if (e->sn_div[chip][dest] != divider) {
+                if (e->sn_div[chip][dest] != divider &&
+                    (sn_frequency_due || x->elapsed == dt || e->sn_div[chip][dest] == UINT16_MAX)) {
                     sn(e, chip, (uint8_t)(0x80 | (dest << 5) | (divider & 15)));
                     sn(e, chip, (uint8_t)((divider >> 4) & 63));
                     e->sn_div[chip][dest] = divider;

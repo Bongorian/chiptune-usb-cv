@@ -16,8 +16,9 @@ int main(int argc, char **argv) {
                        .cv_raw = {1455, 2909},
                        .gates = {true, false},
                        .tick_us = 100,
+                       .clock_hz = 4000000,
                        .tick_overruns = 0};
-    for (int group = 0; group < 9; group++) {
+    for (int group = 0; group < 10; group++) {
         ui.group = (uint8_t)group;
         ui.menu = true;
         ui.field = (uint8_t)(group == 5                                             ? 1

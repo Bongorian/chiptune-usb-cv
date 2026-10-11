@@ -11,4 +11,5 @@ typedef struct {
 uint32_t store_crc(const void *data, size_t length);
 void store_record(StoreRecord *r, const Settings *s, uint32_t sequence);
 bool store_valid(const StoreRecord *r);
+bool store_load(const void *record, Settings *settings, uint32_t *sequence);
 int store_select(const StoreRecord *a, const StoreRecord *b);
