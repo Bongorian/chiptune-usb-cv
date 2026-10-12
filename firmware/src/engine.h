@@ -6,9 +6,19 @@
 #define PATCHES 16
 #define PRESETS 8
 #define SOURCES 2
-#define SETTINGS_VERSION 2
+#define SETTINGS_VERSION 3
 
-typedef enum { TARGET_AUTO, TARGET_SAA, TARGET_SN1, TARGET_SN2, TARGET_LAYER, TARGET_COUNT } Target;
+typedef enum {
+    TARGET_AUTO,
+    TARGET_SAA,
+    TARGET_SN1,
+    TARGET_SN2,
+    TARGET_LAYER,
+    TARGET_SN_PAIR,
+    TARGET_FULL,
+    TARGET_OFF,
+    TARGET_COUNT
+} Target;
 typedef struct {
     uint8_t channel, target, program, forward;
 } Route; /* channel 0=omni, 1..16 */
@@ -16,12 +26,18 @@ typedef struct {
     uint8_t enabled, voice, program, base_note;
 } CvConfig;
 typedef struct {
+    uint8_t target, program;
+} MidiPart;
+typedef struct {
     uint8_t mix[4]; /* master, SAA, SN1, SN2: 0..100 */
     Route route[SOURCES];
     CvConfig cv[2];
     uint8_t reserve_cv, arp_mode, arp_rate,
         clock_source; /* arp_mode 0=off/1=major/2=minor/3=octave */
     SnClockConfig sn_clock;
+    uint8_t channel_map[SOURCES];
+    MidiPart part[SOURCES][16];
+    uint8_t cv_pair[2], sn_reference, sn_width, sn_trigger_source, arp_target;
 } Preset;
 typedef struct {
     uint32_t version;
@@ -40,7 +56,7 @@ typedef struct {
 extern const Patch patches[PATCHES];
 typedef struct {
     bool active, held, sustained, releasing;
-    uint8_t source, channel, note, velocity, program;
+    uint8_t source, channel, note, velocity, program, pair, hybrid;
     uint16_t token;
     uint32_t age, elapsed, release_elapsed;
     float pitch, level, release_level;
@@ -78,6 +94,15 @@ void engine_tick(Engine *e, uint32_t elapsed_ms);
 void engine_cv(Engine *e, unsigned input, float note, bool gate);
 void engine_cv_pitch(Engine *e, unsigned input, float note);
 uint16_t sn_divider(float hz, bool *clamped);
+uint16_t sn_divider_clock(float hz, uint32_t clock, bool *clamped);
+uint32_t engine_sn_reference(const Preset *p);
+SnClockConfig engine_clock_config(const Preset *p);
+uint16_t engine_cv_mask(const Preset *p, unsigned input, bool resources);
+bool engine_cv_config_valid(const Preset *p);
+bool engine_cv_patch_ok(int voice, int program);
+bool engine_target_patch_ok(int target, int program);
+void engine_routes_reset(Engine *e, unsigned source);
 void saa_frequency(float hz, uint8_t *octave, uint8_t *frequency, bool *clamped);
 uint8_t sn_attenuation(float gain);
 unsigned engine_active(const Engine *e);
+unsigned engine_active_notes(const Engine *e);

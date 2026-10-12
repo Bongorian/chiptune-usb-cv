@@ -9,3 +9,8 @@
 #define PICO_DEFAULT_I2C 1
 #define PICO_DEFAULT_I2C_SDA_PIN 18
 #define PICO_DEFAULT_I2C_SCL_PIN 19
+
+/* Route tables and backwards-compatible settings parsing need more than the SDK default. */
+#ifndef PICO_STACK_SIZE
+#define PICO_STACK_SIZE 0x1000
+#endif

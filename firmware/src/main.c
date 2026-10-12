@@ -66,7 +66,7 @@ static volatile uint16_t last_clock_half;
 static uint32_t clock_last_irq_us;
 static PIO const clock_pio = pio0;
 static void sn_clock_control(void) {
-    SnClockConfig config = engine.preset.sn_clock;
+    SnClockConfig config = engine_clock_config(&engine.preset);
     unsigned wait = sn_clock_write_us(&config);
     bool note = engine.sn_note_trigger != seen_note_trigger;
     bool manual = engine.sn_manual_trigger != seen_manual_trigger;

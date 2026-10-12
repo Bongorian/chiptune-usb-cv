@@ -21,6 +21,81 @@ const Patch patches[PATCHES] = {{"CHIP LEAD", 3, 70, 90, 85, 0, 0, 0, 0, 10, 0},
 static float limit(float v, float lo, float hi) {
     return v < lo ? lo : v > hi ? hi : v;
 }
+uint32_t engine_sn_reference(const Preset *p) {
+    static const uint32_t hz[] = {4000000, 2000000, 1000000};
+    return p->sn_reference < 3 ? hz[p->sn_reference] : 4000000;
+}
+SnClockConfig engine_clock_config(const Preset *p) {
+    SnClockConfig c = p->sn_clock;
+    unsigned base = c.mode == SN_CLOCK_OFF ? 0 : c.base;
+    base += p->sn_reference * 12u;
+    c.base = (uint8_t)(base > 48 ? 48 : base);
+    if (c.mode == SN_CLOCK_OFF) {
+        c.mode = SN_CLOCK_MANUAL;
+        c.depth = 0;
+    }
+    return c;
+}
+bool engine_cv_patch_ok(int v, int p) {
+    if (v < 0 || v >= VOICES || p < 0 || p >= PATCHES)
+        return false;
+    if (patches[p].hw_env)
+        return v == 2 || v == 5;
+    if (v >= 12)
+        return patches[p].noise == 1;
+    if (v >= 6)
+        return !patches[p].noise;
+    return !(patches[p].noise && patches[p].noise_rate == 3);
+}
+bool engine_target_patch_ok(int target, int program) {
+    if (target < 0 || target >= TARGET_COUNT || program < 0 || program >= PATCHES)
+        return false;
+    const Patch *p = &patches[program];
+    bool saa_ok = !(p->noise && p->noise_rate == 3);
+    bool sn_ok = !p->hw_env && p->noise != 2;
+    if (target == TARGET_SAA)
+        return saa_ok;
+    if (target == TARGET_SN1 || target == TARGET_SN2 || target == TARGET_SN_PAIR)
+        return sn_ok;
+    if (target == TARGET_FULL)
+        return saa_ok && sn_ok;
+    return true;
+}
+static int pair_mate(int v) {
+    return v >= 6 && v < 9 ? v + 3 : v >= 9 && v < 12 ? v - 3 : v == 12 ? 13 : v == 13 ? 12 : -1;
+}
+static int companion(int v);
+uint16_t engine_cv_mask(const Preset *p, unsigned input, bool resources) {
+    if (input >= 2 || !p->cv[input].enabled || p->cv[input].voice >= VOICES)
+        return 0;
+    int v = p->cv[input].voice;
+    uint16_t mask = (uint16_t)(1u << v);
+    int mate = p->cv_pair[input] ? pair_mate(v) : -1;
+    if (mate >= 0)
+        mask |= (uint16_t)(1u << mate);
+    const Patch *patch = &patches[p->cv[input].program % PATCHES];
+    if (resources && (patch->hw_env || (v >= 12 && patch->noise_rate == 3))) {
+        int buddy = companion(v);
+        if (buddy >= 0)
+            mask |= (uint16_t)(1u << buddy);
+        if (mate >= 0 && companion(mate) >= 0)
+            mask |= (uint16_t)(1u << companion(mate));
+    }
+    return mask;
+}
+bool engine_cv_config_valid(const Preset *p) {
+    for (unsigned i = 0; i < 2; i++) {
+        const CvConfig *c = &p->cv[i];
+        if (c->enabled > 1 || c->voice >= VOICES || c->program >= PATCHES || c->base_note > 127 ||
+            p->cv_pair[i] > 1)
+            return false;
+        if (p->cv_pair[i] && !((c->voice >= 6 && c->voice <= 8) || c->voice == 12))
+            return false;
+        if (c->enabled && !engine_cv_patch_ok(c->voice, c->program))
+            return false;
+    }
+    return !(engine_cv_mask(p, 0, true) & engine_cv_mask(p, 1, true));
+}
 void settings_default(Settings *s) {
     memset(s, 0, sizeof(*s));
     s->version = SETTINGS_VERSION;
@@ -28,25 +103,65 @@ void settings_default(Settings *s) {
         Preset *p = &s->preset[i];
         p->mix[0] = 70;
         p->mix[1] = 80;
-        p->mix[2] = 70;
-        p->mix[3] = 70;
-        p->route[0] = (Route){0, TARGET_AUTO, (uint8_t)(i * 2), 0};
-        p->route[1] = (Route){0, TARGET_SAA, (uint8_t)(i * 2 + 1), 0};
+        p->mix[2] = p->mix[3] = 70;
         p->cv[0] = (CvConfig){1, 0, 1, 48};
-        p->cv[1] = (CvConfig){1, 6, 2, 48};
+        p->cv[1] = (CvConfig){1, 6, 2, 36};
+        p->cv_pair[1] = 1;
         p->reserve_cv = 1;
         p->arp_rate = 4;
+        p->arp_target = 1; /* harmonies on SAA; keep the SN bass steady */
+        p->sn_reference = 1;
+        p->sn_trigger_source = 7; /* melody/CV, excluding MIDI channel 10 */
         p->sn_clock = (SnClockConfig){SN_CLOCK_OFF, 0, 24, 4, 0, 1};
-        if (i >= 4) {
-            static const SnClockConfig recipes[4] = {{SN_CLOCK_DIVE, 0, 36, 3, 0, 1},
-                                                     {SN_CLOCK_TRIANGLE, 12, 24, 6, 0, 0},
-                                                     {SN_CLOCK_RANDOM, 0, 36, 12, 0, 0},
-                                                     {SN_CLOCK_SEQUENCE, 0, 24, 4, 4, 0}};
-            static const uint8_t programs[4] = {10, 9, 14, 15};
-            p->sn_clock = recipes[i - 4];
-            p->route[0].target = i == 7 ? TARGET_LAYER : i == 6 ? TARGET_SN2 : TARGET_SN1;
-            p->route[0].program = programs[i - 4];
+        for (unsigned source = 0; source < SOURCES; source++) {
+            p->route[source] = (Route){0, TARGET_SAA, 5, 0};
+            p->channel_map[source] = 1;
+            for (unsigned ch = 0; ch < 16; ch++)
+                p->part[source][ch] = (MidiPart){TARGET_OFF, 0};
+            p->part[source][0] = (MidiPart){TARGET_SAA, 5};
+            p->part[source][1] = (MidiPart){TARGET_SN_PAIR, 2};
+            p->part[source][2] = (MidiPart){TARGET_SAA, 0};
+            p->part[source][3] = (MidiPart){TARGET_SAA, 3};
+            p->part[source][9] = (MidiPart){TARGET_SN_PAIR, 10};
+            if (i == 1)
+                p->part[source][1].program = 15;
+            if (i == 3)
+                p->part[source][0].program = 1;
+            if (i == 4)
+                p->part[source][1] = (MidiPart){TARGET_SAA, 2};
+            if (i == 5) {
+                p->part[source][1].program = 15;
+                p->part[source][9] = (MidiPart){TARGET_SAA, 7};
+            }
+            if (i == 6 || i == 7)
+                p->part[source][1].program = 15;
         }
+        if (i == 1) {
+            p->sn_width = 12;
+            p->cv[0].program = 5;
+        }
+        if (i == 2) {
+            p->arp_mode = 2;
+            p->arp_rate = 6;
+            p->cv[0].voice = 2;
+            p->cv[0].program = 3;
+        }
+        if (i == 3)
+            p->sn_reference = 2;
+        if (i == 4) {
+            p->sn_clock = (SnClockConfig){SN_CLOCK_DIVE, 0, 36, 3, 0, 1};
+            p->sn_trigger_source = 4;
+            p->cv[1].enabled = 0;
+        }
+        if (i == 5) {
+            p->sn_clock = (SnClockConfig){SN_CLOCK_TRIANGLE, 0, 24, 11, 0, 0};
+            p->cv[1].voice = 12;
+            p->cv[1].program = 9;
+        }
+        if (i == 6)
+            p->sn_clock = (SnClockConfig){SN_CLOCK_RANDOM, 0, 36, 12, 0, 0};
+        if (i == 7)
+            p->sn_clock = (SnClockConfig){SN_CLOCK_SEQUENCE, 0, 24, 4, 4, 0};
     }
     s->cv_codes_per_volt[0] = s->cv_codes_per_volt[1] = 1.0f / 0.0006875f;
 }
@@ -62,8 +177,18 @@ static bool preset_valid(const Preset *p) {
             p->cv[i].base_note > 127)
             return false;
     }
-    if (p->cv[0].enabled && p->cv[1].enabled && p->cv[0].voice == p->cv[1].voice)
+    if (!engine_cv_config_valid(p) || p->sn_reference > 2 || p->sn_width > 30 ||
+        p->sn_trigger_source > 7 || p->arp_target > 2)
         return false;
+    for (unsigned source = 0; source < SOURCES; source++) {
+        if (p->channel_map[source] > 1)
+            return false;
+        for (unsigned ch = 0; ch < 16; ch++) {
+            if (p->part[source][ch].target >= TARGET_COUNT ||
+                p->part[source][ch].program >= PATCHES)
+                return false;
+        }
+    }
     return p->reserve_cv <= 1 && p->arp_mode <= 3 && p->arp_rate >= 1 && p->arp_rate <= 16 &&
            p->clock_source < SOURCES && sn_clock_valid(&p->sn_clock);
 }
@@ -99,11 +224,16 @@ void saa_frequency(float hz, uint8_t *oct, uint8_t *reg, bool *clamped) {
         }
     }
 }
-uint16_t sn_divider(float hz, bool *clamped) {
-    const float min = 4000000.0f / (32 * 1023), max = 4000000.0f / 32;
+uint16_t sn_divider_clock(float hz, uint32_t clock, bool *clamped) {
+    if (clock < 250000 || clock > 4000000)
+        clock = 4000000;
+    float min = (float)clock / (32 * 1023), max = (float)clock / 32;
     *clamped = !isfinite(hz) || hz < min || hz > max;
     hz = isfinite(hz) ? limit(hz, min, max) : min;
-    return (uint16_t)limit(roundf(4000000.0f / (32 * hz)), 1, 1023);
+    return (uint16_t)limit(roundf((float)clock / (32 * hz)), 1, 1023);
+}
+uint16_t sn_divider(float hz, bool *clamped) {
+    return sn_divider_clock(hz, 4000000, clamped);
 }
 uint8_t sn_attenuation(float gain) {
     static const float threshold[15] = {0.891251f, 0.707946f, 0.562341f, 0.446684f, 0.354813f,
@@ -127,11 +257,20 @@ static void sn(Engine *e, int chip, uint8_t v) {
     if (e->sink.sn)
         e->sink.sn(e->sink.ctx, (uint8_t)chip, v);
 }
-static void channels_reset(Engine *e) {
-    for (int s = 0; s < SOURCES; s++)
-        for (int c = 0; c < 16; c++)
-            e->channel[s][c] = (Channel){100, 127, 64, 0, 0, e->preset.route[s].program, 2, 0};
+void engine_routes_reset(Engine *e, unsigned source) {
+    if (source >= SOURCES)
+        return;
+    for (unsigned c = 0; c < 16; c++) {
+        uint8_t program = e->preset.channel_map[source] ? e->preset.part[source][c].program
+                                                        : e->preset.route[source].program;
+        e->channel[source][c] = (Channel){100, 127, 64, 0, 0, program, 2, 0};
+    }
 }
+static void channels_reset(Engine *e) {
+    for (unsigned s = 0; s < SOURCES; s++)
+        engine_routes_reset(e, s);
+}
+static void retire_voice(Engine *e, int v);
 void engine_init(Engine *e, const Preset *p, SoundSink sink) {
     memset(e, 0, sizeof(*e));
     e->preset = *p;
@@ -160,7 +299,7 @@ void engine_init(Engine *e, const Preset *p, SoundSink sink) {
 void engine_panic(Engine *e, int source) {
     for (int i = 0; i < VOICES; i++)
         if (source < 0 || e->voice[i].source == source)
-            e->voice[i].active = false;
+            retire_voice(e, i);
     for (int s = 0; s < SOURCES; s++)
         if (source < 0 || s == source) {
             memcpy(e->released[s], e->pressed[s], sizeof(e->released[s]));
@@ -184,8 +323,9 @@ static int companion(int v) {
     return v == 12 ? 8 : v == 13 ? 11 : v == 2 ? 1 : v == 5 ? 4 : -1;
 }
 static bool cv_reserved(const Engine *e, int v) {
-    return e->preset.reserve_cv && ((e->preset.cv[0].enabled && e->preset.cv[0].voice == v) ||
-                                    (e->preset.cv[1].enabled && e->preset.cv[1].voice == v));
+    return e->preset.reserve_cv &&
+           ((engine_cv_mask(&e->preset, 0, true) | engine_cv_mask(&e->preset, 1, true)) &
+            (1u << v));
 }
 static bool locked(const Engine *e, int v) {
     if (cv_reserved(e, v))
@@ -209,6 +349,8 @@ static bool fits(const Engine *e, int v, const Patch *p, int target) {
     if (target == TARGET_SN1 && chip != 1)
         return false;
     if (target == TARGET_SN2 && chip != 2)
+        return false;
+    if (target == TARGET_OFF)
         return false;
     if (p->hw_env && v != 2 && v != 5)
         return false;
@@ -236,10 +378,62 @@ static void release_voice(Voice *v) {
     v->release_elapsed = 0;
     v->release_level = v->level;
 }
+static void mute_voice(Engine *e, int v) {
+    if (v < 6) {
+        saa(e, (uint8_t)v, 0);
+        if (v == 2 || v == 5)
+            saa(e, (uint8_t)(0x18 + (v == 5)), 0);
+    } else {
+        int chip = chip_for(v) - 1;
+        int ch = v >= 12 ? 3 : (v - 6) % 3;
+        sn(e, chip, (uint8_t)(0x90 | (ch << 5) | 15));
+        e->sn_atten[chip][ch] = 15;
+    }
+}
+static void retire_voice(Engine *e, int v) {
+    Voice old = e->voice[v];
+    int mate = old.pair ? old.pair - 1 : -1;
+    for (int i = 0; i < VOICES; i++) {
+        Voice *x = &e->voice[i];
+        bool linked = old.hybrid && x->hybrid && old.source == x->source &&
+                      old.channel == x->channel && old.note == x->note && old.token == x->token;
+        if (i == v || (i == mate && x->pair == v + 1) || linked) {
+            x->pair = x->hybrid = 0;
+            if (x->active) {
+                x->active = false;
+                mute_voice(e, i);
+            }
+        }
+    }
+}
+static bool sn_trigger(const Engine *e, int v, int source, int ch) {
+    if (!chip_for(v))
+        return false;
+    switch (e->preset.sn_trigger_source) {
+    case 1:
+        return source < SOURCES;
+    case 2:
+        return source == 2;
+    case 3:
+        return source == 3;
+    case 4:
+        return source < SOURCES && ch == 9;
+    case 5:
+        return v < 12;
+    case 6:
+        return v >= 12;
+    case 7:
+        return source >= SOURCES || ch != 9;
+    default:
+        return true;
+    }
+}
 static void start(Engine *e, int v, int source, int ch, int note, int vel, int program,
                   uint16_t token, float pitch) {
-    if (e->voice[v].active)
+    if (e->voice[v].active) {
         e->steals++;
+        retire_voice(e, v);
+    }
     e->voice[v] = (Voice){.active = true,
                           .held = true,
                           .source = (uint8_t)source,
@@ -251,19 +445,12 @@ static void start(Engine *e, int v, int source, int ch, int note, int vel, int p
                           .age = ++e->age,
                           .pitch = pitch};
     const Patch *p = &patches[program];
-    if (chip_for(v))
+    if (sn_trigger(e, v, source, ch))
         e->sn_note_trigger++;
     int buddy = companion(v);
     if ((p->hw_env || (v >= 12 && p->noise_rate == 3)) && buddy >= 0 && e->voice[buddy].active) {
-        e->voice[buddy].active = false;
         e->steals++;
-        if (buddy < 6)
-            saa(e, (uint8_t)buddy, 0);
-        else {
-            int chip = chip_for(buddy) - 1;
-            sn(e, chip, 0xdf);
-            e->sn_atten[chip][2] = 15;
-        }
+        retire_voice(e, buddy);
     }
     if (v == 2 || v == 5)
         saa(e, (uint8_t)(0x18 + (v == 5)), 0);
@@ -278,28 +465,30 @@ static void start(Engine *e, int v, int source, int ch, int note, int vel, int p
         e->sn_noise[chip] = noise;
     }
 }
-static void allocate(Engine *e, int source, int ch, int note, int vel, int program, uint16_t token,
-                     int target) {
+static uint64_t voice_cost(const Engine *e, int v, const Patch *p) {
+    const Voice *x = &e->voice[v];
+    uint64_t score = x->active ? (x->held ? UINT64_C(1) << 40 : UINT64_C(1) << 39) + x->age : 0;
+    int buddy = companion(v);
+    if ((p->hw_env || (v >= 12 && p->noise_rate == 3)) && buddy >= 0 && e->voice[buddy].active) {
+        const Voice *b = &e->voice[buddy];
+        uint64_t cost = (b->held ? UINT64_C(1) << 40 : UINT64_C(1) << 39) + b->age;
+        if (cost > score)
+            score = cost;
+        score += UINT64_C(1) << 38;
+    }
+    return score;
+}
+static int find_voice(const Engine *e, int note, int program, int target) {
     const Patch *p = &patches[program];
     int best = -1;
     uint64_t score_best = UINT64_MAX;
     for (int v = 0; v < VOICES; v++)
         if (fits(e, v, p, target)) {
-            const Voice *x = &e->voice[v];
-            uint64_t score =
-                x->active ? (x->held ? UINT64_C(1) << 40 : UINT64_C(1) << 39) + x->age : 0;
-            int buddy = companion(v);
-            if ((p->hw_env || (v >= 12 && p->noise_rate == 3)) && buddy >= 0 &&
-                e->voice[buddy].active) {
-                const Voice *b = &e->voice[buddy];
-                uint64_t cost = (b->held ? UINT64_C(1) << 40 : UINT64_C(1) << 39) + b->age;
-                if (cost > score)
-                    score = cost;
-                score += UINT64_C(1) << 38;
-            }
-            /* At AUTO low notes prefer SAA (SN minimum is about B2). */
-            if (target == TARGET_AUTO && !p->noise && note < 47 && v >= 6)
-                score += (UINT64_C(1) << 42);
+            uint64_t score = voice_cost(e, v, p);
+            if (target == TARGET_AUTO && !p->noise && v >= 6 &&
+                440 * exp2f(((float)note - 69) / 12) <
+                    (float)engine_sn_reference(&e->preset) / (32 * 1023))
+                score += UINT64_C(1) << 42;
             if (target == TARGET_AUTO && p->noise == 1 && !p->pan_motion && v < 6)
                 score += 1024;
             if (score < score_best) {
@@ -307,6 +496,54 @@ static void allocate(Engine *e, int source, int ch, int note, int vel, int progr
                 best = v;
             }
         }
+    return best;
+}
+static int find_pair(const Engine *e, int program) {
+    const Patch *p = &patches[program];
+    int best = -1;
+    uint64_t score_best = UINT64_MAX;
+    for (int left = 6; left <= 12; left++) {
+        if (left > 8 && left < 12)
+            continue;
+        int right = pair_mate(left);
+        if (!fits(e, left, p, TARGET_SN1) || !fits(e, right, p, TARGET_SN2))
+            continue;
+        uint64_t a = voice_cost(e, left, p), b = voice_cost(e, right, p);
+        uint64_t score = (a > b ? a : b) + ((a || b) ? (UINT64_C(1) << 38) : 0);
+        if (score < score_best) {
+            score_best = score;
+            best = left;
+        }
+    }
+    return best;
+}
+static void start_pair(Engine *e, int left, int source, int ch, int note, int vel, int program,
+                       uint16_t token, float pitch) {
+    int right = pair_mate(left);
+    start(e, left, source, ch, note, vel, program, token, pitch);
+    start(e, right, source, ch, note, vel, program, token, pitch);
+    e->voice[left].pair = (uint8_t)(right + 1);
+    e->voice[right].pair = (uint8_t)(left + 1);
+}
+static void allocate(Engine *e, int source, int ch, int note, int vel, int program, uint16_t token,
+                     int target) {
+    if (target == TARGET_SN_PAIR || target == TARGET_FULL) {
+        int pair = find_pair(e, program);
+        int saa_voice = target == TARGET_FULL ? find_voice(e, note, program, TARGET_SAA) : -1;
+        if (pair < 0 || (target == TARGET_FULL && saa_voice < 0)) {
+            e->refused++;
+            return;
+        }
+        if (saa_voice >= 0)
+            start(e, saa_voice, source, ch, note, vel, program, token, (float)note);
+        start_pair(e, pair, source, ch, note, vel, program, token, (float)note);
+        if (saa_voice >= 0) {
+            e->voice[saa_voice].hybrid = e->voice[pair].hybrid = e->voice[pair_mate(pair)].hybrid =
+                1;
+        }
+        return;
+    }
+    int best = find_voice(e, note, program, target);
     if (best < 0) {
         e->refused++;
         return;
@@ -374,7 +611,12 @@ void engine_message(Engine *e, uint8_t s, const uint8_t *m, uint8_t len) {
     }
     if (kind == 9) {
         uint16_t t = ++e->pressed[s][c][a];
-        int program = ch->program, target = e->preset.route[s].target;
+        int program = ch->program, target = e->preset.channel_map[s] ? e->preset.part[s][c].target
+                                                                     : e->preset.route[s].target;
+        if (target == TARGET_OFF) {
+            e->pressed[s][c][a]--;
+            return;
+        }
         if (c == 9)
             program = a == 36 ? 10 : a == 38 ? 7 : a == 42 || a == 44 ? 8 : program;
         if (target == TARGET_LAYER) {
@@ -395,7 +637,7 @@ void engine_message(Engine *e, uint8_t s, const uint8_t *m, uint8_t len) {
     }
     if (kind != 0xb)
         return;
-    if (s == e->preset.clock_source && a >= 20 && a <= 26) {
+    if (s == e->preset.clock_source && a >= 20 && a <= 29) {
         SnClockConfig *clock = &e->preset.sn_clock;
         if (a == 20)
             clock->mode = (uint8_t)(b < (int)SN_CLOCK_MODES ? b : (int)SN_CLOCK_MODES - 1);
@@ -411,6 +653,17 @@ void engine_message(Engine *e, uint8_t s, const uint8_t *m, uint8_t len) {
             clock->retrigger = (uint8_t)(b >= 64);
         if (a == 26 && b >= 64)
             e->sn_manual_trigger++;
+        if (a == 27) {
+            uint8_t reference = (uint8_t)(b > 2 ? 2 : b);
+            if (reference != e->preset.sn_reference) {
+                engine_panic(e, -1);
+                e->preset.sn_reference = reference;
+            }
+        }
+        if (a == 28)
+            e->preset.sn_width = (uint8_t)((b * 30 + 63) / 127);
+        if (a == 29)
+            e->preset.sn_trigger_source = (uint8_t)(b > 7 ? 7 : b);
     }
     if (a == 7)
         ch->volume = (uint8_t)b;
@@ -466,39 +719,49 @@ void engine_cv(Engine *e, unsigned input, float note, bool gate) {
     if (!cv->enabled)
         return;
     Voice *x = &e->voice[v];
+    int mate = e->preset.cv_pair[input] ? pair_mate(v) : -1;
     if (gate) {
         if (x->active && x->source == owner && x->held) {
-            x->pitch = limit(note, 0, 127);
+            engine_cv_pitch(e, input, note);
             return;
         }
-        /* CV also obeys companion and shared-noise locks. Exempt its own reservation only. */
-        Engine *mutable = e;
-        uint8_t old = mutable->preset.reserve_cv;
-        mutable->preset.reserve_cv = 0;
+        uint8_t enabled = cv->enabled;
+        cv->enabled = 0; /* exempt only this CV's reserved resources */
         bool ok = fits(e, v, &patches[cv->program],
                        chip_for(v) == 0   ? TARGET_SAA
                        : chip_for(v) == 1 ? TARGET_SN1
                                           : TARGET_SN2);
-        mutable->preset.reserve_cv = old;
-        int buddy = companion(v);
-        if (buddy >= 0 &&
-            (patches[cv->program].hw_env || (v >= 12 && patches[cv->program].noise_rate == 3)) &&
-            cv_reserved(e, buddy))
-            ok = false;
+        if (mate >= 0)
+            ok = ok && fits(e, mate, &patches[cv->program], TARGET_SN2);
+        cv->enabled = enabled;
         if (!ok) {
             e->refused++;
             return;
         }
-        start(e, v, owner, 0, (int)limit(note, 0, 127), 110, cv->program, 0, limit(note, 0, 127));
-    } else if (x->active && x->source == owner && x->held)
-        release_voice(x);
+        float pitch = limit(note, 0, 127);
+        if (mate >= 0)
+            start_pair(e, v, owner, 0, (int)pitch, 110, cv->program, 0, pitch);
+        else
+            start(e, v, owner, 0, (int)pitch, 110, cv->program, 0, pitch);
+    } else {
+        if (x->active && x->source == owner && x->held)
+            release_voice(x);
+        if (mate >= 0 && e->voice[mate].active && e->voice[mate].source == owner &&
+            e->voice[mate].held)
+            release_voice(&e->voice[mate]);
+    }
 }
 void engine_cv_pitch(Engine *e, unsigned input, float note) {
     if (input >= 2 || !isfinite(note))
         return;
-    Voice *v = &e->voice[e->preset.cv[input].voice];
+    int index = e->preset.cv[input].voice;
+    Voice *v = &e->voice[index];
     if (v->active && v->held && v->source == input + 2)
         v->pitch = limit(note, 0, 127);
+    int mate = e->preset.cv_pair[input] ? pair_mate(index) : -1;
+    if (mate >= 0 && e->voice[mate].active && e->voice[mate].held &&
+        e->voice[mate].source == input + 2)
+        e->voice[mate].pitch = limit(note, 0, 127);
 }
 static float envelope(Voice *x, const Patch *p, uint32_t dt) {
     x->elapsed += dt;
@@ -526,8 +789,9 @@ void engine_tick(Engine *e, uint32_t dt) {
         dt = 100;
     e->now += dt;
     /* Slow external clocks also slow the SN bus. Keep the shared bus available to MIDI/ADC/UI. */
+    SnClockConfig effective_clock = engine_clock_config(&e->preset);
     bool sn_frequency_due =
-        sn_clock_write_us(&e->preset.sn_clock) <= 40 || e->now - e->sn_frequency_updated >= 4;
+        sn_clock_write_us(&effective_clock) <= 40 || e->now - e->sn_frequency_updated >= 4;
     if (sn_frequency_due)
         e->sn_frequency_updated = e->now;
     uint8_t tone = 0, noise = 0, colour = 0, oct[3] = {0};
@@ -544,10 +808,12 @@ void engine_tick(Engine *e, uint32_t dt) {
         float pitch = x->pitch + (ch ? ch->bend / 8192.0f * ch->bend_range : 0);
         float sweep = 1 - limit((float)x->elapsed / p->decay, 0, 1);
         pitch += p->sweep * sweep;
+        int phase_voice = x->pair && chip_for(v) == 2 ? x->pair - 1 : v;
         float depth = (p->vibrato + (ch ? ch->modulation * 0.8f : 0)) / 100.0f;
         if (x->elapsed > 180)
-            pitch += depth * sinf((float)(e->now % 200000) * 0.032f + (float)v * 0.3f);
-        if (e->preset.arp_mode) {
+            pitch += depth * sinf((float)(e->now % 200000) * 0.032f + (float)phase_voice * 0.3f);
+        if (e->preset.arp_mode && (!e->preset.arp_target || (e->preset.arp_target == 1 && v < 6) ||
+                                   (e->preset.arp_target == 2 && v >= 6))) {
             static const int8_t arp[3][4] = {{0, 4, 7, 12}, {0, 3, 7, 12}, {0, 12, 0, 12}};
             uint32_t phase =
                 (e->clock_seen && (!e->clock_running || e->now - e->last_clock < 600))
@@ -555,10 +821,21 @@ void engine_tick(Engine *e, uint32_t dt) {
                     : (uint32_t)((float)e->now * e->midi_hz / (1000 * e->preset.arp_rate));
             pitch += arp[e->preset.arp_mode - 1][phase % 4];
         }
+        if (x->pair && v >= 6)
+            pitch += ((v >= 9 && v < 12) || v == 13 ? 1.0f : -1.0f) * e->preset.sn_width / 200.0f;
         float hz = 440 * exp2f((pitch - 69) / 12), gain = x->level * x->velocity / 127.0f;
         gain *= e->preset.mix[0] / 100.0f * e->preset.mix[chip_for(v) + 1] / 100.0f;
         if (ch)
             gain *= ch->volume / 127.0f * ch->expression / 127.0f;
+        if (x->pair && v >= 6) {
+            float pan = ch ? ch->pan / 127.0f : 0.5f;
+            if (p->pan_motion)
+                pan = limit(pan + 0.35f *
+                                      sinf((float)(e->now % 200000) * 0.004f + (float)phase_voice),
+                            0, 1);
+            bool right = (v >= 9 && v < 12) || v == 13;
+            gain *= fminf(1, 2 * (right ? pan : 1 - pan));
+        }
         bool clamp = false;
         if (v < 6) {
             uint8_t o, f;
@@ -589,7 +866,8 @@ void engine_tick(Engine *e, uint32_t dt) {
             int chip = chip_for(v) - 1, chidx = v >= 12 ? 3 : (v - (chip == 0 ? 6 : 9));
             if (chidx < 3 || p->noise_rate == 3) {
                 uint16_t divider =
-                    sn_divider(hz * (v >= 12 && x->program == 9 ? 15.0f : 1.0f), &clamp);
+                    sn_divider_clock(hz * (v >= 12 && x->program == 9 ? 15.0f : 1.0f),
+                                     engine_sn_reference(&e->preset), &clamp);
                 int dest = chidx < 3 ? chidx : 2;
                 if (e->sn_div[chip][dest] != divider &&
                     (sn_frequency_due || x->elapsed == dt || e->sn_div[chip][dest] == UINT16_MAX)) {
@@ -630,5 +908,23 @@ unsigned engine_active(const Engine *e) {
     unsigned count = 0;
     for (int i = 0; i < VOICES; i++)
         count += e->voice[i].active;
+    return count;
+}
+
+unsigned engine_active_notes(const Engine *e) {
+    unsigned count = 0;
+    for (unsigned v = 0; v < VOICES; v++)
+        if (e->voice[v].active) {
+            bool seen = false;
+            const Voice *x = &e->voice[v];
+            for (unsigned j = 0; j < v; j++) {
+                const Voice *y = &e->voice[j];
+                if (y->active && x->source == y->source && x->channel == y->channel &&
+                    x->note == y->note && x->token == y->token)
+                    seen = true;
+            }
+            if (!seen)
+                count++;
+        }
     return count;
 }

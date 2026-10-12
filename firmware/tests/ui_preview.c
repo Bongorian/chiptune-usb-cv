@@ -16,16 +16,20 @@ int main(int argc, char **argv) {
                        .cv_raw = {1455, 2909},
                        .gates = {true, false},
                        .tick_us = 100,
-                       .clock_hz = 4000000,
+                       .clock_hz = 2000000,
                        .tick_overruns = 0};
+    ui.route_channel[0] = ui.route_channel[1] = 1;
     for (int group = 0; group < 10; group++) {
         ui.group = (uint8_t)group;
         ui.menu = true;
-        ui.field = (uint8_t)(group == 5                                             ? 1
-                             : group == 7                                           ? 1
-                             : group == 8                                           ? 2
-                             : group == 1 || group == 2 || group == 3 || group == 4 ? 2
-                                                                                    : 0);
+        ui.field = (uint8_t)(group == 1 || group == 2 ? 5
+                             : group == 4             ? 4
+                             : group == 5             ? 1
+                             : group == 7             ? 1
+                             : group == 8             ? 2
+                             : group == 9             ? 8
+                             : group == 3             ? 2
+                                                      : 0);
         ui.edit = false;
         ui_render(&ui, &status, 1000);
         char path[1024];

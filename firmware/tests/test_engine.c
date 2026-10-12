@@ -37,6 +37,19 @@ static void sn_log(void *ctx, uint8_t chip, uint8_t value) {
 }
 static void setup(void) {
     settings_default(&settings);
+    /* Compatibility fixture: retain v0.1/0.2 routing for the existing protocol tests. */
+    for (unsigned i = 0; i < PRESETS; i++) {
+        Preset *p = &settings.preset[i];
+        p->route[0] = (Route){0, TARGET_AUTO, (uint8_t)(i * 2), 0};
+        p->route[1] = (Route){0, TARGET_SAA, (uint8_t)(i * 2 + 1), 0};
+        p->channel_map[0] = p->channel_map[1] = 0;
+        p->cv[0] = (CvConfig){1, 0, 1, 48};
+        p->cv[1] = (CvConfig){1, 6, 2, 48};
+        p->cv_pair[0] = p->cv_pair[1] = 0;
+        p->sn_reference = p->sn_width = p->sn_trigger_source = p->arp_target = 0;
+        p->arp_mode = 0;
+        p->sn_clock = (SnClockConfig){SN_CLOCK_OFF, 0, 24, 4, 0, 1};
+    }
     sn_count = 0;
     engine_init(&e, &settings.preset[0], (SoundSink){saa_log, sn_log, NULL});
 }
@@ -417,12 +430,10 @@ static void test_ui_controls(void) {
     assert(cal_calls == 1);
     UiStatus status = {.power = true, .usb = true, .adc_ok = true};
     for (int g = 0; g < 10; g++)
-        for (int f = 0; f < 8; f++) {
+        for (int f = 0; f < 11; f++) {
             u->group = (uint8_t)g;
-            u->field = (uint8_t)(f % (g == 9                                                     ? 8
-                                      : g == 0 || g == 2 || g == 3 || g == 4 || g == 5 || g == 7 ? 4
-                                      : g == 1 || g == 6                                         ? 3
-                                                         : 5));
+            static const unsigned counts[] = {4, 7, 8, 5, 5, 4, 4, 4, 5, 11};
+            u->field = (uint8_t)(f % counts[g]);
             u->edit = false;
             ui_render(u, &status, now);
         }

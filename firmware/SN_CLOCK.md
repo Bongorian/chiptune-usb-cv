@@ -1,12 +1,12 @@
 # SN CLOCK：実クロックを使う音作り
 
-v0.2.0-alphaは、GP16からSN76489ANのCLOCK端子へ送る信号を直接変調します。
-トーン用分周器を4 MHz基準で設定したまま実クロックを変えるため、音程とノイズ速度が一緒に変化します。
+v0.3.0-alphaは、GP16からSN76489ANのCLOCK端子へ送る信号を直接変調します。
+トーン用分周器をREFERENCEの4／2／1 MHzで設定したまま実クロックを変えるため、音程とノイズ速度が一緒に変化します。
 音程を保つための自動補正は行いません。SAA1099の8 MHzクロックは独立して維持します。
 
 **SN1／SN2は基板上でクロックを共有しています。** 左右の全SNトーン・ノイズ、CVで発音しているSNの声にも同じ変調がかかります。
 SNの新しいノートがクロックを再トリガーすると、すでに鳴っているSNの声も変化します。
-通常の1 V/octを保ちたい場合はMODEをOFFにしてください。
+通常の指定音程を保ちたい場合はMODEをOFFにしてください。新規設定のREFERENCEは2 MHzです。
 
 ## 操作
 
@@ -17,17 +17,20 @@ SNの新しいノートがクロックを再トリガーすると、すでに鳴
 | 項目 | 内容 |
 |---|---|
 | MODE | OFF、MANUAL、RISE、TRIANGLE、SQUARE、RANDOM、SEQUENCE、DIVE |
-| BASE DROP | 4 MHzから下げる半音数。0–48、12で約2 MHz、24で1 MHz、36で500 kHz、48で250 kHz |
+| BASE DROP | REFERENCEから下げる半音数。0–48。2 MHz基準なら12で1 MHz、24で500 kHz、36で250 kHz。下限250 kHz |
 | DEPTH | BASEからさらに下げる幅。0–48半音。合計は48半音で制限 |
 | RATE | 0.25、0.5、1、2、4、8、16、32、50、80、100、160、250、400、600、800 Hz |
 | MIDI CLOCKS/CYCLE | FREE、1、2、3、4、6、8、12、24クロックで1周期 |
 | NOTE RETRIGGER | ONでSNのNote On／CVゲート立ち上がり時に位相とスイープを再開始 |
 | CLOCK/CC SOURCE | USB／TRS。ARPEGGIOのCLOCK USB/TRSと同じ設定 |
 | TRIGGER | OKで手動再トリガー。NOTE RETRIGGERがOFFでも実行 |
+| REFERENCE | 4／2／1 MHz。生成と音程計算の基準。変更時は消音 |
+| PAIR WIDTH | 左右SNペアの合計ピッチ差、0–30 cents |
+| TRIGGER FROM | ANY SN／MIDI SN／CV1／CV2／DRUM CH10／SN TONES／SN NOISE／MELODY/CV |
 
 | MODE | 動作 |
 |---|---|
-| OFF | クロック4 MHz固定。BASE／DEPTHを無視 |
+| OFF | REFERENCEのクロック固定。BASE／DEPTHを無視 |
 | MANUAL | BASEだけでクロックを低下。全体を低音・遅いノイズにする |
 | RISE | トリガー時にBASE＋DEPTHへ下げ、時間とともにBASEへ戻す。実クロックと音程は上昇 |
 | TRIANGLE | BASEからBASE＋DEPTHまで往復。大きな揺れや速い周波数変調 |
@@ -46,7 +49,7 @@ MIDI同期でClockが来ない／Stopした場合は現在の段階を保持し�
 
 ## まず試す設定
 
-USB MIDIのTARGETをSN1 LEFTまたはSN2 RIGHTにして演奏します。全体のMASTER音量は控えめから調整してください。
+USB MIDIのTARGETをSN STEREO、SN1 LEFTまたはSN2 RIGHTにして演奏します。全体のMASTER音量は控えめから調整してください。
 
 | 音の方向 | PATCH | MODE / BASE / DEPTH / RATE | その他 |
 |---|---|---|---|
@@ -57,8 +60,8 @@ USB MIDIのTARGETをSN1 LEFTまたはSN2 RIGHTにして演奏します。全体�
 | 拍に合う音程崩し | DRY SQUARE（PC15） | SEQUENCE / 0 / 24 | SYNC=4 CLOCKS/CYCLE、RETRIGGER=OFF |
 
 音の表現は狙いで、実ICでの試聴は未実施です。16音色の定義に加わる全体エフェクトなので、組み合わせを変えられます。
-初期設定のプリセット5–8にはDIVE、TRIANGLE、RANDOM、同期SEQUENCEの例を収録しています。
-v0.1の保存設定を移行した場合は、互換のため全スロットのSN CLOCKをOFFにします。
+[キャラクターと演奏設定](CHARACTER_GUIDE.md)に、プリセットとチャンネル／CV割り当てを記載しています。
+v0.1の移行ではSN CLOCKをOFFにし、v0.2の移行では旧FXを維持します。どちらも4 MHz基準を維持します。
 例を復元するにはPRESETでSLOT 5–8を選びINIT、必要ならSAVEします。INITは選択枠の設定を初期化します。
 
 ## DAWからの操作
@@ -75,6 +78,9 @@ CLOCK/CC SOURCEで選んだ入力と、その入力のチャンネルフィル�
 | 24 SYNC | 0–127をFREE＋8種類のMIDI分割へ変換 |
 | 25 RETRIGGER | 0–63 OFF / 64–127 ON |
 | 26 TRIGGER | 64以上を送るたびに再開始 |
+| 27 REFERENCE | 0＝4 MHz／1＝2 MHz／2以上＝1 MHz。変更時は全音源を消音 |
+| 28 WIDTH | 0–127を合計0–30 centsへ変換 |
+| 29 TRIGGER FROM | 0 ANY SN / 1 MIDI SN / 2 CV1 / 3 CV2 / 4 DRUM CH10 / 5 SN TONES / 6 SN NOISE / 7 MELODY/CV。8以上は7 |
 
 例えばCC20=5、CC21=0、CC22=95、CC23=102、CC24=0、CC25=0で、おおむねDEPTH 36・RATE 250 HzのRANDOMになります。
 これらのCCは他のMIDI機器と意味が一致する規格ではありません。

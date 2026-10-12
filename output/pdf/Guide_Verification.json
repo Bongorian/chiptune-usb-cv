@@ -2,19 +2,20 @@
   "document": "Chiptune USB/CV Japanese board guide",
   "date": "2026-10-12",
   "pages": 8,
-  "pdf_sha256": "5ca0c279c91ea07fd6e9f687a5ad542713912fede2afb5fc839727b476bc7a8e",
+  "pdf_sha256": "3154178225c99d88e0029f5c780332a5ea232d3de0856d4653d3ee2c11bbcd9c",
   "source_files_sha256": {
     "routed/Chiptune_USB_CV.kicad_pcb": "55ab595f397bca30c0f537f32063af6ece6441c61c2f6eb9e14c219f94813180",
     "routed/design.json": "fdfa1ae67e401247713fbb74d0f292cdb214ea273aff41a863e5fb2fb3eeb536",
     "firmware/pinmap.h": "be2ef804e9b54dbd5ada5ff2d57318dfa7d6790924e1df25ef403ad52369cc9e",
     "firmware/sound_bus.h": "6902f063e6bed3010e598a995e57949fbdc4458eed4942a4a23ad6bd0ff21c72",
-    "firmware/README.md": "f768798a2544217d2406f7bd20683795b09580381a5d1b74826505508af8c9e3",
-    "firmware/src/main.c": "152dfc868dd91fd3293f74ff87ad467f271ae2909899431d6f2f1fdaa6e76bf2",
-    "firmware/src/engine.c": "4a3edac9fe17111213ec0ecfc3d0701081c105efe7e0f0bbc04681ed1c5131ae",
+    "firmware/README.md": "f036598197f7223253f3aacc364590ca8b23e255d1af4943525bbffe5fecd607",
+    "firmware/CHARACTER_GUIDE.md": "c0e15dc257925470dbdb7dd54bcdc8a2f1bc8bc9249643b75cc7b6cd9fa80307",
+    "firmware/src/main.c": "04fb70106d078b0f07dc7b63f8e70e6485c053ca8b45f8fb927153002ca6ecc5",
+    "firmware/src/engine.c": "4570ad338b7e2b77ee70e619fcab29900839a419a488a4632c9770400ddedd70",
     "firmware/src/sn_clock.c": "df70d70d2f7cfa51e14fa81c445f76cb6668372efe755a6b4d4714b9254f4a1f",
     "firmware/pio/sn_clock.pio": "24a0dab51023d4df465c1c4235552b5b66972ad8b11070019f1d88a0bac9e7e5",
-    "firmware/dist/Verification.json": "9215b182cfde9b35ebadddf8bf8e2ec6667b52a8f719169cb0f341f36fc97c47",
-    "docs/USB-CV-design-notes.txt": "7bdc071066af74cfd5b3da1b47949aa952b9fd8454a47a05c0dd186a68b3a56a",
+    "firmware/dist/Verification.json": "4e089c2f55e80e429ccc9d6062f10739e038b2d033c5be09408ccd387ddaec0a",
+    "docs/USB-CV-design-notes.txt": "8a847d815378f6ae6a5decc27c6033bcc793101fead088ed0f4e1b227fa1bf0a",
     "docs/routing-notes.txt": "6290a284078718974c68cbf97cd62b0c04ef6093fb7169052eabbddb5e8a8b71",
     "mechanical/parameters.json": "6c004773447e72a1c1f742d231e88a503bfe0c3b1583e019730c56ebdb5ad56d",
     "mechanical/mechanical_verification.json": "a5d3f1a3965f97576b4bac56df0f8fef89464b844dd423d53497eafa29658404",
@@ -211,15 +212,15 @@
     ],
     [
       4,
-      663.14,
-      706.75,
+      676.9,
+      720.51,
       "GPIO0…7に8bitをまとめて出力するAPIでは、論理バイトをその"
     ],
     [
       5,
       85,
       99.08,
-      "1 V/octの音程CVとゲートを読み取り、各系統へ予約した音源の声を"
+      "1 V/octの音程CVとゲートを読み取り、各系統へ音源の声またはSN"
     ],
     [
       5,
@@ -255,7 +256,7 @@
       6,
       85,
       99.08,
-      "v0.2.0-alphaに設定画面を実装。描画コードをPCで検査してい"
+      "v0.3.0-alphaに設定画面を実装。描画コードをPCで検査してい"
     ],
     [
       6,
@@ -272,7 +273,7 @@
     [
       6,
       686.95,
-      700.72,
+      714.49,
       "実装済み画面のPCレンダリング：firmware/assets/ole"
     ],
     [

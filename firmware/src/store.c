@@ -22,13 +22,24 @@ void store_record(StoreRecord *r, const Settings *s, uint32_t sequence) {
         &r->version,
         sizeof(*r) - offsetof(StoreRecord, version)); /* CRC field is zero during calculation */
 }
+/* Validate the CRC without copying the enlarged record onto the MCU stack. */
+static uint32_t record_crc(const StoreRecord *r) {
+    const uint8_t *bytes = (const uint8_t *)r;
+    uint32_t crc = 0xffffffffu;
+    for (unsigned i = offsetof(StoreRecord, version); i < sizeof(*r); i++) {
+        uint8_t value =
+            i >= offsetof(StoreRecord, crc) && i < offsetof(StoreRecord, crc) + 4 ? 0 : bytes[i];
+        crc ^= value;
+        for (unsigned bit = 0; bit < 8; bit++)
+            crc = (crc >> 1) ^ ((0u - (crc & 1)) & 0xedb88320u);
+    }
+    return ~crc;
+}
 bool store_valid(const StoreRecord *r) {
     if (r->commit != STORE_COMMIT || r->version != SETTINGS_VERSION ||
         r->length != sizeof(Settings) || !settings_valid(&r->settings))
         return false;
-    StoreRecord copy = *r;
-    copy.crc = 0;
-    return r->crc == store_crc(&copy.version, sizeof(copy) - offsetof(StoreRecord, version));
+    return r->crc == record_crc(r);
 }
 /* v0.1 records have 24-byte presets without the SN clock controls. */
 typedef struct {
@@ -49,50 +60,84 @@ typedef struct {
 } LegacyRecord;
 _Static_assert(sizeof(LegacySettings) == 216, "v1 settings layout must stay fixed");
 _Static_assert(sizeof(LegacyRecord) == 236, "v1 record layout must stay fixed");
+typedef struct {
+    LegacyPreset old;
+    SnClockConfig clock;
+} LegacyPreset2;
+typedef struct {
+    uint32_t version;
+    LegacyPreset2 preset[PRESETS];
+    float cv_zero[2], cv_codes_per_volt[2];
+    uint8_t selected, padding[3];
+} LegacySettings2;
+typedef struct {
+    uint32_t commit, version, sequence, length, crc;
+    LegacySettings2 settings;
+} LegacyRecord2;
+_Static_assert(sizeof(LegacySettings2) == 264, "v2 settings layout must stay fixed");
+_Static_assert(sizeof(LegacyRecord2) == 284, "v2 record layout must stay fixed");
 bool store_load(const void *raw, Settings *settings, uint32_t *sequence) {
     const StoreRecord *current = raw;
     if (store_valid(current)) {
-        *settings = current->settings;
+        if (settings)
+            *settings = current->settings;
         *sequence = current->sequence;
         return true;
     }
-    const LegacyRecord *old = raw;
-    if (old->commit != STORE_COMMIT || old->version != 1 || old->length != sizeof(LegacySettings) ||
-        old->settings.version != 1)
+    uint32_t header[5];
+    memcpy(header, raw, sizeof(header));
+    if (header[0] != STORE_COMMIT || (header[1] != 1 && header[1] != 2))
         return false;
-    LegacyRecord copy = *old;
-    copy.crc = 0;
-    if (old->crc != store_crc(&copy.version, sizeof(copy) - offsetof(LegacyRecord, version)))
+    unsigned version = header[1];
+    unsigned length = version == 1 ? sizeof(LegacySettings) : sizeof(LegacySettings2);
+    if (header[3] != length)
+        return false;
+    uint8_t copy[sizeof(LegacyRecord2)] = {0};
+    memcpy(copy, raw, length + sizeof(header));
+    memset(copy + 16, 0, 4);
+    if (header[4] != store_crc(copy + 4, length + sizeof(header) - 4))
+        return false;
+    uint32_t stored_version;
+    memcpy(&stored_version, copy + 20, 4);
+    if (stored_version != version)
         return false;
     Settings migrated;
     memset(&migrated, 0, sizeof(migrated));
     migrated.version = SETTINGS_VERSION;
-    migrated.selected = old->settings.selected;
-    memcpy(migrated.cv_zero, old->settings.cv_zero, sizeof(migrated.cv_zero));
-    memcpy(migrated.cv_codes_per_volt, old->settings.cv_codes_per_volt,
-           sizeof(migrated.cv_codes_per_volt));
+    unsigned preset_size = version == 1 ? sizeof(LegacyPreset) : sizeof(LegacyPreset2);
     for (unsigned i = 0; i < PRESETS; i++) {
-        const LegacyPreset *p = &old->settings.preset[i];
+        LegacyPreset old;
+        memcpy(&old, copy + 24 + i * preset_size, sizeof(old));
         Preset *n = &migrated.preset[i];
-        memcpy(n->mix, p->mix, sizeof(n->mix));
-        memcpy(n->route, p->route, sizeof(n->route));
-        memcpy(n->cv, p->cv, sizeof(n->cv));
-        n->reserve_cv = p->reserve_cv;
-        n->arp_mode = p->arp_mode;
-        n->arp_rate = p->arp_rate;
-        n->clock_source = p->clock_source;
+        memcpy(n->mix, old.mix, sizeof(n->mix));
+        memcpy(n->route, old.route, sizeof(n->route));
+        memcpy(n->cv, old.cv, sizeof(n->cv));
+        n->reserve_cv = old.reserve_cv;
+        n->arp_mode = old.arp_mode;
+        n->arp_rate = old.arp_rate;
+        n->clock_source = old.clock_source;
         n->sn_clock = (SnClockConfig){SN_CLOCK_OFF, 0, 24, 4, 0, 1};
+        if (version == 2)
+            memcpy(&n->sn_clock, copy + 24 + i * preset_size + sizeof(old), sizeof(n->sn_clock));
+        /* Preserve the old 4MHz reference, mono CV assignments and whole-input routing. */
+        for (unsigned s = 0; s < SOURCES; s++)
+            for (unsigned c = 0; c < 16; c++)
+                n->part[s][c] = (MidiPart){old.route[s].target, old.route[s].program};
     }
+    unsigned tail = 24 + PRESETS * preset_size;
+    memcpy(migrated.cv_zero, copy + tail, sizeof(migrated.cv_zero));
+    memcpy(migrated.cv_codes_per_volt, copy + tail + 8, sizeof(migrated.cv_codes_per_volt));
+    migrated.selected = copy[tail + 16];
     if (!settings_valid(&migrated))
         return false;
-    *settings = migrated;
-    *sequence = old->sequence;
+    if (settings)
+        *settings = migrated;
+    *sequence = header[2];
     return true;
 }
 int store_select(const StoreRecord *a, const StoreRecord *b) {
-    Settings settings;
     uint32_t as = 0, bs = 0;
-    bool av = store_load(a, &settings, &as), bv = store_load(b, &settings, &bs);
+    bool av = store_load(a, NULL, &as), bv = store_load(b, NULL, &bs);
     if (!av)
         return bv ? 1 : -1;
     if (!bv)
