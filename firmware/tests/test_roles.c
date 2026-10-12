@@ -234,6 +234,15 @@ static void test_ownership_and_atomicity(void) {
 }
 static void test_cv(void) {
     setup();
+    e.preset.sn_trigger_source = 2;
+    engine_cv(&e, 0, 48, true);
+    assert(e.sn_note_trigger == 1); /* SAA CV1 can trigger the SN effect explicitly */
+    engine_cv(&e, 0, 49, true);
+    assert(e.sn_note_trigger == 1); /* pitch-only/held gate does not retrigger */
+    engine_cv(&e, 0, 49, false);
+    engine_cv(&e, 0, 49, true);
+    assert(e.sn_note_trigger == 2);
+    setup();
     engine_cv(&e, 1, 36, true);
     engine_tick(&e, 10);
     pairs();

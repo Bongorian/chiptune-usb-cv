@@ -19,7 +19,8 @@
     "reference_pitch_passed": true,
     "paired_cv_passed": true,
     "arp_scope_passed": true,
-    "legacy_v2_migration_passed": true
+    "legacy_v2_migration_passed": true,
+    "cross_ic_cv_trigger_passed": true
   },
   "data_bus_checks": {
     "passed": true,
@@ -41,7 +42,7 @@
     "sound_bus.h": "6902f063e6bed3010e598a995e57949fbdc4458eed4942a4a23ad6bd0ff21c72",
     "src/cv.c": "0a7257322f4faa0edd24b620e37378d2df663c194a96756c9577200ea0950f32",
     "src/cv.h": "9c4520cf733bbf6f965a05a375d71a84ac257c75f5ac63efc401a898af8cfc82",
-    "src/engine.c": "4570ad338b7e2b77ee70e619fcab29900839a419a488a4632c9770400ddedd70",
+    "src/engine.c": "70f5c7afd6adf3c5c0060605b3bd949c9e93239527644f9016469bd5e55d1673",
     "src/engine.h": "5a2e46badf58de662ffda042295519469515fd74cd59ed28769b6636d05df979",
     "src/main.c": "04fb70106d078b0f07dc7b63f8e70e6485c053ca8b45f8fb927153002ca6ecc5",
     "src/midi.c": "7820d3ea85f9639b065ea62402c5f2dab1ec40a58b05f7ae2a4a9a568f48db14",
@@ -57,7 +58,7 @@
     "src/usb_descriptors.c": "2b3359e821fa238b41da377f12e9addf3e032e3fa95a22d1871ebe9f657684c2",
     "tests/check_pio_clock.py": "0458d2370036b6de0124f4e9219fcbbe727a3c4bd6d358265853ee8b74a85019",
     "tests/test_engine.c": "089d5cd94a44c5274e1dbb6f73478e53dcabb2031012d42f5a4eff2debe96594",
-    "tests/test_roles.c": "53c55a405034e9fe9bf274fa653080ec90d15248c86269190a4f6520e8e46fa7",
+    "tests/test_roles.c": "951d96e461fa81a9dfebea547fcefd7c71c0db4c4634efccd0d029a24330b0af",
     "tests/ui_preview.c": "53eeb7e19134751c282767338cf9243a4b02fe4daf421b2479033e19d90b2887",
     "tools/bootstrap_sdk.sh": "7a001383add70295945651203c991869eaefa9db10bf62780ec1e743f6b19053",
     "tools/verify_build.py": "d6505dd64e314b0e1fef1a2a39b94f027f843479f702ccf3643bcd25ff68d5d8",

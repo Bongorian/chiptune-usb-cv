@@ -407,6 +407,10 @@ static void retire_voice(Engine *e, int v) {
     }
 }
 static bool sn_trigger(const Engine *e, int v, int source, int ch) {
+    if (e->preset.sn_trigger_source == 2)
+        return source == 2;
+    if (e->preset.sn_trigger_source == 3)
+        return source == 3;
     if (!chip_for(v))
         return false;
     switch (e->preset.sn_trigger_source) {

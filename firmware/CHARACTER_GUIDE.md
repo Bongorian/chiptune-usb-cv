@@ -95,6 +95,7 @@ BASE DROP／DEPTHは基準からさらにクロックを下げる効果です。
 安定したベースが必要な場面ではSAAへ割り当て、SNをドラムや効果音に集中させます。
 TRIGGER FROMで再開始のきっかけをANY SN／MIDI SN／CV1／CV2／DRUM CH10／SN TONES／SN NOISE／MELODY/CVから選べます。
 初期値MELODY/CVは、Ch10の打楽器が毎回ベースのクロックスイープを再開始することを避けます。
+CV1／CV2を指定した場合は、そのCVがSAAに割り当てられていてもゲートでSNの変調を再開始できます。SAAの音程は変わりません。
 これはトリガーの選別であり、変調が作用する音源を分離する機能ではありません。
 ARPEGGIOのAPPLY TOはALL／SAA／SNを選べます。新規設定はSAAで、コード側を巡回させながらSNベースを保てます。
 
