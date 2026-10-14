@@ -25,7 +25,7 @@ typedef struct {
 typedef struct {
     SnClockConfig config;
     uint32_t phase, random, clocks, sweep;
-    uint16_t held;
+    uint16_t held, sequence[8];
     uint8_t sync_step;
 } SnClock;
 extern const uint32_t sn_clock_rate_millihz[SN_CLOCK_RATES];
@@ -40,3 +40,5 @@ uint16_t sn_clock_sample(const SnClock *s);
 uint16_t sn_clock_half(uint16_t drop_q8);
 uint32_t sn_clock_hz(uint16_t half_cycles);
 unsigned sn_clock_write_us(const SnClockConfig *c);
+
+void sn_clock_sequence(SnClock *s, const uint8_t percent[8]);

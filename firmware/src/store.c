@@ -76,6 +76,23 @@ typedef struct {
 } LegacyRecord2;
 _Static_assert(sizeof(LegacySettings2) == 264, "v2 settings layout must stay fixed");
 _Static_assert(sizeof(LegacyRecord2) == 284, "v2 record layout must stay fixed");
+/* v0.3 has 102-byte presets. This is deliberately independent of today's Preset size. */
+typedef struct {
+    uint8_t bytes[102];
+} LegacyPreset3;
+typedef struct {
+    uint32_t version;
+    LegacyPreset3 preset[PRESETS];
+    float cv_zero[2], cv_codes_per_volt[2];
+    uint8_t selected, padding[3];
+} LegacySettings3;
+typedef struct {
+    uint32_t commit, version, sequence, length, crc;
+    LegacySettings3 settings;
+} LegacyRecord3;
+_Static_assert(sizeof(LegacySettings3) == 840, "v3 settings layout must stay fixed");
+_Static_assert(sizeof(LegacyRecord3) == 860, "v3 record layout must stay fixed");
+_Static_assert(offsetof(Preset, performance) == 102, "legacy prefix must remain intact");
 bool store_load(const void *raw, Settings *settings, uint32_t *sequence) {
     const StoreRecord *current = raw;
     if (store_valid(current)) {
@@ -86,13 +103,15 @@ bool store_load(const void *raw, Settings *settings, uint32_t *sequence) {
     }
     uint32_t header[5];
     memcpy(header, raw, sizeof(header));
-    if (header[0] != STORE_COMMIT || (header[1] != 1 && header[1] != 2))
+    if (header[0] != STORE_COMMIT || (header[1] != 1 && header[1] != 2 && header[1] != 3))
         return false;
     unsigned version = header[1];
-    unsigned length = version == 1 ? sizeof(LegacySettings) : sizeof(LegacySettings2);
+    unsigned length = version == 1   ? sizeof(LegacySettings)
+                      : version == 2 ? sizeof(LegacySettings2)
+                                     : sizeof(LegacySettings3);
     if (header[3] != length)
         return false;
-    uint8_t copy[sizeof(LegacyRecord2)] = {0};
+    uint8_t copy[sizeof(LegacyRecord3)] = {0};
     memcpy(copy, raw, length + sizeof(header));
     memset(copy + 16, 0, 4);
     if (header[4] != store_crc(copy + 4, length + sizeof(header) - 4))
@@ -101,14 +120,22 @@ bool store_load(const void *raw, Settings *settings, uint32_t *sequence) {
     memcpy(&stored_version, copy + 20, 4);
     if (stored_version != version)
         return false;
-    Settings migrated;
+    /* Called only from the single main thread; keep the expanded image off the 4KiB stack. */
+    static Settings migrated;
     memset(&migrated, 0, sizeof(migrated));
     migrated.version = SETTINGS_VERSION;
-    unsigned preset_size = version == 1 ? sizeof(LegacyPreset) : sizeof(LegacyPreset2);
+    unsigned preset_size = version == 1   ? sizeof(LegacyPreset)
+                           : version == 2 ? sizeof(LegacyPreset2)
+                                          : sizeof(LegacyPreset3);
     for (unsigned i = 0; i < PRESETS; i++) {
         LegacyPreset old;
         memcpy(&old, copy + 24 + i * preset_size, sizeof(old));
         Preset *n = &migrated.preset[i];
+        preset_performance_default(n);
+        if (version == 3) {
+            memcpy(n, copy + 24 + i * preset_size, sizeof(LegacyPreset3));
+            continue;
+        }
         memcpy(n->mix, old.mix, sizeof(n->mix));
         memcpy(n->route, old.route, sizeof(n->route));
         memcpy(n->cv, old.cv, sizeof(n->cv));

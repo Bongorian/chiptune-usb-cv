@@ -73,12 +73,13 @@ def verify(build: Path, nm: str):
     device = symbol('device')
     assert len(device) == 18 and device[0:2] == bytes([18, 1]) and device[7] == 64
     assert struct.unpack_from('<H', device, 2)[0] == 0x0200
+    assert struct.unpack_from('<H', device, 12)[0] == 0x0040, 'Expected firmware USB revision 0.4'
     bss = symbols['__bss_end__'][0] - symbols['__bss_start__'][0]
     assert bss < 200 * 1024, 'Insufficient RP2040 RAM margin'
     stack = symbols['__StackTop'][0] - symbols['__StackBottom'][0]
     assert stack == 4096, 'Expected the dedicated 4KiB core-0 scratch stack'
     return {
-        'firmware': 'v0.3.0-alpha', 'target': 'RP2040 dedicated Chiptune USB/CV board',
+        'firmware': 'v0.4.0-alpha', 'target': 'RP2040 dedicated Chiptune USB/CV board',
         'hardware_tested': False, 'checks_passed': True,
         'application_bytes': len(binary), 'bss_bytes': bss, 'stack_bytes': stack, 'uf2_bytes': len(uf2),
         'uf2_blocks': count, 'uf2_family_id': hex(FAMILY),

@@ -1,5 +1,5 @@
 {
-  "firmware": "v0.3.0-alpha",
+  "firmware": "v0.4.0-alpha",
   "hardware_tested": false,
   "host_tests": {
     "passed": true,
@@ -20,7 +20,19 @@
     "paired_cv_passed": true,
     "arp_scope_passed": true,
     "legacy_v2_migration_passed": true,
-    "cross_ic_cv_trigger_passed": true
+    "cross_ic_cv_trigger_passed": true,
+    "suites": [
+      "engine_tests",
+      "roles_tests",
+      "performance_tests"
+    ],
+    "cv_quantizer_hysteresis_glide_passed": true,
+    "cv_modulation_fallback_passed": true,
+    "midi_performance_expression_passed": true,
+    "internal_external_transport_passed": true,
+    "custom_clock_sequence_passed": true,
+    "legacy_v3_migration_passed": true,
+    "all_12_ui_groups_passed": true
   },
   "data_bus_checks": {
     "passed": true,
@@ -35,33 +47,34 @@
     "newlib": "4.4.0"
   },
   "source_sha256": {
-    "CMakeLists.txt": "84c54a99be3789e2c19922c88c12b2b685e1a65ae02867107175d6d775746603",
+    "CMakeLists.txt": "b06551dabc50b2a542fbc83fcbdc77f6f76de8374a646beb0af30b67d8d9d5f1",
     "boards/chiptune_rp2040.h": "54dc4d434d4dea6c8a2d49c2fe092211c584f887b817ade526e96b29bfc43be8",
     "pinmap.h": "be2ef804e9b54dbd5ada5ff2d57318dfa7d6790924e1df25ef403ad52369cc9e",
     "pio/sn_clock.pio": "24a0dab51023d4df465c1c4235552b5b66972ad8b11070019f1d88a0bac9e7e5",
     "sound_bus.h": "6902f063e6bed3010e598a995e57949fbdc4458eed4942a4a23ad6bd0ff21c72",
-    "src/cv.c": "0a7257322f4faa0edd24b620e37378d2df663c194a96756c9577200ea0950f32",
-    "src/cv.h": "9c4520cf733bbf6f965a05a375d71a84ac257c75f5ac63efc401a898af8cfc82",
-    "src/engine.c": "70f5c7afd6adf3c5c0060605b3bd949c9e93239527644f9016469bd5e55d1673",
-    "src/engine.h": "5a2e46badf58de662ffda042295519469515fd74cd59ed28769b6636d05df979",
-    "src/main.c": "04fb70106d078b0f07dc7b63f8e70e6485c053ca8b45f8fb927153002ca6ecc5",
+    "src/cv.c": "f1eaa54c723cae44e353545b2e4539356dc10f8523b8acc1f13480d470a503e6",
+    "src/cv.h": "9f5a2911fe8787200b4c4db833740daf5dfb086029b70ac0b69e5195284d3921",
+    "src/engine.c": "60ab13b04167e0edd035a66d272af7c7c41981d25e3d42ac7a74f1fe898b72db",
+    "src/engine.h": "2eb5fe856b45e3f3bfe8fedd12b53e434a5e67822f51bd1f9811dcab11dd831f",
+    "src/main.c": "9c968d0cc56c84faf15a7717a4f9409458f928915431d14d340a600f382b33e3",
     "src/midi.c": "7820d3ea85f9639b065ea62402c5f2dab1ec40a58b05f7ae2a4a9a568f48db14",
     "src/midi.h": "35c50e0812d9ae06f5d609cec957d4eeb69639c4ed603a45623fb95accdedc63",
     "src/power.c": "193e22d97e46752a7da0d2b98ced4bc2b12b81de02be65d8574bce815b4731e9",
     "src/power.h": "995035b317667e07a2d3f0e5215a02e010afe5a156f6c6353227331270756e37",
-    "src/sn_clock.c": "df70d70d2f7cfa51e14fa81c445f76cb6668372efe755a6b4d4714b9254f4a1f",
-    "src/sn_clock.h": "bd98493fc19ed933bdb5e4fc253c4ce2d0e72fe9bf60e18a58fd86b8d35d225e",
-    "src/store.c": "0b90ddc1dad1349062a5bdd620726f5271baddfb4581f8e0043cea19cb687092",
+    "src/sn_clock.c": "30a63869d3ec5ef80b6625544f2e7164c0694757b97d08df02547c6351aa7561",
+    "src/sn_clock.h": "d7d4a4e50dfcd46b4807fb487e81a85baf3d22a55fa9ed60ff76c9646c2e2810",
+    "src/store.c": "ea5e74d4d593edbbafec1210ab44d253544721f801657204db098e31c32b84a4",
     "src/store.h": "08c02262d4c75ac7c0ae2ddf85026bdf23f3c545fe763531eea27165531523e8",
-    "src/ui.c": "33963b8e59bb2262155a76bd84f31412e701aab131b3bb1d305703f6ee362aa5",
-    "src/ui.h": "fcca135d5f58d5b5ba9c14c3ef6dfef02e33b7850ed198ca8bff451d9035c497",
-    "src/usb_descriptors.c": "2b3359e821fa238b41da377f12e9addf3e032e3fa95a22d1871ebe9f657684c2",
+    "src/ui.c": "26ca08e3b831c77fa44ebf0b579b30047dc17f8b470cd39644ddeaa8df728da7",
+    "src/ui.h": "57dfdaa2ed22edb2f1313583018ac9679b67cc25a27cecbcf940258693e82852",
+    "src/usb_descriptors.c": "d823bffe36ce0aeb7dbf68fcd261fb8519611fa0dd76fce30f8c289fd4da6459",
     "tests/check_pio_clock.py": "0458d2370036b6de0124f4e9219fcbbe727a3c4bd6d358265853ee8b74a85019",
     "tests/test_engine.c": "089d5cd94a44c5274e1dbb6f73478e53dcabb2031012d42f5a4eff2debe96594",
+    "tests/test_performance.c": "14439213e2ed071e022855806d186d86592e183f141aa444c946b27d76080148",
     "tests/test_roles.c": "951d96e461fa81a9dfebea547fcefd7c71c0db4c4634efccd0d029a24330b0af",
-    "tests/ui_preview.c": "53eeb7e19134751c282767338cf9243a4b02fe4daf421b2479033e19d90b2887",
+    "tests/ui_preview.c": "5f63366a6ef187b607b962b2d6a0db3ec997fb1fd4eaa5745f74ba189d1f82ac",
     "tools/bootstrap_sdk.sh": "7a001383add70295945651203c991869eaefa9db10bf62780ec1e743f6b19053",
-    "tools/verify_build.py": "d6505dd64e314b0e1fef1a2a39b94f027f843479f702ccf3643bcd25ff68d5d8",
+    "tools/verify_build.py": "dbeaf4ebc3ddb57f719ccf293a7ed51a5b081de2702eb5c0f75521ed5fd71a61",
     "tusb_config.h": "933218e4a227f92efe679460534c006e50f29913d88609924011b473d462a57a"
   },
   "pio_clock": {
@@ -74,5 +87,12 @@
       4000000
     ],
     "physical_tested": false
-  }
+  },
+  "settings_record_bytes": 2140,
+  "stack_frames_bytes": {
+    "store_load": 1000,
+    "save_settings": 40,
+    "engine_tick": 144
+  },
+  "public_sources_rebuild_identical": true
 }

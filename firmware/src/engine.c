@@ -36,6 +36,93 @@ SnClockConfig engine_clock_config(const Preset *p) {
     }
     return c;
 }
+static const uint16_t scale_masks[CV_SCALES] = {0xfff, 0xfff, 0xab5, 0x5ad,
+                                                0x6ad, 0x4a9, 0x295, 0x555};
+/* Nearest allowed note; ties select the lower note, including negative octaves. */
+float engine_quantize(float note, unsigned scale, unsigned root) {
+    if (!isfinite(note) || scale >= CV_SCALES || root >= 12)
+        return NAN;
+    note = limit(note, 0, 127);
+    if (!scale)
+        return note;
+    float best = 0, distance = INFINITY;
+    int center = (int)floorf(note);
+    int first = center > 6 ? center - 6 : 0;
+    int last = center < 121 ? center + 6 : 127;
+    for (int n = first; n <= last; n++) {
+        unsigned pc = (unsigned)((n + 12 - (int)root) % 12);
+        float d = fabsf(note - (float)n);
+        if ((scale_masks[scale] & (1u << pc)) && d < distance) {
+            distance = d;
+            best = (float)n;
+        }
+    }
+    return best;
+}
+unsigned engine_time_scale(unsigned v) {
+    return v < 64 ? 64 + 3 * v : 256 + (v - 64) * 12;
+}
+void preset_performance_default(Preset *p) {
+    for (unsigned source = 0; source < SOURCES; source++)
+        for (unsigned ch = 0; ch < 16; ch++)
+            p->performance[source][ch] = (PartPerformance){24, 0, 127, 0};
+    p->tone[0] = p->tone[1] = (ToneControl){64, 64, 64, 127, 0, 3};
+    memset(p->cv_scale, 0, sizeof(p->cv_scale));
+    memset(p->cv_root, 0, sizeof(p->cv_root));
+    memset(p->cv_glide, 0, sizeof(p->cv_glide));
+    memset(p->cv_role, 0, sizeof(p->cv_role));
+    memset(p->cv_range, 0, sizeof(p->cv_range));
+    p->tempo = 90;
+    p->clock_policy = 0;
+    const uint8_t seq[] = {0, 50, 100, 25, 75, 100, 50, 0};
+    memcpy(p->clock_sequence, seq, sizeof(seq));
+}
+static bool modulation(const Engine *e, unsigned role, float *v) {
+    for (unsigned i = 0; i < 2; i++)
+        if (e->preset.cv[i].enabled && e->preset.cv_role[i] == role && e->cv_mod_valid[i]) {
+            *v = e->cv_mod[i];
+            return true;
+        }
+    return false;
+}
+SnClockConfig engine_effective_clock(const Engine *e) {
+    Preset p = e->preset;
+    float amount;
+    if (modulation(e, CV_SN_BASE, &amount)) {
+        p.sn_clock.base = (uint8_t)lroundf(amount * 48);
+        if (p.sn_clock.mode == SN_CLOCK_OFF)
+            p.sn_clock.mode = SN_CLOCK_MANUAL;
+    }
+    if (modulation(e, CV_SN_DEPTH, &amount))
+        p.sn_clock.depth = (uint8_t)lroundf(amount * 48);
+    return engine_clock_config(&p);
+}
+uint32_t engine_transport_clocks(const Engine *e) {
+    if (e->preset.clock_policy == 2)
+        return e->internal_clocks;
+    if (e->preset.clock_policy == 1 ||
+        (e->clock_seen && (!e->clock_running || e->now - e->last_clock < 600)))
+        return e->clocks;
+    return e->internal_clocks;
+}
+void engine_cv_control(Engine *e, unsigned input, float volts, bool gate) {
+    if (input >= 2 || !isfinite(volts) || !e->preset.cv[input].enabled ||
+        e->preset.cv_role[input] == CV_PITCH)
+        return;
+    e->cv_mod[input] = limit(volts / (e->preset.cv_range[input] ? 10.0f : 5.0f), 0, 1);
+    e->cv_mod_valid[input] = true;
+    if (gate && !e->cv_control_gate[input])
+        e->sn_manual_trigger++;
+    e->cv_control_gate[input] = gate;
+}
+void engine_cv_clear(Engine *e, unsigned input) {
+    if (input >= 2)
+        return;
+    e->cv_mod_valid[input] = e->cv_target_valid[input] = e->cv_quantized_valid[input] = false;
+    e->cv_control_gate[input] = false;
+    if (e->preset.cv_role[input] == CV_PITCH)
+        engine_cv(e, input, 60, false);
+}
 bool engine_cv_patch_ok(int v, int p) {
     if (v < 0 || v >= VOICES || p < 0 || p >= PATCHES)
         return false;
@@ -66,7 +153,8 @@ static int pair_mate(int v) {
 }
 static int companion(int v);
 uint16_t engine_cv_mask(const Preset *p, unsigned input, bool resources) {
-    if (input >= 2 || !p->cv[input].enabled || p->cv[input].voice >= VOICES)
+    if (input >= 2 || !p->cv[input].enabled || p->cv_role[input] != CV_PITCH ||
+        p->cv[input].voice >= VOICES)
         return 0;
     int v = p->cv[input].voice;
     uint16_t mask = (uint16_t)(1u << v);
@@ -87,13 +175,17 @@ bool engine_cv_config_valid(const Preset *p) {
     for (unsigned i = 0; i < 2; i++) {
         const CvConfig *c = &p->cv[i];
         if (c->enabled > 1 || c->voice >= VOICES || c->program >= PATCHES || c->base_note > 127 ||
-            p->cv_pair[i] > 1)
+            p->cv_pair[i] > 1 || p->cv_scale[i] >= CV_SCALES || p->cv_root[i] >= 12 ||
+            p->cv_glide[i] > 7 || p->cv_role[i] >= CV_ROLES || p->cv_range[i] > 1)
             return false;
         if (p->cv_pair[i] && !((c->voice >= 6 && c->voice <= 8) || c->voice == 12))
             return false;
         if (c->enabled && !engine_cv_patch_ok(c->voice, c->program))
             return false;
     }
+    if (p->cv[0].enabled && p->cv[1].enabled && p->cv_role[0] != CV_PITCH &&
+        p->cv_role[0] == p->cv_role[1])
+        return false;
     return !(engine_cv_mask(p, 0, true) & engine_cv_mask(p, 1, true));
 }
 void settings_default(Settings *s) {
@@ -101,6 +193,7 @@ void settings_default(Settings *s) {
     s->version = SETTINGS_VERSION;
     for (int i = 0; i < PRESETS; ++i) {
         Preset *p = &s->preset[i];
+        preset_performance_default(p);
         p->mix[0] = 70;
         p->mix[1] = 80;
         p->mix[2] = p->mix[3] = 70;
@@ -189,7 +282,24 @@ static bool preset_valid(const Preset *p) {
                 return false;
         }
     }
-    return p->reserve_cv <= 1 && p->arp_mode <= 3 && p->arp_rate >= 1 && p->arp_rate <= 16 &&
+    for (unsigned source = 0; source < SOURCES; source++)
+        for (unsigned ch = 0; ch < 16; ch++) {
+            const PartPerformance *f = &p->performance[source][ch];
+            if (f->transpose > 48 || f->low > f->high || f->high > 127 || f->velocity > 3)
+                return false;
+        }
+    for (unsigned i = 0; i < 2; i++) {
+        const ToneControl *t = &p->tone[i];
+        if (t->attack > 127 || t->decay > 127 || t->release > 127 ||
+            (t->sustain > 100 && t->sustain != 127) || t->tremolo > 100 || t->rate > 7)
+            return false;
+    }
+    for (unsigned i = 0; i < 8; i++)
+        if (p->clock_sequence[i] > 100)
+            return false;
+    if (p->tempo > 210 || p->clock_policy > 2)
+        return false;
+    return p->reserve_cv <= 1 && p->arp_mode < ARP_MODES && p->arp_rate >= 1 && p->arp_rate <= 16 &&
            p->clock_source < SOURCES && sn_clock_valid(&p->sn_clock);
 }
 bool settings_valid(const Settings *s) {
@@ -263,7 +373,17 @@ void engine_routes_reset(Engine *e, unsigned source) {
     for (unsigned c = 0; c < 16; c++) {
         uint8_t program = e->preset.channel_map[source] ? e->preset.part[source][c].program
                                                         : e->preset.route[source].program;
-        e->channel[source][c] = (Channel){100, 127, 64, 0, 0, program, 2, 0};
+        e->channel[source][c] = (Channel){.volume = 100,
+                                          .expression = 127,
+                                          .pan = 64,
+                                          .program = program,
+                                          .bend_range = 2,
+                                          .rpn_msb = 127,
+                                          .rpn_lsb = 127,
+                                          .attack = 64,
+                                          .decay = 64,
+                                          .release = 64,
+                                          .envelope_sustain = 127};
     }
 }
 static void channels_reset(Engine *e) {
@@ -297,6 +417,12 @@ void engine_init(Engine *e, const Preset *p, SoundSink sink) {
         }
 }
 void engine_panic(Engine *e, int source) {
+    if (source < 0) {
+        memset(e->cv_target_valid, 0, sizeof(e->cv_target_valid));
+        memset(e->cv_mod_valid, 0, sizeof(e->cv_mod_valid));
+        memset(e->cv_quantized_valid, 0, sizeof(e->cv_quantized_valid));
+        memset(e->cv_control_gate, 0, sizeof(e->cv_control_gate));
+    }
     for (int i = 0; i < VOICES; i++)
         if (source < 0 || e->voice[i].source == source)
             retire_voice(e, i);
@@ -308,9 +434,16 @@ void engine_panic(Engine *e, int source) {
         }
     engine_tick(e, 0);
 }
+void engine_transport_reset(Engine *e) {
+    e->clocks = e->internal_clocks = e->internal_phase = e->last_clock = 0;
+    e->clock_seen = false;
+    e->clock_running = true;
+    e->sn_manual_trigger++;
+}
 void engine_preset(Engine *e, const Preset *p) {
     engine_panic(e, -1);
     e->preset = *p;
+    engine_transport_reset(e);
     channels_reset(e);
 }
 static int chip_for(int v) {
@@ -482,7 +615,7 @@ static uint64_t voice_cost(const Engine *e, int v, const Patch *p) {
     }
     return score;
 }
-static int find_voice(const Engine *e, int note, int program, int target) {
+static int find_voice(const Engine *e, float note, int program, int target) {
     const Patch *p = &patches[program];
     int best = -1;
     uint64_t score_best = UINT64_MAX;
@@ -531,9 +664,11 @@ static void start_pair(Engine *e, int left, int source, int ch, int note, int ve
 }
 static void allocate(Engine *e, int source, int ch, int note, int vel, int program, uint16_t token,
                      int target) {
+    float sounding_note = (float)note + (int)e->preset.performance[source][ch].transpose - 24;
     if (target == TARGET_SN_PAIR || target == TARGET_FULL) {
         int pair = find_pair(e, program);
-        int saa_voice = target == TARGET_FULL ? find_voice(e, note, program, TARGET_SAA) : -1;
+        int saa_voice =
+            target == TARGET_FULL ? find_voice(e, sounding_note, program, TARGET_SAA) : -1;
         if (pair < 0 || (target == TARGET_FULL && saa_voice < 0)) {
             e->refused++;
             return;
@@ -547,7 +682,7 @@ static void allocate(Engine *e, int source, int ch, int note, int vel, int progr
         }
         return;
     }
-    int best = find_voice(e, note, program, target);
+    int best = find_voice(e, sounding_note, program, target);
     if (best < 0) {
         e->refused++;
         return;
@@ -574,6 +709,8 @@ void engine_message(Engine *e, uint8_t s, const uint8_t *m, uint8_t len) {
         return;
     uint8_t status = m[0];
     if (status >= 0xf8) {
+        if (status <= 0xfc && e->preset.clock_policy == 2)
+            return;
         if (status <= 0xfc && s != e->preset.clock_source)
             return;
         if (status == 0xf8) {
@@ -586,7 +723,8 @@ void engine_message(Engine *e, uint8_t s, const uint8_t *m, uint8_t len) {
                 e->clocks++;
         }
         if (status == 0xfa) {
-            e->clocks = 0;
+            e->clocks = e->internal_clocks = e->internal_phase = 0;
+            e->last_clock = e->now;
             e->clock_seen = true;
             e->clock_running = true;
         }
@@ -617,10 +755,17 @@ void engine_message(Engine *e, uint8_t s, const uint8_t *m, uint8_t len) {
         uint16_t t = ++e->pressed[s][c][a];
         int program = ch->program, target = e->preset.channel_map[s] ? e->preset.part[s][c].target
                                                                      : e->preset.route[s].target;
-        if (target == TARGET_OFF) {
-            e->pressed[s][c][a]--;
-            return;
-        }
+        const PartPerformance *performance = &e->preset.performance[s][c];
+        if (target == TARGET_OFF || a < performance->low || a > performance->high)
+            return; /* keep the token even for filtered notes: matching Note Off stays ordered */
+        float velocity = (float)b / 127.0f;
+        if (performance->velocity == 1)
+            velocity = sqrtf(velocity);
+        if (performance->velocity == 2)
+            velocity *= velocity;
+        b = performance->velocity == 3 ? 110 : (int)lroundf(127 * velocity);
+        if (b < 1)
+            b = 1;
         if (c == 9)
             program = a == 36 ? 10 : a == 38 ? 7 : a == 42 || a == 44 ? 8 : program;
         if (target == TARGET_LAYER) {
@@ -637,6 +782,17 @@ void engine_message(Engine *e, uint8_t s, const uint8_t *m, uint8_t len) {
     }
     if (kind == 0xe) {
         ch->bend = (int16_t)((a | (b << 7)) - 8192);
+        return;
+    }
+    if (kind == 0xd) {
+        ch->pressure = (uint8_t)a;
+        return;
+    }
+    if (kind == 0xa) {
+        for (unsigned v = 0; v < VOICES; v++)
+            if (e->voice[v].active && e->voice[v].source == s && e->voice[v].channel == c &&
+                e->voice[v].note == a)
+                e->voice[v].pressure = (uint8_t)b;
         return;
     }
     if (kind != 0xb)
@@ -669,6 +825,30 @@ void engine_message(Engine *e, uint8_t s, const uint8_t *m, uint8_t len) {
         if (a == 29)
             e->preset.sn_trigger_source = (uint8_t)(b > 7 ? 7 : b);
     }
+    if (s == e->preset.clock_source && a == 30)
+        e->sequence_step = (uint8_t)(b > 7 ? 7 : b);
+    if (s == e->preset.clock_source && a == 31)
+        e->preset.clock_sequence[e->sequence_step] = (uint8_t)((b * 100 + 63) / 127);
+    if (a == 101)
+        ch->rpn_msb = (uint8_t)b;
+    if (a == 100)
+        ch->rpn_lsb = (uint8_t)b;
+    if (a == 99 || a == 98)
+        ch->rpn_msb = ch->rpn_lsb = 127; /* NRPN deselects the active registered parameter */
+    if (!ch->rpn_msb && !ch->rpn_lsb) {
+        if (a == 6)
+            ch->bend_range = (uint8_t)(b > 24 ? 24 : b);
+        if (a == 38)
+            ch->bend_cents = (uint8_t)(b > 99 ? 99 : b);
+    }
+    if (a == 73)
+        ch->attack = (uint8_t)b;
+    if (a == 75)
+        ch->decay = (uint8_t)b;
+    if (a == 72)
+        ch->release = (uint8_t)b;
+    if (a == 70)
+        ch->envelope_sustain = (uint8_t)((b * 100 + 63) / 127);
     if (a == 7)
         ch->volume = (uint8_t)b;
     if (a == 11)
@@ -707,7 +887,12 @@ void engine_message(Engine *e, uint8_t s, const uint8_t *m, uint8_t len) {
         ch->pan = 64;
         ch->modulation = 0;
         ch->bend = 0;
-        ch->sustain = 0;
+        ch->sustain = ch->pressure = 0;
+        ch->attack = ch->decay = ch->release = 64;
+        ch->envelope_sustain = ch->rpn_msb = ch->rpn_lsb = 127;
+        for (unsigned v = 0; v < VOICES; v++)
+            if (e->voice[v].source == s && e->voice[v].channel == c)
+                e->voice[v].pressure = 0;
         for (int v = 0; v < VOICES; v++) {
             Voice *x = &e->voice[v];
             if (x->active && x->source == s && x->channel == c && x->sustained)
@@ -716,7 +901,7 @@ void engine_message(Engine *e, uint8_t s, const uint8_t *m, uint8_t len) {
     }
 }
 void engine_cv(Engine *e, unsigned input, float note, bool gate) {
-    if (input >= 2 || !isfinite(note))
+    if (input >= 2 || !isfinite(note) || e->preset.cv_role[input] != CV_PITCH)
         return;
     CvConfig *cv = &e->preset.cv[input];
     int v = cv->voice, owner = (int)input + 2;
@@ -742,7 +927,9 @@ void engine_cv(Engine *e, unsigned input, float note, bool gate) {
             e->refused++;
             return;
         }
-        float pitch = limit(note, 0, 127);
+        e->cv_quantized_valid[input] = false;
+        engine_cv_pitch(e, input, note);
+        float pitch = e->cv_target[input];
         if (mate >= 0)
             start_pair(e, v, owner, 0, (int)pitch, 110, cv->program, 0, pitch);
         else
@@ -758,14 +945,25 @@ void engine_cv(Engine *e, unsigned input, float note, bool gate) {
 void engine_cv_pitch(Engine *e, unsigned input, float note) {
     if (input >= 2 || !isfinite(note))
         return;
+    if (e->preset.cv_role[input] != CV_PITCH)
+        return;
+    float quantized = engine_quantize(note, e->preset.cv_scale[input], e->preset.cv_root[input]);
+    if (e->preset.cv_scale[input] && e->cv_quantized_valid[input] &&
+        fabsf(note - e->cv_quantized[input]) <= fabsf(note - quantized) + 0.16f)
+        quantized = e->cv_quantized[input]; /* 0.08 semitone threshold hysteresis */
+    e->cv_quantized[input] = quantized;
+    e->cv_quantized_valid[input] = e->cv_target_valid[input] = true;
+    e->cv_target[input] = quantized;
+    if (e->preset.cv_glide[input])
+        return;
     int index = e->preset.cv[input].voice;
     Voice *v = &e->voice[index];
     if (v->active && v->held && v->source == input + 2)
-        v->pitch = limit(note, 0, 127);
+        v->pitch = quantized;
     int mate = e->preset.cv_pair[input] ? pair_mate(index) : -1;
     if (mate >= 0 && e->voice[mate].active && e->voice[mate].held &&
         e->voice[mate].source == input + 2)
-        e->voice[mate].pitch = limit(note, 0, 127);
+        e->voice[mate].pitch = quantized;
 }
 static float envelope(Voice *x, const Patch *p, uint32_t dt) {
     x->elapsed += dt;
@@ -792,8 +990,25 @@ void engine_tick(Engine *e, uint32_t dt) {
     if (dt > 100)
         dt = 100;
     e->now += dt;
+    if (e->clock_running) {
+        e->internal_phase += dt * (e->preset.tempo + 30u) * 24u;
+        e->internal_clocks += e->internal_phase / 60000u;
+        e->internal_phase %= 60000u;
+    }
+    static const uint16_t glide_ms[] = {0, 10, 30, 60, 120, 250, 500, 1000};
+    for (unsigned input = 0; input < 2; input++)
+        if (e->cv_target_valid[input] && e->preset.cv_glide[input]) {
+            unsigned index = e->preset.cv[input].voice;
+            Voice *voice = &e->voice[index];
+            if (voice->active && voice->held && voice->source == input + 2) {
+                voice->pitch += (e->cv_target[input] - voice->pitch) *
+                                ((float)dt / (glide_ms[e->preset.cv_glide[input]] + (float)dt));
+                if (voice->pair)
+                    e->voice[voice->pair - 1].pitch = voice->pitch;
+            }
+        }
     /* Slow external clocks also slow the SN bus. Keep the shared bus available to MIDI/ADC/UI. */
-    SnClockConfig effective_clock = engine_clock_config(&e->preset);
+    SnClockConfig effective_clock = engine_effective_clock(e);
     bool sn_frequency_due =
         sn_clock_write_us(&effective_clock) <= 40 || e->now - e->sn_frequency_updated >= 4;
     if (sn_frequency_due)
@@ -804,31 +1019,66 @@ void engine_tick(Engine *e, uint32_t dt) {
         Voice *x = &e->voice[v];
         if (!x->active)
             continue;
-        const Patch *p = &patches[x->program];
+        Patch edited = patches[x->program];
+        Channel *ch = x->source < SOURCES ? &e->channel[x->source][x->channel] : NULL;
+        const ToneControl *control = &e->preset.tone[v < 6 ? 0 : 1];
+        edited.attack =
+            (uint16_t)limit((float)((uint32_t)edited.attack * engine_time_scale(control->attack) *
+                                    engine_time_scale(ch ? ch->attack : 64) / 65536u),
+                            1, 8000);
+        edited.decay =
+            (uint16_t)limit((float)((uint32_t)edited.decay * engine_time_scale(control->decay) *
+                                    engine_time_scale(ch ? ch->decay : 64) / 65536u),
+                            1, 8000);
+        edited.release =
+            (uint16_t)limit((float)((uint32_t)edited.release * engine_time_scale(control->release) *
+                                    engine_time_scale(ch ? ch->release : 64) / 65536u),
+                            1, 8000);
+        if (control->sustain != 127)
+            edited.sustain = control->sustain;
+        if (ch && ch->envelope_sustain != 127)
+            edited.sustain = ch->envelope_sustain;
+        const Patch *p = &edited;
         x->level = envelope(x, p, dt);
         if (!x->active)
             continue;
-        Channel *ch = x->source < SOURCES ? &e->channel[x->source][x->channel] : NULL;
-        float pitch = x->pitch + (ch ? ch->bend / 8192.0f * ch->bend_range : 0);
+        float pitch =
+            x->pitch + (ch ? ch->bend / 8192.0f * (ch->bend_range + ch->bend_cents / 100.0f) : 0);
+        if (ch)
+            pitch += (int)e->preset.performance[x->source][x->channel].transpose - 24;
         float sweep = 1 - limit((float)x->elapsed / p->decay, 0, 1);
         pitch += p->sweep * sweep;
         int phase_voice = x->pair && chip_for(v) == 2 ? x->pair - 1 : v;
-        float depth = (p->vibrato + (ch ? ch->modulation * 0.8f : 0)) / 100.0f;
+        float depth = (p->vibrato +
+                       (ch ? fmaxf(ch->modulation, fmaxf(ch->pressure, x->pressure)) * 0.8f : 0)) /
+                      100.0f;
         if (x->elapsed > 180)
             pitch += depth * sinf((float)(e->now % 200000) * 0.032f + (float)phase_voice * 0.3f);
         if (e->preset.arp_mode && (!e->preset.arp_target || (e->preset.arp_target == 1 && v < 6) ||
                                    (e->preset.arp_target == 2 && v >= 6))) {
-            static const int8_t arp[3][4] = {{0, 4, 7, 12}, {0, 3, 7, 12}, {0, 12, 0, 12}};
-            uint32_t phase =
-                (e->clock_seen && (!e->clock_running || e->now - e->last_clock < 600))
-                    ? e->clocks / e->preset.arp_rate
-                    : (uint32_t)((float)e->now * e->midi_hz / (1000 * e->preset.arp_rate));
+            static const int8_t arp[ARP_MODES - 1][4] = {
+                {0, 4, 7, 12}, {0, 3, 7, 12}, {0, 12, 0, 12}, {0, 4, 7, 11},
+                {0, 3, 7, 10}, {0, 3, 7, 9},  {0, 7, 12, 19}};
+            uint32_t phase = engine_transport_clocks(e) / e->preset.arp_rate;
             pitch += arp[e->preset.arp_mode - 1][phase % 4];
         }
+        float amount, width = e->preset.sn_width;
+        if (modulation(e, CV_SN_WIDTH, &amount))
+            width = amount * 30;
         if (x->pair && v >= 6)
-            pitch += ((v >= 9 && v < 12) || v == 13 ? 1.0f : -1.0f) * e->preset.sn_width / 200.0f;
+            pitch += ((v >= 9 && v < 12) || v == 13 ? 1.0f : -1.0f) * width / 200.0f;
         float hz = 440 * exp2f((pitch - 69) / 12), gain = x->level * x->velocity / 127.0f;
-        gain *= e->preset.mix[0] / 100.0f * e->preset.mix[chip_for(v) + 1] / 100.0f;
+        float master = e->preset.mix[0] / 100.0f;
+        if (modulation(e, CV_MASTER, &amount))
+            master *= amount;
+        gain *= master * e->preset.mix[chip_for(v) + 1] / 100.0f;
+        static const float trem_hz[] = {0.5f, 1, 2, 4, 8, 16, 32, 64};
+        float trem_depth = control->tremolo / 100.0f;
+        if (modulation(e, CV_TREMOLO, &amount))
+            trem_depth = amount;
+        if (trem_depth > 0)
+            gain *= 1 - trem_depth * (0.5f + 0.5f * sinf((float)(e->now % 200000) *
+                                                         trem_hz[control->rate] * 0.0062831853f));
         if (ch)
             gain *= ch->volume / 127.0f * ch->expression / 127.0f;
         if (x->pair && v >= 6) {
@@ -853,6 +1103,8 @@ void engine_tick(Engine *e, uint32_t dt) {
                 colour |= (uint8_t)(p->noise_rate << ((v / 3) * 4));
             }
             float pan = ch ? ch->pan / 127.0f : 0.5f;
+            if (modulation(e, CV_SAA_PAN, &amount))
+                pan = amount;
             if (p->pan_motion)
                 pan = limit(pan + 0.35f * sinf((float)(e->now % 200000) * 0.004f + (float)v), 0, 1);
             int left = (int)lroundf(15 * gain * fminf(1, 2 * (1 - pan))),

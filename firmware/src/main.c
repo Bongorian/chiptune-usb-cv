@@ -64,9 +64,11 @@ static volatile unsigned sn_wait_us = 136;
 static unsigned next_sn_wait_us = 16;
 static volatile uint16_t last_clock_half;
 static uint32_t clock_last_irq_us;
+static uint8_t seen_clock_sequence[8];
 static PIO const clock_pio = pio0;
 static void sn_clock_control(void) {
-    SnClockConfig config = engine_clock_config(&engine.preset);
+    SnClockConfig config = engine_effective_clock(&engine);
+    uint32_t clocks = engine_transport_clocks(&engine);
     unsigned wait = sn_clock_write_us(&config);
     bool note = engine.sn_note_trigger != seen_note_trigger;
     bool manual = engine.sn_manual_trigger != seen_manual_trigger;
@@ -77,14 +79,18 @@ static void sn_clock_control(void) {
         next_sn_wait_us = wait;
         sn_clock_configure(&clock_fx, &config);
     }
-    if (engine.clocks != seen_midi_clocks)
-        sn_clock_midi(&clock_fx, engine.clocks);
+    if (memcmp(seen_clock_sequence, engine.preset.clock_sequence, sizeof(seen_clock_sequence))) {
+        sn_clock_sequence(&clock_fx, engine.preset.clock_sequence);
+        memcpy(seen_clock_sequence, engine.preset.clock_sequence, sizeof(seen_clock_sequence));
+    }
+    if (clocks != seen_midi_clocks)
+        sn_clock_midi(&clock_fx, clocks);
     if (manual || (note && config.retrigger))
         sn_clock_trigger(&clock_fx);
     restore_interrupts(irq);
     seen_note_trigger = engine.sn_note_trigger;
     seen_manual_trigger = engine.sn_manual_trigger;
-    seen_midi_clocks = engine.clocks;
+    seen_midi_clocks = clocks;
 }
 static bool sn_clock_irq(struct repeating_timer *timer) {
     (void)timer;
@@ -111,9 +117,10 @@ static bool sn_clock_irq(struct repeating_timer *timer) {
 static void sn_clock_start(void) {
     const SnClockConfig boot_clock = {SN_CLOCK_OFF, 0, 24, 4, 0, 1};
     sn_clock_init(&clock_fx, &boot_clock);
+    memset(seen_clock_sequence, 0xff, sizeof(seen_clock_sequence));
     seen_note_trigger = engine.sn_note_trigger;
     seen_manual_trigger = engine.sn_manual_trigger;
-    seen_midi_clocks = engine.clocks;
+    seen_midi_clocks = engine_transport_clocks(&engine);
     next_sn_wait_us = sn_wait_us = sn_clock_write_us(&clock_fx.config);
     pio_gpio_init(clock_pio, PIN_SN_CLK_RAW);
     pio_sm_config cfg = sn_clock_program_get_default_config(clock_offset);
@@ -401,6 +408,12 @@ static void cv_adc_task(uint32_t now_us) {
 static float cv_note(unsigned input) {
     return cv_pitch(&settings, input, status.cv_raw[input], engine.preset.cv[input].base_note);
 }
+static void cv_event(unsigned input, bool gate) {
+    if (engine.preset.cv_role[input] == CV_PITCH)
+        engine_cv(&engine, input, cv_note(input), gate);
+    else
+        engine_cv_control(&engine, input, cv_volts(&settings, input, status.cv_raw[input]), gate);
+}
 static void gate_tasks(uint32_t now) {
     static uint32_t previous_overflow;
     static bool ready[2], previous_power;
@@ -424,7 +437,7 @@ static void gate_tasks(uint32_t now) {
         unsigned input = ev >> 1;
         last_gate[input] = ev & 1;
         if (rail_on && cv_sequence[input] && now - cv_time[input] < 100)
-            engine_cv(&engine, input, cv_note(input), last_gate[input]);
+            cv_event(input, last_gate[input]);
     }
     for (unsigned input = 0; input < 2; input++) {
         bool gate = !gpio_get(input ? PIN_GATE2_N : PIN_GATE1_N);
@@ -432,11 +445,16 @@ static void gate_tasks(uint32_t now) {
         bool fresh = status.adc_ok && cv_sequence[input] && now - cv_time[input] < 100;
         if (rail_on) {
             if (!fresh)
-                engine_cv(&engine, input, 60, false);
+                engine_cv_clear(&engine, input);
             else if (!ready[input] || gate != last_gate[input])
-                engine_cv(&engine, input, cv_note(input), gate);
-            else if (seen[input] != cv_sequence[input])
-                engine_cv_pitch(&engine, input, cv_note(input));
+                cv_event(input, gate);
+            else if (seen[input] != cv_sequence[input]) {
+                if (engine.preset.cv_role[input] == CV_PITCH)
+                    engine_cv_pitch(&engine, input, cv_note(input));
+                else
+                    engine_cv_control(&engine, input,
+                                      cv_volts(&settings, input, status.cv_raw[input]), gate);
+            }
         }
         ready[input] = fresh;
         last_gate[input] = gate;
@@ -461,7 +479,7 @@ static bool save_settings(void *ctx) {
         !settings_valid(&settings))
         return false;
     engine_panic(&engine, -1);
-    StoreRecord record;
+    static StoreRecord record;
     store_record(&record, &settings, store_sequence + 1);
     static uint8_t pages[STORE_BANK_BYTES];
     memset(pages, 0xff, sizeof(pages));

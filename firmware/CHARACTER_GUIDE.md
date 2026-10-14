@@ -1,6 +1,6 @@
 # 音源のキャラクターと演奏設定
 
-v0.3.0-alphaの演奏用ガイドです。以下は各ICの機能を使う音作りの方針です。
+v0.4.0-alphaの演奏用ガイドです。以下は各ICの機能を使う音作りの方針です。
 実基板での試聴・音程・音量バランス・CV応答は未確認です。
 
 ## 音楽の骨格をSAA、荒れる層をSNへ
@@ -68,7 +68,8 @@ CVは1 V/octの音程、ゲートHighで発音、Lowでリリースです。
 CV/GATEメニューでENABLE、VOICE、PATCH、0V NOTE、SN STEREOを設定します。
 SAAは1声のまま左右に出せます。SN STEREOをONにすると、VOICE 6／7／8に右側9／10／11を、VOICE 12に右側13を組にします。
 同じゲートで左右が立ち上がり、CVの音程変更・リリース・再トリガーも同時に反映します。
-現状、CVでSAAとSNをまとめて重ねるモードや、CVを音量・クロック深度へ直接割り当てる機能はありません。
+CV ROLEで音程入力の代わりにクロック・音量・定位などの変調入力を選べます。下記の追加機能を参照してください。
+CVでSAAとSNをまとめて重ねるモードはありません。
 
 CV RESERVE＝ONでは発音する声に加え、包絡・周期ノイズ用のクロック枠も予約します。
 2つのCVが同じ声・専用クロックを取り合う設定は受け付けません。
@@ -126,3 +127,102 @@ SNを左右ペアにした場合は、最大SAA6和音＋SN3和音＝9和音と�
 ホームのNOTESは発音中のノート単位、VOICESは使っている物理枠数で、リリース中も含みます。
 
 技術仕様の参照：[Philips SAA1099](https://bitsavers.org/components/philips/_dataBooks/1986_IC01_Philips_Radio_Audio_and_Associated_Systems.pdf)、[TI SN76489AN](https://map.grauw.nl/resources/sound/texas_instruments_sn76489an.pdf)。
+
+
+## v0.4：演奏と音作りを広げる設定
+
+追加機能は初期状態で元の音色を維持します。スケール／グライド／トレモロはOFF、移調は0、音域は0–127です。
+3ボタンの操作方法は共通で、ホームの−／＋でメニュー、OKで項目を開き、OKで編集を切り替えます。
+保存対象は各プリセット。CV校正だけは全プリセット共通です。
+
+### CVのスケール量子化とグライド
+
+CV/GATE 1・2のSCALEはOFF／CHROMATIC／MAJOR／NATURAL MINOR／DORIAN／MINOR PENTA／MAJOR PENTA／WHOLE TONE。
+SCALE ROOTはC–Bで、0V NOTEとは独立です。例えば0V NOTE=C3、SCALE=MINOR PENTA、ROOT=Cなら、CVを動かすだけでCの短調ペンタトニックに沿って演奏します。
+入力はMIDI 0–127へ制限し、最も近いスケール音を選びます。同距離では低い音を選択します。
+発音中は境界に0.08半音のヒステリシスを入れて小さなADC揺れによる音程の往復を抑えます。新しいゲートでは直近の入力から選び直します。
+
+GLIDEはOFF／10／30／60／120／250／500／1000 ms。表示は平滑化の時定数で、指定時間で必ず移動を完了する値ではありません。
+ゲートHighの音程変化へ指数的に追従し、SN左右ペアは同じ音程へ同時に移動します。新しいゲートのアタックはその時点のCV音程から開始します。
+リリース中の音程は固定します。量子化の後にグライドするので、移動中はスケール間の音程も通ります。
+
+### CVを変調入力にする
+
+CV ROLEをPITCH以外にすると、その系統は声を発音・予約せず、CVを変調へ使います。
+ENABLEは引き続き有効。PITCH用のVOICE／PATCH／SCALEなどは保持し、役割を戻すと再び使用します。
+MOD RANGEは0–5 Vまたは0–10 V。範囲外は端で止めます。校正後の電圧を使います。
+
+| CV ROLE | 電圧に対する動作 |
+|---|---|
+| PITCH 1V/OCT | 元の音程CV＋ゲート。スケール／グライドも使用可 |
+| SN BASE DROP | SN基準から0–48半音下へ。MODE OFFなら一時的にMANUALとして動作 |
+| SN FX DEPTH | 変調のDEPTHを0–48半音へ。MODE OFF／MANUALでは深度を使わないため効果なし |
+| SN PAIR WIDTH | 左右の音程差を0–30 centsへ。SN左右ペアだけに作用 |
+| MASTER LEVEL | 保存されたMASTER音量へ0–100%の倍率を掛ける |
+| SAA PAN | SAAの定位を左→右へ。音色固有の定位移動も加わる |
+| TREMOLO DEPTH | 全音源のトレモロ深度0–100%。速度はTONE EDITのSAA／SN別設定 |
+
+変調入力のゲート立ち上がりは、SNクロック効果の手動トリガーとして扱います。TRIGGER FROM／NOTE RETRIGGERに関わらず再開始します。
+同じ変調先へ2系統を設定する競合は拒否します。CVによる実効値はプリセットに書き戻しません。
+ADC取得が100 ms以上途切れた場合は変調を外して保存値へ戻し、音程CVの声はリリースします。
+ケーブルを抜いたことを識別する回路はないので、未接続で0 Vを測定できる場合は0 Vとして扱います。
+CV入力の速度はADS1115と入力フィルターに制限され、オーディオレートのFM入力にはなりません。
+
+### MIDIパートの演奏設定
+
+USB MIDI／TRS MIDIでEDIT CHANNELを選び、追加したPART TRANSPOSE／LOW NOTE／HIGH NOTE／VELOCITYを編集します。
+この4項目はWHOLE INPUTでも受信チャンネル別に適用します。移調は−24〜＋24半音、音域は移調前の受信ノート番号で両端を含みます。
+チャンネル別の音域フィルターなので、1チャンネルを複数パートに分岐するキーボードスプリットではありません。
+
+VELOCITYはLINEAR／SOFT／HARD／FIXED 110。SOFTは軽く弾いても音量を出しやすく、HARDは弱い入力を抑えます。
+非ゼロVelocityは最低1を維持し、Note On Velocity 0は従来どおりNote Offです。
+移調してもNote Offとサステインは元の受信ノートに対応します。チャンネル間・USB／TRS間の設定は独立です。
+
+Channel PressureとPolyphonic Key Pressureは追加のビブラートへ反映します。CC1と各Pressureの最大値を使い、音色と同様に発音180 ms後から入ります。
+RPN 0（CC101=0、CC100=0）選択後、CC6でベンド幅0–24半音、CC38で追加0–99 centsを設定できます。RPN NullやNRPN選択後のData Entryでは変更しません。
+MPEのゾーン／マスターチャンネル合成は実装していません。MIDI 1.0のチャンネル別制御です。
+
+### TONE EDIT：包絡とトレモロ
+
+SOUND GROUPでSAA1099またはSN1+SN2を選び、ATTACK SCALE／DECAY SCALE／SUSTAIN／RELEASE SCALE／TREMOLO／TREMOLO RATEを編集します。
+SN1+SN2という表示のグループは、左右ペア・単声を含む両方のSNの全声へ作用します。
+時間倍率は25–約395%、元の音色と同じ値は100%（内部値64）。SUSTAINのPATCH VALUEは元の音色、0–100は明示した維持レベルです。
+ソフトウェアADSRへ作用し、SAAのハードウェア包絡の形・70 Hz専用クロックは変更しません。
+MIDIチャンネルごとのCC73 Attack／75 Decay／72 Releaseは同じ倍率をさらに掛け、各段階の時間は1–8000 msへ制限します。
+CC70は本機独自のSustain override（0–127→0–100%）。CC121でチャンネル側の倍率・Sustain override・Pressureを初期値に戻します。
+これらのMIDI CC状態は保存しません。TONE EDIT側の設定は保存します。
+
+TREMOLOは0–100%の音量変調、RATEは0.5／1／2／4／8／16／32／64 Hz。
+両側を同時に動かすため、SNの左右ペアを維持します。SNは2 dB刻み、SAAは4bit音量なので、段階的な質感になります。
+音声波形へDSPエフェクトを掛ける構成ではありません。
+
+### 内部テンポと8ステップのSNクロック
+
+ARPEGGIOにINTERNAL BPM（30–240）とCLOCK MODEを追加しました。
+AUTOは選択したUSB／TRSのClockが届く間は外部に追従し、600 ms途切れると内部テンポへ戻ります。
+外部Stopを受けた場合は停止を維持し、Continue／Startで再開します。欠落からの切替時に位相を厳密に接続する機能はありません。
+EXTERNALは外部Clockだけ、INTERNALは内部テンポだけを使い、外部Clock／Start／Stop／Continueを無視します。
+INTERNALは電源投入・プリセット読込・CLOCK MODE変更で走り始めます。テンポはUSBへ送信しません。
+
+CHORDはOFF／MAJOR／MINOR／OCTAVEに加えてMAJOR 7／MINOR 7／MINOR 6／POWER。
+押さえた実際のコードを巡回する方式ではなく、各発音の音程を4段階の決まった間隔で変えるチップチューン向けの機能です。
+
+CLOCK STEPSでSTEP 1–8とDROP PERCENTを編集します。SN CLOCKのSEQUENCEで、BASE DROP＋DEPTH×各ステップの割合を実クロックへ反映します。
+同期の場合、MIDI CLOCKS/CYCLEは8ステップ全体の周期です。1周期に8未満のClockなら一部ステップを飛び越えます。
+FREEはRATEを全体の巡回速度として使います。AUTO／INTERNALを使えば、MIDI接続なしでも同期モードのパターンを動かせます。
+CC30（値0–7）でステップ、CC31（値0–127→0–100%）でその値を編集できます。SN CLOCKのCLOCK/CC SOURCEで選択した入力だけが有効です。
+
+### 設定の移行
+
+保存形式はv4。v1／v2／v3のCRCと値を検証し、音色・割当・CV校正・v3の左右ペア／基準クロックを保持してRAM上へ読み込みます。
+追加機能は元の音に影響しない初期値にします。SAVEするまでは旧形式のフラッシュを変更しません。
+v0.4でSAVEしたv4形式はv0.3以前では読めないため、旧版へ戻す場合は設定を別途控えてください。
+
+### 演奏例
+
+- **CVメロディ＋荒れるSN**：CV1=PITCH、MINOR PENTA、GLIDE 30 ms。CV2=SN FX DEPTH、SN CLOCK=TRIANGLE。CV1のSAAメロディを維持し、CV2でSNの崩れ方を変える。
+- **左右でうなるベース**：Ch2=SN STEREO、CV2=SN PAIR WIDTH。0 Vでは左右同音、上げると微小な差が付く。CV2の元のベース予約がなくなるのでMIDI用のペアが増える。
+- **レトロな震えるコード**：Ch1=SAA PAD、TONE EDITのSAA TREMOLO=40%、RATE=4 Hz。SNベースのトレモロは0%で安定させる。
+- **クロックの階段**：SN SEQUENCE、DEPTH=24、CLOCK STEPS=0/0/50/50/100/100/50/0、INTERNAL=120 BPM、24 clocks/cycle。全SNの速度を1拍で巡回させる。
+
+MIDIメッセージの参照：[MIDI AssociationのCC／RPN一覧](https://midi.org/midi-1-0-control-change-messages)、[MIDI 1.0メッセージ一覧](https://midi.org/summary-of-midi-1-0-messages)。

@@ -10,6 +10,8 @@ int main(int argc, char **argv) {
     settings_default(&settings);
     engine_init(&engine, &settings.preset[0], (SoundSink){0});
     ui_init(&ui, &settings, &engine, NULL, NULL, NULL);
+    engine.preset.cv_scale[0] = 5;
+    engine.preset.tone[0].tremolo = 40;
     UiStatus status = {.power = true,
                        .usb = true,
                        .adc_ok = true,
@@ -19,7 +21,7 @@ int main(int argc, char **argv) {
                        .clock_hz = 2000000,
                        .tick_overruns = 0};
     ui.route_channel[0] = ui.route_channel[1] = 1;
-    for (int group = 0; group < 10; group++) {
+    for (int group = 0; group < UI_GROUPS; group++) {
         ui.group = (uint8_t)group;
         ui.menu = true;
         ui.field = (uint8_t)(group == 1 || group == 2 ? 5
@@ -28,7 +30,9 @@ int main(int argc, char **argv) {
                              : group == 7             ? 1
                              : group == 8             ? 2
                              : group == 9             ? 8
-                             : group == 3             ? 2
+                             : group == 10            ? 5
+                             : group == 11            ? 1
+                             : group == 3             ? 6
                                                       : 0);
         ui.edit = false;
         ui_render(&ui, &status, 1000);

@@ -1,14 +1,23 @@
 #include "ui.h"
 #include <stdio.h>
 #include <string.h>
-static const char *groups[] = {"MIX",    "USB MIDI", "TRS MIDI",  "CV/GATE 1",   "CV/GATE 2",
-                               "PRESET", "ARPEGGIO", "CALIBRATE", "DIAGNOSTICS", "SN CLOCK"};
+static const char *groups[] = {"MIX",         "USB MIDI", "TRS MIDI",  "CV/GATE 1",
+                               "CV/GATE 2",   "PRESET",   "ARPEGGIO",  "CALIBRATE",
+                               "DIAGNOSTICS", "SN CLOCK", "TONE EDIT", "CLOCK STEPS"};
 #define GROUPS (sizeof(groups) / sizeof(groups[0]))
+_Static_assert(GROUPS == UI_GROUPS, "UI group inventory must stay in sync");
 static const char *clock_modes[] = {"OFF",    "MANUAL", "RISE",     "TRIANGLE",
                                     "SQUARE", "RANDOM", "SEQUENCE", "DIVE"};
 static const char *targets[] = {"AUTO",       "SAA1099",   "SN1 LEFT",      "SN2 RIGHT",
                                 "LAYER MONO", "SN STEREO", "SAA+SN STEREO", "OFF"};
-static const uint8_t counts[] = {4, 7, 8, 5, 5, 4, 4, 4, 5, 11};
+static const uint8_t counts[] = {4, 11, 12, 10, 10, 4, 6, 4, 5, 11, 7, 2};
+static const char *cv_roles[] = {"PITCH 1V/OCT", "SN BASE DROP", "SN FX DEPTH",  "SN PAIR WIDTH",
+                                 "MASTER LEVEL", "SAA PAN",      "TREMOLO DEPTH"};
+static const char *cv_scales[] = {"OFF",    "CHROMATIC",   "MAJOR",       "NATURAL MINOR",
+                                  "DORIAN", "MINOR PENTA", "MAJOR PENTA", "WHOLE TONE"};
+static const unsigned glide_ms[] = {0, 10, 30, 60, 120, 250, 500, 1000};
+static const char *arp_names[] = {"OFF",     "MAJOR",   "MINOR",   "OCTAVE",
+                                  "MAJOR 7", "MINOR 7", "MINOR 6", "POWER"};
 /* A small 5x7 alphabet, column bits from top to bottom. */
 static const uint8_t glyph[36][5] = {
     {0x3e, 0x51, 0x49, 0x45, 0x3e}, {0, 0x42, 0x7f, 0x40, 0},       {0x42, 0x61, 0x51, 0x49, 0x46},
@@ -131,9 +140,20 @@ static uint8_t *value(Ui *u, uint8_t *maximum, const char **label) {
             *maximum = TARGET_COUNT - 1;
             return &part->target;
         }
-        *label = "PART PATCH";
-        *maximum = PATCHES - 1;
-        return &part->program;
+        if (f == 6) {
+            *label = "PART PATCH";
+            *maximum = PATCHES - 1;
+            return &part->program;
+        }
+        unsigned index = f - (source == 0 ? 7u : 8u);
+        PartPerformance *performance = &p->performance[source][u->route_channel[source]];
+        static const char *names[] = {"PART TRANSPOSE", "LOW NOTE", "HIGH NOTE", "VELOCITY"};
+        *label = names[index];
+        *maximum = index == 0 ? 48 : index == 3 ? 3 : 127;
+        return index == 0   ? &performance->transpose
+               : index == 1 ? &performance->low
+               : index == 2 ? &performance->high
+                            : &performance->velocity;
     }
     if (u->group == 3 || u->group == 4) {
         CvConfig *cv = &p->cv[u->group - 3];
@@ -157,9 +177,17 @@ static uint8_t *value(Ui *u, uint8_t *maximum, const char **label) {
             *maximum = 127;
             return &cv->base_note;
         }
-        *label = "SN STEREO";
-        *maximum = 1;
-        return &p->cv_pair[u->group - 3];
+        unsigned input = u->group - 3;
+        static const char *names[] = {"SN STEREO",  "CV ROLE", "SCALE",
+                                      "SCALE ROOT", "GLIDE",   "MOD RANGE"};
+        *label = names[f - 4];
+        *maximum = f == 5 ? CV_ROLES - 1 : f == 6 ? CV_SCALES - 1 : f == 7 ? 11 : f == 8 ? 7 : 1;
+        return f == 4   ? &p->cv_pair[input]
+               : f == 5 ? &p->cv_role[input]
+               : f == 6 ? &p->cv_scale[input]
+               : f == 7 ? &p->cv_root[input]
+               : f == 8 ? &p->cv_glide[input]
+                        : &p->cv_range[input];
     }
     if (u->group == 5) {
         *maximum = PRESETS - 1;
@@ -167,6 +195,16 @@ static uint8_t *value(Ui *u, uint8_t *maximum, const char **label) {
         return f == 0 ? &u->settings->selected : NULL;
     }
     if (u->group == 6) {
+        if (f == 4) {
+            *label = "INTERNAL BPM";
+            *maximum = 210;
+            return &p->tempo;
+        }
+        if (f == 5) {
+            *label = "CLOCK MODE";
+            *maximum = 2;
+            return &p->clock_policy;
+        }
         if (f == 3) {
             *label = "APPLY TO";
             *maximum = 2;
@@ -177,7 +215,7 @@ static uint8_t *value(Ui *u, uint8_t *maximum, const char **label) {
             *label = "CLOCK USB/TRS";
             return &p->clock_source;
         }
-        *maximum = f == 0 ? 3 : 16;
+        *maximum = f == 0 ? ARP_MODES - 1 : 16;
         *label = f == 0 ? "CHORD" : "CLOCKS/STEP";
         return f == 0 ? &p->arp_mode : &p->arp_rate;
     }
@@ -221,6 +259,25 @@ static uint8_t *value(Ui *u, uint8_t *maximum, const char **label) {
             return NULL;
         }
     }
+    if (u->group == 10) {
+        static const char *names[] = {"SOUND GROUP",   "ATTACK SCALE", "DECAY SCALE", "SUSTAIN",
+                                      "RELEASE SCALE", "TREMOLO",      "TREMOLO RATE"};
+        *label = names[f];
+        *maximum = f == 0 ? 1 : f == 5 ? 100 : f == 6 ? 7 : 127;
+        ToneControl *control = &p->tone[u->tone_chip];
+        return f == 0   ? &u->tone_chip
+               : f == 1 ? &control->attack
+               : f == 2 ? &control->decay
+               : f == 3 ? &control->sustain
+               : f == 4 ? &control->release
+               : f == 5 ? &control->tremolo
+                        : &control->rate;
+    }
+    if (u->group == 11) {
+        *label = f == 0 ? "STEP" : "DROP PERCENT";
+        *maximum = f == 0 ? 7 : 100;
+        return f == 0 ? &u->sequence_step : &p->clock_sequence[u->sequence_step];
+    }
     *label = "ACTION";
     return NULL;
 }
@@ -238,6 +295,8 @@ static void change(Ui *u, int delta, uint32_t now) {
         next = max;
     if (next > max)
         next = min;
+    if (u->group == 10 && u->field == 3 && next > 100 && next < 127)
+        next = delta > 0 ? 127 : 100;
     if (u->group == 0) {
         next = (int)old + delta * 5;
         if (next < 0)
@@ -287,18 +346,30 @@ static void change(Ui *u, int delta, uint32_t now) {
         if (!engine_cv_config_valid(p)) {
             p->cv[input] = old_cv;
             p->cv_pair[input] = old_pair;
+            *v = old;
             toast(u, "RESOURCE IN USE", now);
             return;
         }
         engine_panic(u->engine, -1);
         return;
     }
-    if (u->group != 0 && u->group != 6 && u->group != 9 &&
+    if ((u->group == 1 || u->group == 2) && u->field >= (u->group == 1 ? 7 : 8)) {
+        unsigned source = u->group - 1;
+        PartPerformance *performance = &p->performance[source][u->route_channel[source]];
+        if ((v == &performance->low && next > performance->high) ||
+            (v == &performance->high && next < performance->low)) {
+            toast(u, "INVALID NOTE RANGE", now);
+            return;
+        }
+    }
+    if (u->group != 0 && u->group != 6 && u->group != 9 && u->group != 10 && u->group != 11 &&
         !((u->group == 1 || u->group == 2) && u->field == 4))
         engine_panic(u->engine, -1);
     if (u->group == 9 && u->field == 8)
         engine_panic(u->engine, -1);
     *v = (uint8_t)next;
+    if ((u->group == 6 && (u->field == 2 || u->field == 5)) || (u->group == 9 && u->field == 6))
+        engine_transport_reset(u->engine);
     if (u->group == 1 || u->group == 2) {
         unsigned source = u->group - 1;
         if (u->field == 1 &&
@@ -331,7 +402,7 @@ static void action(Ui *u, uint32_t now) {
             toast(u, "LOADED", now);
         }
         if (u->field == 3) {
-            Settings fresh;
+            static Settings fresh;
             settings_default(&fresh);
             engine_preset(u->engine, &fresh.preset[slot]);
             toast(u, "INIT - NOT SAVED", now);
@@ -514,8 +585,7 @@ void ui_render(Ui *u, const UiStatus *s, uint32_t now) {
                     snprintf(line, sizeof(line), "%u %s%d", *v, names[*v % 12], *v / 12 - 1);
                 }
                 if (u->group == 6 && u->field == 0) {
-                    static const char *modes[] = {"OFF", "MAJOR", "MINOR", "OCTAVE"};
-                    snprintf(line, sizeof(line), "%s", modes[*v]);
+                    snprintf(line, sizeof(line), "%s", arp_names[*v]);
                 }
                 if (u->group == 6 && u->field == 3) {
                     static const char *scopes[] = {"ALL", "SAA", "SN"};
@@ -523,6 +593,51 @@ void ui_render(Ui *u, const UiStatus *s, uint32_t now) {
                 }
                 if (u->group == 6 && u->field == 2)
                     snprintf(line, sizeof(line), "%s", *v ? "TRS" : "USB");
+                if ((u->group == 1 && u->field >= 7) || (u->group == 2 && u->field >= 8)) {
+                    unsigned index = u->field - (u->group == 1 ? 7u : 8u);
+                    if (index == 0)
+                        snprintf(line, sizeof(line), "%+d SEMITONES", (int)*v - 24);
+                    if (index == 3) {
+                        static const char *names[] = {"LINEAR", "SOFT", "HARD", "FIXED 110"};
+                        snprintf(line, sizeof(line), "%s", names[*v]);
+                    }
+                }
+                if (u->group == 3 || u->group == 4) {
+                    if (u->field == 5)
+                        snprintf(line, sizeof(line), "%s", cv_roles[*v]);
+                    if (u->field == 6)
+                        snprintf(line, sizeof(line), "%s", cv_scales[*v]);
+                    if (u->field == 7) {
+                        static const char *names[] = {"C",  "C#", "D",  "D#", "E",  "F",
+                                                      "F#", "G",  "G#", "A",  "A#", "B"};
+                        snprintf(line, sizeof(line), "%s", names[*v]);
+                    }
+                    if (u->field == 8)
+                        snprintf(line, sizeof(line), "%u MS", glide_ms[*v]);
+                    if (u->field == 9)
+                        snprintf(line, sizeof(line), "0-%u V", *v ? 10 : 5);
+                }
+                if (u->group == 6 && u->field == 4)
+                    snprintf(line, sizeof(line), "%u BPM", *v + 30);
+                if (u->group == 6 && u->field == 5) {
+                    static const char *names[] = {"AUTO", "EXTERNAL", "INTERNAL"};
+                    snprintf(line, sizeof(line), "%s", names[*v]);
+                }
+                if (u->group == 10) {
+                    if (u->field == 0)
+                        snprintf(line, sizeof(line), "%s", *v ? "SN1+SN2" : "SAA1099");
+                    if (u->field == 1 || u->field == 2 || u->field == 4)
+                        snprintf(line, sizeof(line), "%u PERCENT",
+                                 engine_time_scale(*v) * 100 / 256);
+                    if (u->field == 3 && *v == 127)
+                        snprintf(line, sizeof(line), "PATCH VALUE");
+                    if (u->field == 6) {
+                        static const char *rate[] = {"0.5", "1", "2", "4", "8", "16", "32", "64"};
+                        snprintf(line, sizeof(line), "%s HZ", rate[*v]);
+                    }
+                }
+                if (u->group == 11 && u->field == 0)
+                    snprintf(line, sizeof(line), "%u OF 8", *v + 1);
                 if (u->group == 9) {
                     if (u->field == 0)
                         snprintf(line, sizeof(line), "%s", clock_modes[*v]);

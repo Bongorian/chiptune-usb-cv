@@ -1,6 +1,6 @@
 # SN CLOCK：実クロックを使う音作り
 
-v0.3.0-alphaは、GP16からSN76489ANのCLOCK端子へ送る信号を直接変調します。
+v0.4.0-alphaは、GP16からSN76489ANのCLOCK端子へ送る信号を直接変調します。
 トーン用分周器をREFERENCEの4／2／1 MHzで設定したまま実クロックを変えるため、音程とノイズ速度が一緒に変化します。
 音程を保つための自動補正は行いません。SAA1099の8 MHzクロックは独立して維持します。
 
@@ -43,8 +43,8 @@ RISE／DIVEの時間はRATEの逆数です。2 Hzなら約500 ms、100 Hzなら�
 この2モードはMIDI同期を使わず、トリガーとRATEで動きます。
 NOTE RETRIGGERがOFFの場合はTRIGGERまたはCC26で開始してください。
 
-TRIANGLE／SQUARE／RANDOM／SEQUENCEは、FREEでRATEを使い、MIDI同期では選択した入力のClockだけで進みます。
-MIDI同期でClockが来ない／Stopした場合は現在の段階を保持します。FREEではMIDI Stopに影響されません。
+TRIANGLE／SQUARE／RANDOM／SEQUENCEは、FREEでRATEを使い、同期ではARPEGGIOのCLOCK MODEが選んだ外部／内部Clockで進みます。
+EXTERNALではClockが来ない／Stopした場合は現在の段階を保持します。AUTOはClock欠落時に内部へ戻り、明示的Stopは保持します。FREEではMIDI Stopに影響されません。
 再トリガー後のMIDI周期は次の受信Clockから数え直します。
 
 ## まず試す設定
@@ -110,3 +110,12 @@ pioasmの実機向け機械語を実行するモデルで、241周期の50%デ�
 基板端子の波形、ICの音、変調割り込みの実時間はまだ測定していません。
 
 仕様参照：[TI SN76489AN pp.2–4,7](https://map.grauw.nl/resources/sound/texas_instruments_sn76489an.pdf)、[RP2040 PIO](https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf)。
+
+
+## v0.4の連携
+
+CLOCK STEPSで8ステップの深度割合を編集・保存できます。SEQUENCEの基本速度はBASE DROP、最大変化幅はDEPTHで指定します。
+CC30=0–7で編集ステップ、CC31=0–127でその深度割合0–100%を設定します。CLOCK/CC SOURCEの入力だけが有効です。
+ARPEGGIOのCLOCK MODE=INTERNALとINTERNAL BPMを使えば、接続先からClockが来なくても同期パターンを動かせます。
+CV ROLE=SN BASE DROP／SN FX DEPTHで実効値をCV操作できます。CVの変調入力のゲートは手動トリガーとして作用します。
+詳細は[キャラクターと演奏設定](CHARACTER_GUIDE.md)を参照してください。

@@ -13,7 +13,7 @@ typedef struct {
     bool (*calibrate)(void *, unsigned, bool);
     void *ctx;
     uint8_t frame[1024];
-    uint8_t group, field, route_channel[SOURCES];
+    uint8_t group, field, route_channel[SOURCES], tone_chip, sequence_step;
     bool menu, edit;
     bool raw[3], stable[3], long_sent[3];
     uint32_t changed[3], pressed[3], repeat[3], toast_until;

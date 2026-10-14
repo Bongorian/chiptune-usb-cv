@@ -6,7 +6,11 @@
 #define PATCHES 16
 #define PRESETS 8
 #define SOURCES 2
-#define SETTINGS_VERSION 3
+#define SETTINGS_VERSION 4
+#define CV_SCALES 8
+#define CV_ROLES 7
+#define ARP_MODES 8
+#define UI_GROUPS 12
 
 typedef enum {
     TARGET_AUTO,
@@ -29,6 +33,21 @@ typedef struct {
     uint8_t target, program;
 } MidiPart;
 typedef struct {
+    uint8_t transpose, low, high, velocity; /* transpose 0..48 => -24..+24 */
+} PartPerformance;
+typedef struct {
+    uint8_t attack, decay, release, sustain, tremolo, rate;
+} ToneControl; /* times: 64=original; sustain 127=patch; rate index 0..7 */
+typedef enum {
+    CV_PITCH,
+    CV_SN_BASE,
+    CV_SN_DEPTH,
+    CV_SN_WIDTH,
+    CV_MASTER,
+    CV_SAA_PAN,
+    CV_TREMOLO
+} CvRole;
+typedef struct {
     uint8_t mix[4]; /* master, SAA, SN1, SN2: 0..100 */
     Route route[SOURCES];
     CvConfig cv[2];
@@ -38,6 +57,10 @@ typedef struct {
     uint8_t channel_map[SOURCES];
     MidiPart part[SOURCES][16];
     uint8_t cv_pair[2], sn_reference, sn_width, sn_trigger_source, arp_target;
+    PartPerformance performance[SOURCES][16];
+    ToneControl tone[2]; /* SAA, SN; affects the software envelope only */
+    uint8_t cv_scale[2], cv_root[2], cv_glide[2], cv_role[2], cv_range[2];
+    uint8_t tempo, clock_policy, clock_sequence[8]; /* tempo 0..210 => 30..240 BPM */
 } Preset;
 typedef struct {
     uint32_t version;
@@ -56,13 +79,14 @@ typedef struct {
 extern const Patch patches[PATCHES];
 typedef struct {
     bool active, held, sustained, releasing;
-    uint8_t source, channel, note, velocity, program, pair, hybrid;
+    uint8_t source, channel, note, velocity, program, pair, hybrid, pressure;
     uint16_t token;
     uint32_t age, elapsed, release_elapsed;
     float pitch, level, release_level;
 } Voice;
 typedef struct {
     uint8_t volume, expression, pan, modulation, sustain, program, bend_range;
+    uint8_t bend_cents, rpn_msb, rpn_lsb, pressure, attack, decay, release, envelope_sustain;
     int16_t bend;
 } Channel;
 typedef struct {
@@ -81,6 +105,10 @@ typedef struct {
     uint32_t now, age, steals, refused, pitch_clamps, clocks, last_clock;
     float midi_hz;
     uint32_t sn_note_trigger, sn_manual_trigger, sn_frequency_updated;
+    uint32_t internal_clocks, internal_phase;
+    uint8_t sequence_step;
+    float cv_target[2], cv_mod[2], cv_quantized[2];
+    bool cv_target_valid[2], cv_mod_valid[2], cv_quantized_valid[2], cv_control_gate[2];
     bool clock_seen, clock_running;
     SoundSink sink;
 } Engine;
@@ -106,3 +134,14 @@ void saa_frequency(float hz, uint8_t *octave, uint8_t *frequency, bool *clamped)
 uint8_t sn_attenuation(float gain);
 unsigned engine_active(const Engine *e);
 unsigned engine_active_notes(const Engine *e);
+
+/* Runtime modulation never changes the saved preset. */
+SnClockConfig engine_effective_clock(const Engine *e);
+uint32_t engine_transport_clocks(const Engine *e);
+void engine_cv_control(Engine *e, unsigned input, float volts, bool gate);
+void engine_cv_clear(Engine *e, unsigned input);
+float engine_quantize(float note, unsigned scale, unsigned root);
+unsigned engine_time_scale(unsigned value); /* Q8 multiplier, 64=256 */
+void preset_performance_default(Preset *p); /* appended v4 fields only */
+
+void engine_transport_reset(Engine *e);

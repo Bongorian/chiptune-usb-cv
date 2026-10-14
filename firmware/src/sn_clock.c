@@ -38,6 +38,8 @@ void sn_clock_trigger(SnClock *s) {
 }
 void sn_clock_init(SnClock *s, const SnClockConfig *c) {
     memset(s, 0, sizeof(*s));
+    const uint16_t sequence[] = {0, 32768, 65535, 16384, 49152, 65535, 32768, 0};
+    memcpy(s->sequence, sequence, sizeof(sequence));
     s->random = 0x534e7648u;
     s->held = random_next(s);
     if (sn_clock_valid(c))
@@ -106,8 +108,7 @@ uint16_t sn_clock_sample(const SnClock *s) {
         modulation = s->held;
         break;
     case SN_CLOCK_SEQUENCE: {
-        static const uint16_t sequence[8] = {0, 32768, 65535, 16384, 49152, 65535, 32768, 0};
-        modulation = sequence[s->phase >> 29];
+        modulation = s->sequence[s->phase >> 29];
         break;
     }
     default:
@@ -134,4 +135,11 @@ unsigned sn_clock_write_us(const SnClockConfig *c) {
         drop = (uint16_t)(drop + c->depth * 256);
     /* 32 clocks at the slowest setting, plus 8us for phase/old PIO cycle/timing margin. */
     return (sn_clock_half(drop) + 1u) / 2u + 8u;
+}
+
+void sn_clock_sequence(SnClock *s, const uint8_t percent[8]) {
+    for (unsigned i = 0; i < 8; i++) {
+        unsigned v = percent[i] > 100 ? 100 : percent[i];
+        s->sequence[i] = (uint16_t)((v * 65535u + 50u) / 100u);
+    }
 }

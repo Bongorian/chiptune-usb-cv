@@ -97,8 +97,8 @@ def heading(n,title,subtitle):
  para(subtitle,X,85,CW,9.2,MUTED)
  line(X,113,PAGE_W-X,113)
  line(X,787,PAGE_W-X,787)
- txt('Rev C hardware  |  2026-10-12  |  Design / prototype documentation',X,797,7,MUTED,'Latin')
- txt(f'{page} / 8',PAGE_W-X-27,797,8,MUTED,'Latin')
+ txt('Rev C hardware  |  2026-10-15  |  Design / prototype documentation',X,797,7,MUTED,'Latin')
+ txt(f'{page} / 9',PAGE_W-X-27,797,8,MUTED,'Latin')
  C.bookmarkPage('p'+str(page));C.addOutlineEntry(title,'p'+str(page),0,False)
 
 def section(title,y):
@@ -176,7 +176,7 @@ y=table(['項目','基板の仕様'],[
  ['入力','USB MIDIデバイス、TRS Type A MIDI IN、CV × 2、GATE × 2'],
  ['出力・操作','3.5 mmステレオライン出力、0.96インチOLED、3ボタン'],
  ['電源・寸法','USB-C給電、85 × 54 mm、4層FR-4、厚さ1.6 mm']], [93,CW-93],y+32,9.4)
-note('開発状況：基板の配線・製造データ・設計検査は完了。ファームウェアv0.3.0-alphaはUF2ビルドとPCテストを通過。実基板での動作確認は未完了です。',y+3,61)
+note('開発状況：基板の配線・製造データ・設計検査は完了。ファームウェアv0.4.0-alphaはUF2ビルドとPCテストを通過。実基板での動作確認は未完了です。',y+3,61)
 
 heading(2,'端子と部品配置','上から見て音源ICの列を奥、USB-Cとボタンを手前に置いた方向で説明します。')
 y=boardmap(X+26,133,CW-52)
@@ -254,7 +254,7 @@ y=para('系統ごとに既知の0 Vと1 Vを入力して、オフセットとゲ
 y=note('用途は音程CVと低速の変調です。ADCの取得速度と入力フィルタにより、オーディオレート変調向けの構成ではありません。',y+16,49)
 para('ADC仕様の参照：<link href="https://www.ti.com/lit/ds/symlink/ads1115.pdf" color="#127c7f">TI ADS1115データシート</link>。入力換算の分解能はPGA設定と本基板の1/11減衰比から算出。',X,y+2,CW,8.2,MUTED)
 
-heading(6,'OLEDと3ボタンで設定するUI','v0.3.0-alphaに設定画面を実装。描画コードをPCで検査しています。実OLEDの表示確認は未完了です。')
+heading(6,'OLEDと3ボタンで設定するUI','v0.4.0-alphaに設定画面を実装。描画コードをPCで検査しています。実OLEDの表示確認は未完了です。')
 rect(X,135,CW,60,HexColor('#fbf0e8'),5)
 para('表示器：HS96L03W2C03、SSD1315、0.96インチ、128 × 64、白OLED。J5のGND / VCC / SCL / SDAへ接続し、3.2 Vで給電します。I2Cアドレスは0x3Cです。',X+12,145,CW-24,10)
 y=table(['ボタン','短押し','長押し'],[
@@ -306,16 +306,33 @@ y=para('検査済み：DRC 0、未接続0、ERC 0、回路図との不一致0。
 y=para('ソフトウェア：UF2ビルド、ASan／UBSan付きPCテストを通過。実機ではUSB列挙・電流、音声レベル・雑音、CV精度・校正、ゲート応答、温度、印刷後の嵌め合いが未確認です。',X,y+10,CW,9.4)
 y=section('初回起動・書き込みの確認順',y+15)
 y=para('3.2 V電源確認 → 電源OFFで手実装 → UF2を書き込み、消音・クロック・音源電源を確認 → 音源ごとの試験音 → MIDI → CV／ゲート → 校正・保存の順で検証します。実機評価用UF2をfirmware/distに収録しています。',X,y,CW,9.2)
-y=para('JP1=BOOT、JP2=RESETは裏面のサービス用銅パッドです。BOOTを短絡保持し、RESETを短絡して解放するとUSB書き込みモードに入る構成です。通常操作の3ボタンとは別です。v0.3.0-alphaは−と＋を押しながらUSB接続しても書き込みモードに入ります。',X,y+9,CW,9.2)
+y=para('JP1=BOOT、JP2=RESETは裏面のサービス用銅パッドです。BOOTを短絡保持し、RESETを短絡して解放するとUSB書き込みモードに入る構成です。通常操作の3ボタンとは別です。v0.4.0-alphaは−と＋を押しながらUSB接続しても書き込みモードに入ります。',X,y+9,CW,9.2)
 y=section('設計ファイル・参照先',y+13)
 links=[('GitHub: Bongorian/chiptune-usb-cv','https://github.com/Bongorian/chiptune-usb-cv'),('回路仕様・操作設計','https://github.com/Bongorian/chiptune-usb-cv/blob/main/docs/USB-CV-design-notes.txt'),('ファームウェア・操作資料','https://github.com/Bongorian/chiptune-usb-cv/tree/main/firmware'),('製造データ・手実装一覧','https://github.com/Bongorian/chiptune-usb-cv/tree/main/outputs/jlc-one'),('ケースCAD・印刷手順','https://github.com/Bongorian/chiptune-usb-cv/tree/main/mechanical')]
 for label,url in links:
  y=para(f'<link href="{url}" color="#127c7f">{label}</link>',X,y,CW,8.5)+3
-para('基準：配線済みRev C、2026-10-05の設計検査、2026-10-12時点のリポジトリ。音源仕様はPhilips SAA1099とTI SN76489ANのメーカー資料を確認。ファームウェアはv0.3.0-alpha。実機動作とUSB適合性は未検証です。',X,y+4,CW,7.8,MUTED)
-assert page==8
+para('基準：配線済みRev C、2026-10-05の設計検査、2026-10-15時点のリポジトリ。音源仕様はPhilips SAA1099とTI SN76489ANのメーカー資料を確認。ファームウェアはv0.4.0-alpha。実機動作とUSB適合性は未検証です。',X,y+4,CW,7.8,MUTED)
+heading(9,'v0.4：演奏と変調を広げる','既存の音色・発音枠を保ち、CVとMIDIから実ICの音程・音量・クロックを操作します。')
+y=table(['設定','使える機能・操作場所'],[
+ ['CV SCALE / ROOT','CV/GATE：8種類のスケール設定と主音。境界ヒステリシスでADC揺れを抑制'],
+ ['CV GLIDE','ゲートHigh中の音程を平滑化。SN左右ペアは同時に追従。10-1000 msの時定数'],
+ ['CV ROLE','音程の代わりにSN基本速度・変調深度・左右幅、Master、SAA定位、トレモロへ'],
+ ['PART PERFORMANCE','USB/TRS：チャンネルごとの移調±24半音、音域フィルター、4種類のVelocity'],
+ ['TONE EDIT','SAA/SN別のソフトウェア包絡倍率・Sustain、0.5-64 Hzのトレモロ'],
+ ['MIDI EXPRESSION','Channel / Poly Pressureでビブラート。RPN 0でベンド幅。CC73/75/72で包絡'],
+ ['INTERNAL TEMPO','ARPEGGIO：30-240 BPM、AUTO / EXTERNAL / INTERNAL。固定コードパターンを追加'],
+ ['CLOCK STEPS','SN SEQUENCEの8段階を編集・保存。CC30でステップ、CC31で深度割合']], [120,CW-120],135,9.3)
+y=section('音源の役割を分ける演奏例',y+8)
+y=para('CV1をSAAのMINOR PENTA＋GLIDE 30 ms、CV2をSN FX DEPTHへ。安定した旋律に、SNのクロックが荒れる層を重ねます。CVを変調へ使う系統は発音・声の予約をしません。',X,y,CW,9.6)
+y=para('MIDI Ch2をSN STEREO、CV2をSN PAIR WIDTHへ。0 Vでは同音、CVを上げると左右に微小な音程差を作ります。SAAのコードにはTONE EDITで4 Hzのトレモロを追加できます。',X,y+10,CW,9.6)
+y=section('保存・入力の扱い',y+15)
+y=para('v1/v2/v3の設定を検証してv4へRAM上で移行し、追加機能は元の音に影響しない初期値にします。SAVEするまで旧バンクは変更しません。v4で保存した設定は旧版では読めません。',X,y,CW,9.4)
+y=para('変調CVは0-5 Vまたは0-10 Vで換算します。ADC取得が100 ms以上途切れると保存値へ戻ります。CVは低速制御用で、オーディオレート入力ではありません。内部テンポはUSBへ送信しません。',X,y+10,CW,9.4)
+para('詳細・CC・初期値・演奏例：firmware/CHARACTER_GUIDE.md。追加機能の自動テストはfirmware/tests/test_performance.c。実物ICでの音・更新負荷・CV応答の確認は未完了です。',X,y+18,CW,8.7,MUTED)
+assert page==9
 C.save()
 inputs=['routed/Chiptune_USB_CV.kicad_pcb','routed/design.json','firmware/pinmap.h','firmware/sound_bus.h','firmware/README.md', 'firmware/CHARACTER_GUIDE.md','firmware/src/main.c','firmware/src/engine.c', 'firmware/src/sn_clock.c', 'firmware/pio/sn_clock.pio','firmware/dist/Verification.json','docs/USB-CV-design-notes.txt','docs/routing-notes.txt','mechanical/parameters.json','mechanical/mechanical_verification.json','outputs/routing-verification.json','outputs/bus-encoding-verification.json','outputs/jlc-one/reference/Hand_Assembly.csv']
-manifest=dict(document='Chiptune USB/CV Japanese board guide',date='2026-10-12',pages=8,pdf_sha256=hashlib.sha256(PDF.read_bytes()).hexdigest(),source_files_sha256={p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs},layout_paragraph_bounds=bounds)
+manifest=dict(document='Chiptune USB/CV Japanese board guide',date='2026-10-15',pages=9,pdf_sha256=hashlib.sha256(PDF.read_bytes()).hexdigest(),source_files_sha256={p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs},layout_paragraph_bounds=bounds)
 (OUT/'Guide_Verification.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
 print(PDF)
-print('8 pages generated; text bounds remain inside the content area.')
+print('9 pages generated; text bounds remain inside the content area.')
