@@ -1,0 +1,5 @@
+*.pdf binary
+*.uf2 binary
+*.bin binary
+*.png binary
+firmware/LICENSES/*.txt -whitespace

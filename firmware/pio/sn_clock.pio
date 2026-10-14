@@ -1,0 +1,17 @@
+; Variable SN clock. At 128MHz, each half-wave is X+5 cycles.
+; X=11..251 -> 4MHz..250kHz, steady 50% duty.
+; Only replace X while low. An empty FIFO recycles X, never stalls.
+.program sn_clock
+.wrap_target
+    pull noblock
+    mov x, osr
+    set pins, 1
+    mov y, x
+high:
+    jmp y-- high
+    nop [1]
+    set pins, 0
+    mov y, x
+low:
+    jmp y-- low
+.wrap

@@ -4,7 +4,7 @@ SAA1099 × 1、SN76489AN × 2、RP2040を搭載した小型チップチューン
 USB MIDI、TRS MIDI、2系統のCV／ゲート入力と、OLED・3ボタンによる操作を想定しています。
 回路図、配線済みPCB、JLCPCB向け製造データ、設計資料を収録しています。
 
-**開発状況:** PCBの配線と設計ルール検査は完了しています。実機ファームウェアと組み立て後の動作検証は開発中です。
+**開発状況:** PCBの配線と設計ルール検査は完了しています。ファームウェアv0.4.0-alphaはUF2のビルドとPCテストを通過しています。組み立て後の実機検証は未完了です。
 
 ![PCB配線図](outputs/review/routing-traces-all.png)
 
@@ -28,7 +28,7 @@ USB MIDI、TRS MIDI、2系統のCV／ゲート入力と、OLED・3ボタンに�
 |---|---|
 | `routed/` | 配線済みKiCadプロジェクト、シンボル、フットプリント |
 | `hardware/` | 回路・配置生成用の未配線プロジェクト |
-| `firmware/` | GPIO定義と音源バス書き込みヘルパー |
+| `firmware/` | RP2040音源エンジン、USB／TRS MIDI、CV／ゲート、OLED UI、プリセット、UF2 |
 | `mechanical/` | 3Dプリント用ケース、STL・STEP、寸法図・組み立て手順 |
 | `docs/` | 回路仕様、操作設計、配線ルール |
 | `scripts/` | 設計生成、配置、配線、検証、製造データ出力用スクリプト |
@@ -71,11 +71,18 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 上下2分割、底面のM2インサート固定、音源ICとOLEDの開口、3ボタンの押し子を備えます。
 ケース本体は89.8 × 58.8 × 23.0 mmです。OLEDは別モジュールを基板上の5 mmスペーサーで取り付けます。
 
+## ファームウェア
+
+[RP2040用ファームウェアと操作資料](firmware/README.md)に、SAAのステレオ・ハードウェア包絡、SNの矩形波・周期／白色ノイズを使う16音色と、[SNの実クロック変調](firmware/SN_CLOCK.md)を収録しています。[音源の使い分け・演奏設定](firmware/CHARACTER_GUIDE.md)も参照してください。
+[実機評価用UF2](firmware/dist/chiptune-v0.4.0-alpha.uf2)、[初回動作確認手順](firmware/BRINGUP.md)、[検証記録](firmware/dist/Verification.json)を参照してください。
+−と＋を押しながらUSBを接続すると、ファームウェアからUSB ROMブートローダーへ入れます。
+音源電源・クロック・消費電流を確認してから演奏してください。
+
 ## 開発状況
 
 - 基板検査: DRC 0、未接続0、回路図との一致問題0、ERC 0。
 - 設計照合: 152フットプリントの配置・端子接続と、音源バスの768ケースを検査済み。
-- ファームウェア: GPIO定義と音源書き込みヘルパーを収録。USB MIDI、CV／ゲート処理、OLED UI、設定保存は未実装。
+- ファームウェア: v0.4.0-alpha。16音色、共有SNクロック変調、左右ペア・2 MHz基準、チャンネル別MIDI演奏設定、CVスケール／グライド／変調割当、包絡／トレモロ、内部テンポと8ステップ、OLED設定、8枠保存を実装。ARMビルドとASan／UBSan付きPCテストを通過。実機評価は未完了。
 - 実機検証: 電源電流・突入電流、音声出力、CV校正、取り付け公差の評価は未完了。
 
 [`UIモックアップ`](outputs/review/chiptune-ui.html) は画面構成と操作の確認用です。
@@ -99,7 +106,7 @@ kicad-cli sch erc --format json --exit-code-violations \
 
 ## 設計資料
 
-- [基板説明資料（日本語・8ページPDF）](output/pdf/Chiptune_USB_CV_Guide_JA.pdf)
+- [基板説明資料（日本語・9ページPDF）](output/pdf/Chiptune_USB_CV_Guide_JA.pdf)
 - [回路仕様・操作設計](docs/USB-CV-design-notes.txt)
 - [配線方針・線幅](docs/routing-notes.txt)
 - [実装ライブラリの照合記録](outputs/assembly-review/Assembly_Review.txt)

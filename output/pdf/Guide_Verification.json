@@ -1,14 +1,21 @@
 {
   "document": "Chiptune USB/CV Japanese board guide",
-  "date": "2026-10-12",
-  "pages": 8,
-  "pdf_sha256": "e9f54f2a97643b4c67aa9e51e1dc2ae698dba96010e47d05392e3ab2a9fb7b76",
+  "date": "2026-10-15",
+  "pages": 9,
+  "pdf_sha256": "b093f70a4e7f1dafe22d6e106a66a268134e706ff55540f1913459d37d43a6f4",
   "source_files_sha256": {
     "routed/Chiptune_USB_CV.kicad_pcb": "55ab595f397bca30c0f537f32063af6ece6441c61c2f6eb9e14c219f94813180",
     "routed/design.json": "fdfa1ae67e401247713fbb74d0f292cdb214ea273aff41a863e5fb2fb3eeb536",
     "firmware/pinmap.h": "be2ef804e9b54dbd5ada5ff2d57318dfa7d6790924e1df25ef403ad52369cc9e",
     "firmware/sound_bus.h": "6902f063e6bed3010e598a995e57949fbdc4458eed4942a4a23ad6bd0ff21c72",
-    "docs/USB-CV-design-notes.txt": "ae6f1d491c2851cbe0508fec269a977be19c07009b6f2c8e57904bc29a6ce032",
+    "firmware/README.md": "bfdecdbfc1c5c8b5667bd72116a01585620730fab47a20420d8136147d6d656b",
+    "firmware/CHARACTER_GUIDE.md": "740ff384db3fe5bb817a5bdc1d794c2f55f57458993ed6229398e09af30f409b",
+    "firmware/src/main.c": "9c968d0cc56c84faf15a7717a4f9409458f928915431d14d340a600f382b33e3",
+    "firmware/src/engine.c": "60ab13b04167e0edd035a66d272af7c7c41981d25e3d42ac7a74f1fe898b72db",
+    "firmware/src/sn_clock.c": "30a63869d3ec5ef80b6625544f2e7164c0694757b97d08df02547c6351aa7561",
+    "firmware/pio/sn_clock.pio": "24a0dab51023d4df465c1c4235552b5b66972ad8b11070019f1d88a0bac9e7e5",
+    "firmware/dist/Verification.json": "45b977d778d9cd3d4537e2d9694f7071d829d2bc49afd222f98cc3bbd3038acb",
+    "docs/USB-CV-design-notes.txt": "8a847d815378f6ae6a5decc27c6033bcc793101fead088ed0f4e1b227fa1bf0a",
     "docs/routing-notes.txt": "6290a284078718974c68cbf97cd62b0c04ef6093fb7169052eabbddb5e8a8b71",
     "mechanical/parameters.json": "6c004773447e72a1c1f742d231e88a503bfe0c3b1583e019730c56ebdb5ad56d",
     "mechanical/mechanical_verification.json": "a5d3f1a3965f97576b4bac56df0f8fef89464b844dd423d53497eafa29658404",
@@ -39,7 +46,7 @@
       1,
       677.05,
       706.12,
-      "開発状況：基板の配線・製造データ・設計検査は完了。USB MIDI、C"
+      "開発状況：基板の配線・製造データ・設計検査は完了。ファームウェアv0."
     ],
     [
       2,
@@ -183,7 +190,7 @@
       3,
       649.46,
       678.53,
-      "電源投入時は音源電源を無効にし、USBの状態を判定後に音源を初期化する"
+      "ファームウェアはUSBで500 mAを要求し、USB構成後またはCCで"
     ],
     [
       4,
@@ -205,15 +212,15 @@
     ],
     [
       4,
-      649.38,
-      692.98,
+      676.9,
+      720.51,
       "GPIO0…7に8bitをまとめて出力するAPIでは、論理バイトをその"
     ],
     [
       5,
       85,
       99.08,
-      "1 V/octの音程CVとゲートを読み取り、各系統へ予約した音源の声を"
+      "1 V/octの音程CVとゲートを読み取り、各系統へ音源の声またはSN"
     ],
     [
       5,
@@ -231,7 +238,7 @@
       5,
       499.37,
       546.65,
-      "系統ごとに既知の0 Vと1 Vを入力して、オフセットとゲインを保存する"
+      "系統ごとに既知の0 Vと1 Vを入力して、オフセットとゲインを保存しま"
     ],
     [
       5,
@@ -249,7 +256,7 @@
       6,
       85,
       99.08,
-      "以下は画面・操作の設計仕様です。現在のリポジトリに実機UIファームウェ"
+      "v0.4.0-alphaに設定画面を実装。描画コードをPCで検査してい"
     ],
     [
       6,
@@ -259,15 +266,15 @@
     ],
     [
       6,
-      583.82,
-      629.72,
-      "OLEDは低頻度の分割描画とし、CV取得とゲート処理を長時間ブロックし"
+      639.35,
+      669.95,
+      "OLEDは16バイトごとの分割転送で、ADC・音源更新を優先します。M"
     ],
     [
       6,
-      646.72,
-      660.49,
-      "画面モック：outputs/review/chiptune-ui.ht"
+      686.95,
+      714.49,
+      "実装済み画面のPCレンダリング：firmware/assets/ole"
     ],
     [
       7,
@@ -327,73 +334,91 @@
       8,
       429.77,
       458.54,
-      "未完了：動作するUSB MIDI／CV／UIファームウェア、USB電流"
+      "ソフトウェア：UF2ビルド、ASan／UBSan付きPCテストを通過。"
     ],
     [
       8,
       499.54,
       527.69,
-      "3.2 V電源確認 → 電源OFFで手実装 → 開発用ファームウェアで"
+      "3.2 V電源確認 → 電源OFFで手実装 → UF2を書き込み、消音"
     ],
     [
       8,
       536.69,
-      564.84,
+      578.92,
       "JP1=BOOT、JP2=RESETは裏面のサービス用銅パッドです。B"
     ],
     [
       8,
-      603.84,
-      616.85,
+      617.92,
+      630.92,
       "<link href=\"https://github.com/Bong"
     ],
     [
       8,
-      619.85,
-      632.85,
+      633.92,
+      646.93,
       "<link href=\"https://github.com/Bong"
     ],
     [
       8,
-      635.85,
-      648.86,
+      649.93,
+      662.93,
       "<link href=\"https://github.com/Bong"
     ],
     [
       8,
-      651.86,
-      664.86,
+      665.93,
+      678.94,
       "<link href=\"https://github.com/Bong"
     ],
     [
       8,
-      667.86,
-      680.87,
+      681.94,
+      694.94,
       "<link href=\"https://github.com/Bong"
     ],
     [
       8,
-      687.87,
-      711.73,
+      701.94,
+      725.81,
       "基準：配線済みRev C、2026-10-05の設計検査、2026-1"
-    ]
-  ],
-  "quality_checks": {
-    "page_count": 8,
-    "text_and_numeric_content_verified": true,
-    "japanese_and_latin_fonts_embedded": true,
-    "visually_reviewed_pages": [
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8
     ],
-    "visual_findings": [],
-    "layout_bounds_pass": true,
-    "source_hashes_match": true
-  }
+    [
+      9,
+      85,
+      99.08,
+      "既存の音色・発音枠を保ち、CVとMIDIから実ICの音程・音量・クロッ"
+    ],
+    [
+      9,
+      444.64,
+      474.02,
+      "CV1をSAAのMINOR PENTA＋GLIDE 30 ms、CV2"
+    ],
+    [
+      9,
+      484.02,
+      513.39,
+      "MIDI Ch2をSN STEREO、CV2をSN PAIR WIDT"
+    ],
+    [
+      9,
+      554.39,
+      583.16,
+      "v1/v2/v3の設定を検証してv4へRAM上で移行し、追加機能は元の"
+    ],
+    [
+      9,
+      593.16,
+      621.92,
+      "変調CVは0-5 Vまたは0-10 Vで換算します。ADC取得が100"
+    ],
+    [
+      9,
+      639.92,
+      666.54,
+      "詳細・CC・初期値・演奏例：firmware/CHARACTER_GU"
+    ]
+  ]
 }

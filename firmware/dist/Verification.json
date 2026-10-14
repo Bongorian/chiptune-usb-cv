@@ -1,0 +1,38 @@
+{
+  "firmware": "v0.4.0-alpha",
+  "target": "RP2040 dedicated Chiptune USB/CV board",
+  "hardware_tested": false,
+  "checks_passed": true,
+  "application_bytes": 91732,
+  "bss_bytes": 36868,
+  "stack_bytes": 4096,
+  "uf2_bytes": 183808,
+  "uf2_blocks": 359,
+  "uf2_family_id": "0xe48bff56",
+  "application_end": "0x10016654",
+  "settings_start": "0x101fe000",
+  "settings_reserved_bytes": 8192,
+  "settings_region_untouched": true,
+  "usb": {
+    "vid": "0xcafe",
+    "pid": "0x4008",
+    "power_ma": 500,
+    "midi_version": "1.0",
+    "interfaces": 2,
+    "bulk_endpoints": [
+      1,
+      129
+    ]
+  },
+  "sha256": {
+    "chiptune.bin": "28168ffbe93ac8a5a51ac7a904ba7a4603bb42606086b057e440453bc456dc2d",
+    "chiptune.uf2": "4d2fc547217ccd2e41a8bbf2f8c5d681d2da30f293116ce53b506541c2f030f6"
+  },
+  "untested": [
+    "physical USB enumeration/resume/current",
+    "sound IC output and timing",
+    "CV accuracy/gate latency",
+    "OLED module display",
+    "flash retention on hardware"
+  ]
+}

@@ -97,8 +97,8 @@ def heading(n,title,subtitle):
  para(subtitle,X,85,CW,9.2,MUTED)
  line(X,113,PAGE_W-X,113)
  line(X,787,PAGE_W-X,787)
- txt('Rev C hardware  |  2026-10-12  |  Design / prototype documentation',X,797,7,MUTED,'Latin')
- txt(f'{page} / 8',PAGE_W-X-27,797,8,MUTED,'Latin')
+ txt('Rev C hardware  |  2026-10-15  |  Design / prototype documentation',X,797,7,MUTED,'Latin')
+ txt(f'{page} / 9',PAGE_W-X-27,797,8,MUTED,'Latin')
  C.bookmarkPage('p'+str(page));C.addOutlineEntry(title,'p'+str(page),0,False)
 
 def section(title,y):
@@ -176,7 +176,7 @@ y=table(['項目','基板の仕様'],[
  ['入力','USB MIDIデバイス、TRS Type A MIDI IN、CV × 2、GATE × 2'],
  ['出力・操作','3.5 mmステレオライン出力、0.96インチOLED、3ボタン'],
  ['電源・寸法','USB-C給電、85 × 54 mm、4層FR-4、厚さ1.6 mm']], [93,CW-93],y+32,9.4)
-note('開発状況：基板の配線・製造データ・設計検査は完了。USB MIDI、CV処理、OLED UI、設定保存のファームウェアと実機検証は未完了です。',y+3,61)
+note('開発状況：基板の配線・製造データ・設計検査は完了。ファームウェアv0.4.0-alphaはUF2ビルドとPCテストを通過。実基板での動作確認は未完了です。',y+3,61)
 
 heading(2,'端子と部品配置','上から見て音源ICの列を奥、USB-Cとボタンを手前に置いた方向で説明します。')
 y=boardmap(X+26,133,CW-52)
@@ -220,7 +220,7 @@ y=table(['電源','回路と用途'],[
  ['USB VBUS','USB-Cからの約5 V入力。CC1/CC2は各5.1 kΩのRdで接続'],
  ['ロジック 3.2 V','AP2120N-3.2TRG1：RP2040、フラッシュ、OLED、CVバッファ、ADC'],
  ['音源 約5.0 V','TPS61023：USB電圧低下時を含む音源側電源を生成。GPIO29で有効化']], [112,CW-112],y,9.2)
-para('電源投入時は音源電源を無効にし、USBの状態を判定後に音源を初期化する制御を予定しています。PC接続時の500 mA要求、突入・未構成・サスペンド電流、充電器単独でのCV演奏条件は、ファームウェア開発と実測で確定します。',X,y+1,CW,9.5)
+para('ファームウェアはUSBで500 mAを要求し、USB構成後またはCCで1.5 A以上の供給広告を検出後に音源を初期化します。PCのサスペンド時は音源・表示を停止します。突入・未構成・サスペンド電流は実測で確認します。',X,y+1,CW,9.5)
 
 heading(4,'3個の音源ICとステレオ出力','音源ICのレジスタを操作して発音します。RP2040上のソフトウェア音源ではありません。')
 y=table(['音源','機能','本基板での役割'],[
@@ -228,18 +228,18 @@ y=table(['音源','機能','本基板での役割'],[
  ['U11 / SN76489AN','3音程生成器＋1ノイズ生成器','SN1。アナログ出力を左チャンネルへ混合'],
  ['U12 / SN76489AN','3音程生成器＋1ノイズ生成器','SN2。アナログ出力を右チャンネルへ混合']], [105,203,CW-308],135,9.3)
 y=section('ミックスの仕組み',y+11)
-y=para('SAA1099のL/Rと、SN1・SN2のモノラル出力をTLV9004で混ぜ、AC結合してライン出力へ送ります。音量調整は音源ICの音量レジスタを使う設計です。SN1/SN2の接続先は基板上で固定されているため、UIで自由な左右パンを追加することはできません。',X,y,CW,10.4)
+y=para('SAA1099のL/Rと、SN1・SN2のモノラル出力をTLV9004で混ぜ、AC結合してライン出力へ送ります。音量調整は音源ICの音量レジスタを使う設計です。SN1/SN2は固定の左右出力です。SN STEREOでは左右を1ノートとして発音し、左右の音量でPan、微小なピッチ差で幅を制御します。',X,y,CW,10.4)
 y=note('接続先：入力インピーダンス10 kΩ以上のアンプ、ミキサー、オーディオインターフェース等。ヘッドホン駆動用アンプとPCM5102は搭載していません。',y+14,58)
 y=section('クロックと音程の制約',y+1)
 y=table(['項目','設計値／実装上の扱い'],[
- ['クロック','SAA1099：8 MHz、SN76489AN：4 MHz、RP2040：128 MHzを想定'],
- ['SNの音程','f = clock / (32 × N)、N=1…1023。4 MHz時の最低音程は約122.2 Hz'],
- ['低音の割当','SNの下限と整数分周の誤差を考慮し、低音向けにはSAA1099を割り当てる設計'],
- ['書き込み間隔','SNのREADY端子は未接続。4 MHz時は10 µs以上の待ちをファームウェアで確保']], [112,CW-112],y,9.3)
+ ['クロック','SAA1099：8 MHz、SN76489AN：初期基準2 MHz、選択4 / 2 / 1 MHz、変調250 kHz–4 MHz、RP2040：128 MHzを想定'],
+ ['SNの音程','f = clock / (32 × N)、N=1…1023。2 MHz時の最低音程は約61.1 Hz、1 MHzでは約30.5 Hz'],
+ ['低音の割当','2 MHz基準でSNベース、1 MHzで低いE1。変調から独立した低音はSAAへ'],
+ ['書き込み間隔','SNのREADY端子は未接続。クロックに合わせ16–136 µsの待ちを確保']], [112,CW-112],y,9.3)
 y=section('共有データバスのビット順',y+5)
 para('GPIO0…7に8bitをまとめて出力するAPIでは、論理バイトをそのまま渡します。PIN_D0…PIN_D7へ個別に書くAPIではビット順を反転します。firmware/sound_bus.hに両方式のヘルパーがあり、768ケースの対応検査を保存しています。',X,y,CW,9.5)
 
-heading(5,'CV／ゲートで2系統を独立に演奏','1 V/octの音程CVとゲートを読み取り、各系統へ予約した音源の声を操作する設計です。')
+heading(5,'CV／ゲートで2系統を独立に演奏','1 V/octの音程CVとゲートを読み取り、各系統へ音源の声またはSNの左右ペアを割り当てます。')
 y=section('CV入力：減衰・バイアス・差動測定',135)
 y=para('100 kΩ / 10 kΩの0.1%抵抗でCVを減衰し、バッファ済みの電源中点を加えます。別回路で同じバイアスの基準を作り、ADS1115の差動測定で差し引くため、公称の差動入力はCV / 11になります。BAT54Sのクランプと100 nFのフィルタを入れています。',X,y,CW,10.3)
 y=table(['項目','値・意味'],[
@@ -249,28 +249,30 @@ y=table(['項目','値・意味'],[
  ['公称分解能','入力換算 約0.6875 mV/LSB、1 V/octで約0.825 cent/LSB。精度保証値ではない']], [117,CW-117],y+15,9.3)
 y=section('ゲート入力：0-5 V／0-10 Vをロジックへ変換',y+8)
 y=para('100 kΩの入力抵抗、ベース抵抗、逆方向保護ダイオード、MMBT3904（C20526）で受けます。コレクタを3.2 Vへプルアップするため、外部ゲートがHighのときRP2040入力はLowになる「Active Low」です。閾値と遅延は実機で測定します。',X,y,CW,10.3)
-y=section('2点校正と声の予約（ファームウェア予定）',y+18)
-y=para('系統ごとに既知の0 Vと1 Vを入力して、オフセットとゲインを保存する設計です。0 Vに対応するノートも設定します。CV用の声を予約した場合はMIDIの声割当から除外し、入力間の取り合いを防ぎます。ノイズ音色ではCVを周期や音色変調へ割り当てる予定です。',X,y,CW,10.3)
+y=section('2点校正と声の予約',y+18)
+y=para('系統ごとに既知の0 Vと1 Vを入力して、オフセットとゲインを保存します。0 Vに対応するノートと音源の声・音色を設定できます。CV用の声を予約した場合はMIDIの声割当から除外します。SNの周期ノイズではCVでクロックの音程を変えます。',X,y,CW,10.3)
 y=note('用途は音程CVと低速の変調です。ADCの取得速度と入力フィルタにより、オーディオレート変調向けの構成ではありません。',y+16,49)
 para('ADC仕様の参照：<link href="https://www.ti.com/lit/ds/symlink/ads1115.pdf" color="#127c7f">TI ADS1115データシート</link>。入力換算の分解能はPGA設定と本基板の1/11減衰比から算出。',X,y+2,CW,8.2,MUTED)
 
-heading(6,'OLEDと3ボタンで設定するUI','以下は画面・操作の設計仕様です。現在のリポジトリに実機UIファームウェアはありません。')
+heading(6,'OLEDと3ボタンで設定するUI','v0.4.0-alphaに設定画面を実装。描画コードをPCで検査しています。実OLEDの表示確認は未完了です。')
 rect(X,135,CW,60,HexColor('#fbf0e8'),5)
 para('表示器：HS96L03W2C03、SSD1315、0.96インチ、128 × 64、白OLED。J5のGND / VCC / SCL / SDAへ接続し、3.2 Vで給電します。I2Cアドレスは0x3Cです。',X+12,145,CW-24,10)
-y=table(['ボタン','短押し','長押しの予定'],[
- ['SW5 / −','項目移動・値を減らす','前の画面へ戻る'],
- ['SW6 / 決定','選択・編集の確定','別操作は未定義'],
- ['SW7 / ＋','項目移動・値を増やす','全音停止（Panic）']], [108,201,CW-309],216,9.5)
-y=section('メニュー構成（予定）',y+8)
+y=table(['ボタン','短押し','長押し'],[
+ ['SW5 / −','項目移動・値を減らす','編集以外で全音停止'],
+ ['SW6 / 決定','選択・編集の確定','ホームへ戻る'],
+ ['SW7 / ＋','項目移動・値を増やす','編集時は連続増加']], [108,201,CW-309],216,9.5)
+y=section('メニュー構成',y+8)
 y=table(['メニュー','設定する内容'],[
  ['MIX','SAA / SN1 / SN2 / Masterの音量、音色や重ね方'],
- ['CV / GATE 1・2','音源の声、音色、0 Vノート、包絡、有効／無効'],
- ['MIDI','USB／TRSの受信チャンネルと割当、TRS → USB転送、CV声との競合規則'],
+ ['CV / GATE 1・2','音源の声、SN左右ペア、16音色、0 Vノート、有効／無効'],
+ ['MIDI','USB／TRSのチャンネル別割当、ステレオ・重ね鳴らし、TRS → USB転送'],
  ['PRESET','8枠への保存・読込・初期化。SAVE操作で明示的にフラッシュへ保存'],
- ['CAL','CV1 / CV2を個別に0 V・1 Vで校正']], [108,CW-108],y,9.3)
+ ['CAL','CV1 / CV2を個別に0 V・1 Vで校正'],
+ ['SN CLOCK', 'SN基準4 / 2 / 1 MHz、幅、変調、同期、再トリガー元'],
+ ['ARP / DIAGNOSTICS','クロック同期の音程変化、声の予約、CV生値・エラー・更新遅れ']], [108,CW-108],y,9.3)
 y=section('演奏を止めないための実装方針',y+5)
-y=para('OLEDは低頻度の分割描画とし、CV取得とゲート処理を長時間ブロックしない方針です。音色変更のたびにフラッシュへ書き込まず、保存操作でまとめて書き込みます。USB／TRS／CVの優先順位とNote Offの追跡もファームウェアで実装します。',X,y,CW,10)
-para('画面モック：outputs/review/chiptune-ui.html。画面遷移と設定操作の確認用で、音生成・実CV校正は行いません。',X,y+17,CW,9,MUTED)
+y=para('OLEDは16バイトごとの分割転送で、ADC・音源更新を優先します。MIXは発音中に変更でき、保存操作で設定をまとめて書き込みます。USB／TRSのNote Off追跡と、CV用の声の予約・競合処理を実装しています。',X,y,CW,10)
+para('実装済み画面のPCレンダリング：firmware/assets/oled-screens.png。音作りと設定：firmware/CHARACTER_GUIDE.md。操作・書き込み：firmware/README.md。',X,y+17,CW,9,MUTED)
 
 heading(7,'手実装と3Dプリントケース','メイン基板の表面実装と、音源IC・OLEDの取り付けを分けた構成です。')
 y=table(['取り付け対象','内容'],[
@@ -301,19 +303,36 @@ y=table(['GPIO','用途'],[
  ['23 / 24','空きGPIO。基板上では未接続']], [113,CW-113],135,8.7)
 y=section('設計検査と未完了の項目',y+3)
 y=para('検査済み：DRC 0、未接続0、ERC 0、回路図との不一致0。152フットプリントの配置・端子接続、音源バス768ケース、ケース干渉とSTL形状を検査しています。PCBA対象は141点、BOMは41行・40品種です。',X,y,CW,9.4)
-y=para('未完了：動作するUSB MIDI／CV／UIファームウェア、USB電流条件、音声レベル・雑音、CV精度・校正、ゲート応答、温度、印刷後の嵌め合い。配線検査の合格は、実機性能の保証ではありません。',X,y+10,CW,9.4)
+y=para('ソフトウェア：UF2ビルド、ASan／UBSan付きPCテストを通過。実機ではUSB列挙・電流、音声レベル・雑音、CV精度・校正、ゲート応答、温度、印刷後の嵌め合いが未確認です。',X,y+10,CW,9.4)
 y=section('初回起動・書き込みの確認順',y+15)
-y=para('3.2 V電源確認 → 電源OFFで手実装 → 開発用ファームウェアで消音・クロック・音源電源を確認 → 音源ごとの試験音 → MIDI → CV／ゲート → 校正・UIの順で検証します。動作済みUF2はまだ収録されていません。',X,y,CW,9.2)
-y=para('JP1=BOOT、JP2=RESETは裏面のサービス用銅パッドです。BOOTを短絡保持し、RESETを短絡して解放するとUSB書き込みモードに入る構成です。通常操作の3ボタンとは別です。',X,y+9,CW,9.2)
+y=para('3.2 V電源確認 → 電源OFFで手実装 → UF2を書き込み、消音・クロック・音源電源を確認 → 音源ごとの試験音 → MIDI → CV／ゲート → 校正・保存の順で検証します。実機評価用UF2をfirmware/distに収録しています。',X,y,CW,9.2)
+y=para('JP1=BOOT、JP2=RESETは裏面のサービス用銅パッドです。BOOTを短絡保持し、RESETを短絡して解放するとUSB書き込みモードに入る構成です。通常操作の3ボタンとは別です。v0.4.0-alphaは−と＋を押しながらUSB接続しても書き込みモードに入ります。',X,y+9,CW,9.2)
 y=section('設計ファイル・参照先',y+13)
-links=[('GitHub: Bongorian/chiptune-usb-cv','https://github.com/Bongorian/chiptune-usb-cv'),('回路仕様・操作設計','https://github.com/Bongorian/chiptune-usb-cv/blob/main/docs/USB-CV-design-notes.txt'),('GPIO定義・音源バスAPI','https://github.com/Bongorian/chiptune-usb-cv/tree/main/firmware'),('製造データ・手実装一覧','https://github.com/Bongorian/chiptune-usb-cv/tree/main/outputs/jlc-one'),('ケースCAD・印刷手順','https://github.com/Bongorian/chiptune-usb-cv/tree/main/mechanical')]
+links=[('GitHub: Bongorian/chiptune-usb-cv','https://github.com/Bongorian/chiptune-usb-cv'),('回路仕様・操作設計','https://github.com/Bongorian/chiptune-usb-cv/blob/main/docs/USB-CV-design-notes.txt'),('ファームウェア・操作資料','https://github.com/Bongorian/chiptune-usb-cv/tree/main/firmware'),('製造データ・手実装一覧','https://github.com/Bongorian/chiptune-usb-cv/tree/main/outputs/jlc-one'),('ケースCAD・印刷手順','https://github.com/Bongorian/chiptune-usb-cv/tree/main/mechanical')]
 for label,url in links:
  y=para(f'<link href="{url}" color="#127c7f">{label}</link>',X,y,CW,8.5)+3
-para('基準：配線済みRev C、2026-10-05の設計検査、2026-10-12時点のリポジトリ。音源仕様はPhilips SAA1099とTI SN76489ANのメーカー資料を確認。資料内の操作・電源シーケンスは設計方針です。',X,y+4,CW,7.8,MUTED)
-assert page==8
+para('基準：配線済みRev C、2026-10-05の設計検査、2026-10-15時点のリポジトリ。音源仕様はPhilips SAA1099とTI SN76489ANのメーカー資料を確認。ファームウェアはv0.4.0-alpha。実機動作とUSB適合性は未検証です。',X,y+4,CW,7.8,MUTED)
+heading(9,'v0.4：演奏と変調を広げる','既存の音色・発音枠を保ち、CVとMIDIから実ICの音程・音量・クロックを操作します。')
+y=table(['設定','使える機能・操作場所'],[
+ ['CV SCALE / ROOT','CV/GATE：8種類のスケール設定と主音。境界ヒステリシスでADC揺れを抑制'],
+ ['CV GLIDE','ゲートHigh中の音程を平滑化。SN左右ペアは同時に追従。10-1000 msの時定数'],
+ ['CV ROLE','音程の代わりにSN基本速度・変調深度・左右幅、Master、SAA定位、トレモロへ'],
+ ['PART PERFORMANCE','USB/TRS：チャンネルごとの移調±24半音、音域フィルター、4種類のVelocity'],
+ ['TONE EDIT','SAA/SN別のソフトウェア包絡倍率・Sustain、0.5-64 Hzのトレモロ'],
+ ['MIDI EXPRESSION','Channel / Poly Pressureでビブラート。RPN 0でベンド幅。CC73/75/72で包絡'],
+ ['INTERNAL TEMPO','ARPEGGIO：30-240 BPM、AUTO / EXTERNAL / INTERNAL。固定コードパターンを追加'],
+ ['CLOCK STEPS','SN SEQUENCEの8段階を編集・保存。CC30でステップ、CC31で深度割合']], [120,CW-120],135,9.3)
+y=section('音源の役割を分ける演奏例',y+8)
+y=para('CV1をSAAのMINOR PENTA＋GLIDE 30 ms、CV2をSN FX DEPTHへ。安定した旋律に、SNのクロックが荒れる層を重ねます。CVを変調へ使う系統は発音・声の予約をしません。',X,y,CW,9.6)
+y=para('MIDI Ch2をSN STEREO、CV2をSN PAIR WIDTHへ。0 Vでは同音、CVを上げると左右に微小な音程差を作ります。SAAのコードにはTONE EDITで4 Hzのトレモロを追加できます。',X,y+10,CW,9.6)
+y=section('保存・入力の扱い',y+15)
+y=para('v1/v2/v3の設定を検証してv4へRAM上で移行し、追加機能は元の音に影響しない初期値にします。SAVEするまで旧バンクは変更しません。v4で保存した設定は旧版では読めません。',X,y,CW,9.4)
+y=para('変調CVは0-5 Vまたは0-10 Vで換算します。ADC取得が100 ms以上途切れると保存値へ戻ります。CVは低速制御用で、オーディオレート入力ではありません。内部テンポはUSBへ送信しません。',X,y+10,CW,9.4)
+para('詳細・CC・初期値・演奏例：firmware/CHARACTER_GUIDE.md。追加機能の自動テストはfirmware/tests/test_performance.c。実物ICでの音・更新負荷・CV応答の確認は未完了です。',X,y+18,CW,8.7,MUTED)
+assert page==9
 C.save()
-inputs=['routed/Chiptune_USB_CV.kicad_pcb','routed/design.json','firmware/pinmap.h','firmware/sound_bus.h','docs/USB-CV-design-notes.txt','docs/routing-notes.txt','mechanical/parameters.json','mechanical/mechanical_verification.json','outputs/routing-verification.json','outputs/bus-encoding-verification.json','outputs/jlc-one/reference/Hand_Assembly.csv']
-manifest=dict(document='Chiptune USB/CV Japanese board guide',date='2026-10-12',pages=8,pdf_sha256=hashlib.sha256(PDF.read_bytes()).hexdigest(),source_files_sha256={p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs},layout_paragraph_bounds=bounds)
+inputs=['routed/Chiptune_USB_CV.kicad_pcb','routed/design.json','firmware/pinmap.h','firmware/sound_bus.h','firmware/README.md', 'firmware/CHARACTER_GUIDE.md','firmware/src/main.c','firmware/src/engine.c', 'firmware/src/sn_clock.c', 'firmware/pio/sn_clock.pio','firmware/dist/Verification.json','docs/USB-CV-design-notes.txt','docs/routing-notes.txt','mechanical/parameters.json','mechanical/mechanical_verification.json','outputs/routing-verification.json','outputs/bus-encoding-verification.json','outputs/jlc-one/reference/Hand_Assembly.csv']
+manifest=dict(document='Chiptune USB/CV Japanese board guide',date='2026-10-15',pages=9,pdf_sha256=hashlib.sha256(PDF.read_bytes()).hexdigest(),source_files_sha256={p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs},layout_paragraph_bounds=bounds)
 (OUT/'Guide_Verification.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
 print(PDF)
-print('8 pages generated; text bounds remain inside the content area.')
+print('9 pages generated; text bounds remain inside the content area.')
