@@ -791,6 +791,11 @@ void engine_message(Engine *e, uint8_t s, const uint8_t *m, uint8_t len) {
         return;
     int a = m[1] & 127, b = len > 2 ? m[2] & 127 : 0;
     Channel *ch = &e->channel[s][c];
+    if (e->preset.studio.enabled) {
+        e->studio.midi_seen[s] = true;
+        e->studio.midi_time[s] = e->now;
+        e->studio.midi_channel[s] = (uint8_t)c;
+    }
     if (e->preset.studio.enabled && kind == 0xc) {
         studio_program(e, s, (unsigned)c, (unsigned)a);
         return;

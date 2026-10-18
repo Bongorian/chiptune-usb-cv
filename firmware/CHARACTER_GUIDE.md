@@ -1,3 +1,7 @@
+# v0.6の操作について
+
+通常はホームで音色を選び、MIDIで演奏します。SOUNDは短いOK、設定メニューはOK長押しです。この資料のPLAYはTOOLS / AUDITION、ROUTEはMIDI INPUT配下またはPARTS / SETUP、MOTIONはPARTS / SETUP > MOTION / SEQUENCE、SCENEはSAVE / LOAD SETUPに相当します。音源の特性と詳細機能は以下を参照してください。
+
 > この資料はv0.4の旧ルーティング／音色番号を含む音源特性資料です。v0.5の操作と音色モデルは[README](README.md)を参照してください。
 
 # 音源のキャラクターと演奏設定

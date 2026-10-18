@@ -18,10 +18,11 @@ typedef struct {
     bool raw[3], stable[3], long_sent[3];
     uint32_t changed[3], pressed[3], repeat[3], toast_until;
     char toast[22];
-    uint8_t page, part, depth, path[4], cursor[4], memory[32];
+    uint8_t page, part, depth, path[6], cursor[6], memory[40];
     uint8_t cv_input, mod_slot, macro, slot, library_slot, target_part, channel;
     uint8_t grid_lane, grid_step, test_note, test_mode, name_target, name_cursor;
     uint8_t confirm_action, name_return;
+    uint8_t active_sound, pending_sound, factory_slot;
     bool dirty, confirm, confirm_yes, boot_requested, chord, chord_sent;
     bool was_dirty, previewed, system_dirty, was_system_dirty;
     uint32_t chord_since;
@@ -60,6 +61,11 @@ typedef enum {
     UI_MONITOR,
     UI_CLOCK_STEPS,
     UI_MIX,
+    UI_MENU,
+    UI_MIDI,
+    UI_SETUP,
+    UI_SAVE_SOUND,
+    UI_FACTORY,
     UI_PAGES
 } UiPage;
 void ui_open(Ui *u, unsigned page);

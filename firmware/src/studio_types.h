@@ -93,4 +93,7 @@ typedef struct {
     uint32_t random;
     float lfo_sample[ST_PARTS], lfo_value[ST_PARTS];
     StSound effective[ST_PARTS];
+    uint32_t midi_time[2];
+    uint8_t midi_channel[2];
+    bool midi_seen[2];
 } StRuntime;

@@ -125,35 +125,102 @@ void studio_default(StScene *s) {
     s->mod[0] = (StMod){3, 0, ST_VIBRATO, 50};
     s->mod[1] = (StMod){4, 0, ST_VIBRATO, 50};
 }
-void studio_factory(unsigned index, StSound *sound, char name[9]) {
-    index %= PATCHES;
-    const Patch *p = &patches[index];
-    unsigned model = p->hw_env       ? ST_SAA_AM
-                     : p->noise == 2 ? ST_SAA_MIX
-                     : p->noise == 1 ? ST_SN_NOISE
-                                     : ST_SAA_TONE;
-    if (index == 4)
-        model = ST_SAA_ENV;
-    if (index == 2 || index == 11 || index == 12 || index == 15)
-        model = ST_SN_TWIN;
-    studio_sound_default(sound, model);
-    sound->attack = p->attack;
-    sound->decay = p->decay;
-    sound->release = p->release;
-    sound->sustain = p->sustain;
-    sound->sweep = p->sweep;
-    sound->vibrato = p->vibrato;
-    sound->noise_rate = p->noise_rate;
-    if (p->hw_env)
-        sound->shape = p->hw_env;
-    if (index == 9)
-        sound->shape = 0;
-    memset(name, ' ', 8);
-    name[8] = 0;
-    unsigned n = (unsigned)strlen(p->name);
-    if (n > 8)
-        n = 8;
-    memcpy(name, p->name, n);
+void studio_factory(unsigned index, StSound *s, char name[9]) {
+    static const char names[ST_SOUNDS][9] = {"ENV BASS", "ENV LEAD", "STEP SAW", "CHIPLEAD",
+                                             "SAA PLUK", "AM BELL ", "SOFT PAD", "TWINLEAD",
+                                             "SN BASS ", "DETUNE  ", "DRY SN  ", "METAL   ",
+                                             "SN SNARE", "HI HAT  ", "SAA NOIS", "LASER   "};
+    static const uint8_t models[ST_SOUNDS] = {ST_SAA_ENV,  ST_SAA_ENV,  ST_SAA_ENV,   ST_SAA_TONE,
+                                              ST_SAA_TONE, ST_SAA_AM,   ST_SAA_TONE,  ST_SN_TWIN,
+                                              ST_SN_TWIN,  ST_SN_TWIN,  ST_SN_TWIN,   ST_SN_METAL,
+                                              ST_SN_NOISE, ST_SN_NOISE, ST_SAA_NOISE, ST_SN_TWIN};
+    index %= ST_SOUNDS;
+    studio_sound_default(s, models[index]);
+    memcpy(name, names[index], 9);
+    switch (index) {
+    case 0:
+        s->mode = 1;
+        s->decay = 180;
+        s->sustain = 65;
+        s->release = 60;
+        break;
+    case 1:
+        s->vibrato = 12;
+        s->release = 110;
+        break;
+    case 2:
+        s->shape = 3;
+        s->steps = 8;
+        s->decay = 220;
+        s->sustain = 55;
+        break;
+    case 3:
+        s->vibrato = 10;
+        s->release = 90;
+        break;
+    case 4:
+        s->attack = 1;
+        s->decay = 240;
+        s->sustain = 0;
+        s->release = 100;
+        break;
+    case 5:
+        s->shape = 3;
+        s->noise_mix = 60;
+        s->decay = 600;
+        s->sustain = 0;
+        break;
+    case 6:
+        s->attack = 450;
+        s->release = 800;
+        s->vibrato = 8;
+        break;
+    case 7:
+        s->detune = 12;
+        s->vibrato = 8;
+        break;
+    case 8:
+        s->mode = 1;
+        s->glide = 1;
+        s->release = 60;
+        s->sustain = 85;
+        break;
+    case 9:
+        s->detune = 25;
+        s->attack = 15;
+        s->release = 300;
+        break;
+    case 10:
+        s->attack = 0;
+        s->decay = 0;
+        s->sustain = 100;
+        s->release = 10;
+        break;
+    case 11:
+        s->decay = 280;
+        s->noise_mix = 45;
+        break;
+    case 12:
+        s->decay = 140;
+        s->noise_rate = 1;
+        break;
+    case 13:
+        s->decay = 45;
+        s->release = 20;
+        s->noise_rate = 0;
+        break;
+    case 14:
+        s->attack = 180;
+        s->sustain = 60;
+        s->release = 420;
+        break;
+    case 15:
+        s->sweep = 36;
+        s->decay = 260;
+        s->sustain = 0;
+        s->release = 80;
+        break;
+    }
 }
 bool studio_sound_valid(const StSound *s) {
     if (s->model >= ST_MODELS || s->shape > 7 || (s->steps != 8 && s->steps != 16) ||
@@ -933,9 +1000,72 @@ static void parameter(StSound *s, unsigned dest, float amount, float *pitch, flo
         break;
     }
 }
+bool studio_is_single(const Engine *e, unsigned part) {
+    if (part >= ST_PARTS || !e->preset.studio.part[part].enabled)
+        return false;
+    for (unsigned p = 0; p < ST_PARTS; p++)
+        if (p != part && e->preset.studio.part[p].enabled)
+            return false;
+    return true;
+}
+bool studio_sound_load(Engine *e, unsigned part, const StSound *sound, const char name[9]) {
+    if (part >= ST_PARTS || !studio_sound_valid(sound) || !text_valid(name))
+        return false;
+    static StScene candidate;
+    candidate = e->preset.studio;
+    StPart *p = &candidate.part[part];
+    p->sound = *sound;
+    memcpy(p->name, name, 9);
+    unsigned maximum = studio_limit(sound->model);
+    if (sound->mode)
+        maximum = 1;
+    if (!studio_is_single(e, part) && maximum > p->poly)
+        maximum = p->poly;
+    p->poly = (uint8_t)maximum;
+    while (!studio_plan(&candidate, NULL, NULL, NULL)) {
+        if (p->poly <= 1)
+            return false;
+        p->poly--;
+    }
+    return studio_apply(e, &candidate);
+}
+bool studio_single(Engine *e, unsigned part, unsigned channel) {
+    if (part >= ST_PARTS || channel >= 16)
+        return false;
+    static StScene candidate;
+    candidate = e->preset.studio;
+    candidate.enabled = 1;
+    memcpy(candidate.name, "SINGLE  ", 9);
+    for (unsigned p = 0; p < ST_PARTS; p++) {
+        candidate.part[p].enabled = p == part;
+        candidate.part[p].arp = candidate.part[p].sequence = 0;
+    }
+    StPart *p = &candidate.part[part];
+    p->poly = (uint8_t)(p->sound.mode ? 1 : studio_limit(p->sound.model));
+    p->low = 0;
+    p->high = 127;
+    memset(candidate.route, 0, sizeof(candidate.route));
+    for (unsigned src = 0; src < 2; src++)
+        candidate.route[src][channel] = (uint16_t)(1u << part);
+    for (unsigned i = 0; i < 2; i++) {
+        candidate.cv[i].mode = candidate.cv[i].gate = 0;
+        candidate.cv[i].part = candidate.cv[i].gate_part = (uint8_t)part;
+    }
+    memset(candidate.mod, 0, sizeof(candidate.mod));
+    candidate.mod[0] = (StMod){3, (uint8_t)part, ST_VIBRATO, 50};
+    candidate.mod[1] = (StMod){4, (uint8_t)part, ST_VIBRATO, 50};
+    if (!studio_apply(e, &candidate))
+        return false;
+    engine_panic(e, -1);
+    memset(e->studio.mute, 0, sizeof(e->studio.mute));
+    return true;
+}
 void studio_program(Engine *e, unsigned source, unsigned channel, unsigned program) {
-    if (!e->library || program >= ST_SOUNDS || !(e->library->sound_used & (1u << program)))
+    if (!e->library || source >= SOURCES || channel >= 16 || program >= ST_SOUNDS ||
+        !(e->library->sound_used & (1u << program)))
         return;
+    /* Keep multi-part Program Change atomic: reject the whole assignment if the
+       new sounds cannot share the available hardware resources. */
     static StScene candidate;
     candidate = e->preset.studio;
     uint16_t route = candidate.route[source][channel];
@@ -943,7 +1073,9 @@ void studio_program(Engine *e, unsigned source, unsigned channel, unsigned progr
         if (route & (1u << p)) {
             candidate.part[p].sound = e->library->sounds[program];
             unsigned maximum = studio_limit(candidate.part[p].sound.model);
-            if (candidate.part[p].poly > maximum)
+            if (candidate.part[p].sound.mode)
+                maximum = 1;
+            if (studio_is_single(e, p) || candidate.part[p].poly > maximum)
                 candidate.part[p].poly = (uint8_t)maximum;
             memcpy(candidate.part[p].name, e->library->sound_name[program], 9);
         }

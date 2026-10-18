@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stddef.h>
 #include <stdlib.h>
+_Static_assert(UI_PAGES <= sizeof(((Ui *)0)->memory), "Page cursor capacity");
 static const uint8_t glyph[36][5] = {
     {0x3e, 0x51, 0x49, 0x45, 0x3e}, {0, 0x42, 0x7f, 0x40, 0},       {0x42, 0x61, 0x51, 0x49, 0x46},
     {0x21, 0x41, 0x45, 0x4b, 0x31}, {0x18, 0x14, 0x12, 0x7f, 0x10}, {0x27, 0x45, 0x45, 0x45, 0x39},
@@ -51,9 +52,11 @@ enum {
     A_GRID_VEL,
     A_GRID_MOD,
     A_CLOCK_GRID,
-    A_VERSION
+    A_VERSION,
+    A_SELECT_SOUND,
+    A_SINGLE,
+    A_FACTORY
 };
-static const char *const roots[] = {"PLAY", "SOUND", "ROUTE", "MOTION", "SCENE", "SYSTEM"};
 static const char *const yesno[] = {"OFF", "ON"};
 static const char *const shape_names[] = {"ZERO",  "MAX",      "DECAY 1",  "SAW DOWN",
                                           "TRI 1", "TRIANGLE", "ATTACK 1", "SAW UP"};
@@ -92,6 +95,60 @@ static void write_item(const Item *i, void *ptr, int v) {
     else
         *(uint8_t *)ptr = (uint8_t)v;
 }
+static bool sound_at(Ui *u, unsigned slot, StSound *sound, char name[9]) {
+    if (slot < ST_SOUNDS) {
+        if (!(u->settings->sound_used & (1u << slot)))
+            return false;
+        *sound = u->settings->sounds[slot];
+        memcpy(name, u->settings->sound_name[slot], 9);
+    } else if (slot < ST_SOUNDS * 2)
+        studio_factory(slot - ST_SOUNDS, sound, name);
+    else
+        return false;
+    return true;
+}
+static bool sound_matches(Ui *u, unsigned slot) {
+    StSound sound;
+    char name[9];
+    StPart *p = &u->engine->preset.studio.part[u->part];
+    return sound_at(u, slot, &sound, name) && !memcmp(&p->sound, &sound, sizeof(sound)) &&
+           !memcmp(p->name, name, 9);
+}
+static void sync_sound(Ui *u) {
+    if (sound_matches(u, u->active_sound))
+        return;
+    for (unsigned slot = 0; slot < ST_SOUNDS * 2; slot++)
+        if (sound_matches(u, slot)) {
+            u->active_sound = (uint8_t)slot;
+            return;
+        }
+}
+static unsigned receive_channel(const Engine *e, unsigned part) {
+    for (unsigned channel = 0; channel < 16; channel++)
+        if ((e->preset.studio.route[0][channel] | e->preset.studio.route[1][channel]) &
+            (1u << part))
+            return channel;
+    return 0;
+}
+static bool select_sound(Ui *u, unsigned slot, uint32_t now) {
+    StSound sound;
+    char name[9];
+    if (!sound_at(u, slot, &sound, name)) {
+        toast(u, "EMPTY SLOT", now);
+        return false;
+    }
+    if (!studio_sound_load(u->engine, u->part, &sound, name)) {
+        toast(u, "NO ROOM: USE SINGLE", now);
+        return false;
+    }
+    u->active_sound = (uint8_t)slot;
+    if (slot < ST_SOUNDS)
+        u->library_slot = (uint8_t)slot;
+    u->dirty = true;
+    if (u->test_mode)
+        studio_test(u->engine, u->part, u->test_note, u->test_mode);
+    return true;
+}
 static unsigned build(Ui *u, Item a[32]) {
     Engine *e = u->engine;
     StScene *scene = &e->preset.studio;
@@ -127,15 +184,33 @@ static unsigned build(Ui *u, Item a[32]) {
         A("ALL NOTES OFF", A_PANIC);
         break;
     case UI_SOUND:
-        PART();
-        S("MODEL", &s->model, U8, 0, ST_MODELS - 1, 1, st_model_names);
-        L("OSCILLATOR", UI_OSC);
+        if (s->model == ST_SAA_ENV || s->model == ST_SAA_AM) {
+            V("WAVE", &s->shape, U8, 0, 7, 1, shape_names);
+            V("STEPS", &s->steps, U8, 8, 16, 8, NULL);
+        } else if (s->model >= ST_SN_NOISE || s->model == ST_SAA_NOISE || s->model == ST_SAA_MIX) {
+            if (s->model == ST_SN_METAL)
+                V("TONE MIX", &s->noise_mix, U8, 0, 100, 1, NULL);
+            else
+                S("NOISE RATE", &s->noise_rate, U8, 0, 3, 1, NULL);
+            V("DECAY MS", &s->decay, U16, 0, 8000, 10, NULL);
+        } else {
+            if (s->model >= ST_SN_TWIN)
+                V("DETUNE CENT", &s->detune, U8, 0, 50, 1, NULL);
+            else
+                V("SWEEP ST", &s->sweep, I8, -48, 48, 1, NULL);
+            V("VIBRATO ST", &s->vibrato, U8, 0, 100, 1, NULL);
+        }
+        V("ATTACK MS", &s->attack, U16, 0, 8000, 5, NULL);
+        V("RELEASE MS", &s->release, U16, 0, 8000, 10, NULL);
+        V("LEVEL", &s->level, U8, 0, 100, 1, NULL);
         L("AMP ENVELOPE", UI_AMP);
+        L("WAVE DETAILS", UI_OSC);
         L("VOICE / PITCH", UI_VOICE);
-        L("MACRO MAP", UI_MACROS);
-        L("SOUND LIBRARY", UI_LIBRARY);
-        L("PART SETUP", UI_PARTS);
-        V("TEST", &u->test_mode, U8, 0, 3, 1, test_names);
+        if (s->model >= ST_SN_TWIN)
+            L("SN CLOCK: BOTH", UI_SN_CLOCK);
+        L("SAVE SOUND", UI_SAVE_SOUND);
+        L("AUDITION", UI_PLAY);
+        L("MACROS / LFO", UI_MACROS);
         break;
     case UI_OSC:
         if (s->model == ST_SAA_ENV || s->model == ST_SAA_AM) {
@@ -154,6 +229,7 @@ static unsigned build(Ui *u, Item a[32]) {
                 V("TONE MIX", &s->noise_mix, U8, 0, 100, 1, NULL);
         }
         V("SWEEP ST", &s->sweep, I8, -48, 48, 1, NULL);
+        S("ENGINE", &s->model, U8, 0, ST_MODELS - 1, 1, st_model_names);
         L("RESOURCE MAP", UI_RESOURCES);
         break;
     case UI_AMP:
@@ -284,12 +360,12 @@ static unsigned build(Ui *u, Item a[32]) {
         break;
     case UI_SCENE:
         V("SLOT", &u->slot, U8, 0, PRESETS - 1, 1, NULL);
-        A("SAVE SCENE", A_SAVE);
-        A("DISCARD + LOAD", A_LOAD);
+        A("SAVE SETUP", A_SAVE);
+        A("LOAD SETUP", A_LOAD);
         A("NAME", A_NAME_SCENE);
         L("PART SETUP", UI_PARTS);
         L("SOUND LIBRARY", UI_LIBRARY);
-        A("NEW SCENE", A_INIT);
+        A("NEW MULTI SETUP", A_INIT);
         break;
     case UI_PARTS:
         PART();
@@ -307,6 +383,40 @@ static unsigned build(Ui *u, Item a[32]) {
         A("SAVE SOUND", A_SAVE_SOUND);
         A("NAME SOUND", A_NAME_SOUND);
         A("SAVE LIBRARY", A_SAVE_SYSTEM);
+        break;
+    case UI_MENU:
+        L("EDIT SOUND", UI_SOUND);
+        L("SAVE SOUND", UI_SAVE_SOUND);
+        L("MIDI INPUT", UI_MIDI);
+        L("PARTS / SETUP", UI_SETUP);
+        L("TOOLS / AUDITION", UI_PLAY);
+        L("SYSTEM", UI_SYSTEM);
+        break;
+    case UI_MIDI:
+        V("RECEIVE CH", &u->channel, U8, 0, 15, 1, NULL);
+        L("USB ROUTING", UI_USB);
+        L("TRS ROUTING", UI_TRS);
+        L("CV / GATE", UI_ROUTE);
+        L("INPUT MONITOR", UI_MONITOR);
+        break;
+    case UI_SETUP:
+        PART();
+        A("SINGLE PLAY", A_SINGLE);
+        L("PART SETUP", UI_PARTS);
+        L("MIDI / CV ROUTING", UI_ROUTE);
+        L("SAVE / LOAD SETUP", UI_SCENE);
+        L("CHIP MIX", UI_MIX);
+        L("MOTION / SEQUENCE", UI_MOTION);
+        break;
+    case UI_SAVE_SOUND:
+        V("USER SLOT", &u->library_slot, U8, 0, ST_SOUNDS - 1, 1, NULL);
+        A("SOUND NAME", A_NAME_PART);
+        A("SAVE SOUND", A_SAVE_SOUND);
+        L("FACTORY SOUNDS", UI_FACTORY);
+        break;
+    case UI_FACTORY:
+        V("FACTORY", &u->factory_slot, U8, 0, ST_SOUNDS - 1, 1, NULL);
+        A("LOAD FACTORY", A_FACTORY);
         break;
     case UI_SYSTEM:
         L("RESOURCE MAP", UI_RESOURCES);
@@ -369,12 +479,14 @@ void ui_open(Ui *u, unsigned page) {
             u->edit = false;
             return;
         }
-    if (u->depth < 4) {
+    if (u->depth < 6) {
         u->path[u->depth] = u->page;
         u->cursor[u->depth] = u->field;
         u->depth++;
     }
     u->page = (uint8_t)page;
+    if (page == UI_MIDI)
+        u->channel = (uint8_t)receive_channel(u->engine, u->part);
     u->field = u->memory[page];
     u->edit = false;
     u->menu = true;
@@ -393,7 +505,27 @@ void ui_init(Ui *u, Settings *settings, Engine *e, bool (*save)(void *),
     u->slot = settings->selected;
     u->test_note = 48;
     e->library = settings;
+    bool fresh = !e->preset.studio.enabled;
     studio_activate(e);
+    u->active_sound = UINT8_MAX;
+    if (fresh) {
+        StSound sound;
+        char name[9];
+        studio_factory(0, &sound, name);
+        e->preset.studio.part[0].sound = sound;
+        memcpy(e->preset.studio.part[0].name, name, 9);
+        (void)studio_single(e, 0, 0);
+        /* Establish a clean RAM baseline; initialization never writes flash. */
+        settings->preset[settings->selected] = e->preset;
+    }
+    for (unsigned p = 0; p < ST_PARTS; p++)
+        if (e->preset.studio.part[p].enabled) {
+            u->part = (uint8_t)p;
+            break;
+        }
+    sync_sound(u);
+    if (u->active_sound < ST_SOUNDS)
+        u->library_slot = u->active_sound;
     for (unsigned i = 0; i < 2; i++)
         e->preset.route[i].channel = 0;
 }
@@ -424,6 +556,16 @@ static bool set_value(Ui *u, const Item *item, int value) {
             }
         }
         return studio_apply(e, &u->candidate);
+    }
+    if (item->ptr == &u->channel && u->page == UI_MIDI) {
+        if (u->edit) {
+            engine_panic(e, -1);
+            for (unsigned src = 0; src < SOURCES; src++) {
+                for (unsigned c = 0; c < 16; c++)
+                    e->preset.studio.route[src][c] &= (uint16_t) ~(1u << u->part);
+                e->preset.studio.route[src][value] |= (uint16_t)(1u << u->part);
+            }
+        }
     }
     write_item(item, item->ptr, value);
     if (item->ptr == &u->part && u->part != previous_part && e->studio.test_on)
@@ -474,6 +616,19 @@ static void perform(Ui *u, unsigned action, uint32_t now) {
     Engine *e = u->engine;
     Settings *s = u->settings;
     switch (action) {
+    case A_SELECT_SOUND:
+        (void)select_sound(u, u->pending_sound, now);
+        break;
+    case A_FACTORY:
+        (void)select_sound(u, ST_SOUNDS + u->factory_slot, now);
+        break;
+    case A_SINGLE:
+        if (studio_single(e, u->part, receive_channel(e, u->part))) {
+            u->test_mode = 0;
+            u->dirty = true;
+            toast(u, "SINGLE MIDI PLAY", now);
+        }
+        break;
     case A_PANIC:
         engine_panic(e, -1);
         u->test_mode = 0;
@@ -488,7 +643,7 @@ static void perform(Ui *u, unsigned action, uint32_t now) {
         if (u->save && u->save(u->ctx)) {
             u->dirty = false;
             u->system_dirty = false;
-            toast(u, "SCENE SAVED", now);
+            toast(u, "SETUP SAVED", now);
         } else {
             s->preset[u->slot] = u->undo;
             s->selected = old;
@@ -502,7 +657,14 @@ static void perform(Ui *u, unsigned action, uint32_t now) {
         s->selected = u->slot;
         u->test_mode = 0;
         u->dirty = false;
-        toast(u, "SCENE LOADED", now);
+        u->active_sound = UINT8_MAX;
+        for (unsigned p = 0; p < ST_PARTS; p++)
+            if (e->preset.studio.part[p].enabled) {
+                u->part = (uint8_t)p;
+                break;
+            }
+        sync_sound(u);
+        toast(u, "SETUP LOADED", now);
         break;
     case A_INIT:
         u->candidate = e->preset.studio;
@@ -510,42 +672,37 @@ static void perform(Ui *u, unsigned action, uint32_t now) {
         u->candidate.enabled = 1;
         (void)studio_apply(e, &u->candidate);
         u->dirty = true;
-        toast(u, "NEW SCENE", now);
+        toast(u, "NEW MULTI SETUP", now);
         break;
     case A_SAVE_SOUND: {
         StSound old = s->sounds[u->library_slot];
         char name[9];
         memcpy(name, s->sound_name[u->library_slot], 9);
         uint16_t used = s->sound_used;
+        bool single = studio_is_single(e, u->part);
+        u->undo = s->preset[s->selected];
+        if (single)
+            s->preset[s->selected] = e->preset;
         s->sounds[u->library_slot] = e->preset.studio.part[u->part].sound;
         memcpy(s->sound_name[u->library_slot], e->preset.studio.part[u->part].name, 9);
         s->sound_used |= (uint16_t)(1u << u->library_slot);
         if (u->save && u->save(u->ctx)) {
             u->system_dirty = false;
+            u->active_sound = u->library_slot;
+            if (single)
+                u->dirty = false;
             toast(u, "SOUND SAVED", now);
         } else {
             s->sounds[u->library_slot] = old;
             memcpy(s->sound_name[u->library_slot], name, 9);
             s->sound_used = used;
+            s->preset[s->selected] = u->undo;
             toast(u, "SAVE FAILED", now);
         }
         break;
     }
     case A_LOAD_SOUND:
-        if (!(s->sound_used & (1u << u->library_slot))) {
-            toast(u, "EMPTY SLOT", now);
-            break;
-        }
-        u->candidate = e->preset.studio;
-        u->candidate.part[u->part].sound = s->sounds[u->library_slot];
-        u->candidate.part[u->part].poly = (uint8_t)fminf(
-            u->candidate.part[u->part].poly, (float)studio_limit(s->sounds[u->library_slot].model));
-        if (studio_apply(e, &u->candidate)) {
-            memcpy(e->preset.studio.part[u->part].name, s->sound_name[u->library_slot], 9);
-            u->dirty = true;
-            toast(u, "SOUND LOADED", now);
-        } else
-            toast(u, "NO ROOM: RESOURCES", now);
+        (void)select_sound(u, u->library_slot, now);
         break;
     case A_COPY:
         u->candidate = e->preset.studio;
@@ -573,7 +730,7 @@ static void perform(Ui *u, unsigned action, uint32_t now) {
 }
 static void action(Ui *u, unsigned a, uint32_t now) {
     if (a == A_VERSION) {
-        toast(u, "V0.5.1 ALPHA", now);
+        toast(u, "V0.6.0 ALPHA", now);
         return;
     }
     if (u->page == UI_ROUTE && (a == UI_CV || a == UI_GATE)) {
@@ -620,7 +777,10 @@ void ui_click(Ui *u, unsigned button, bool long_press, uint32_t now) {
     if (button > 2)
         return;
     if (long_press && button == 1) {
-        back(u, now);
+        if (!u->depth && !u->confirm)
+            ui_open(u, UI_MENU);
+        else
+            back(u, now);
         return;
     }
     int delta = button == 0 ? -1 : 1;
@@ -705,17 +865,32 @@ void ui_click(Ui *u, unsigned button, bool long_press, uint32_t now) {
             if (value > i->max)
                 value = i->max;
             u->draft = value;
-            if (!i->structural && set_value(u, i, value))
+            if (!i->structural && !(u->page == UI_MIDI && i->ptr == &u->channel) &&
+                set_value(u, i, value))
                 u->previewed = true;
         }
         return;
     }
     if (!u->depth) {
         if (button == 1) {
-            u->page = u->group;
-            ui_open(u, u->group);
-        } else
-            u->group = (uint8_t)((u->group + delta + 6) % 6);
+            ui_open(u, UI_SOUND);
+        } else {
+            sync_sound(u);
+            unsigned current =
+                u->active_sound < ST_SOUNDS ? u->active_sound : (delta > 0 ? ST_SOUNDS - 1 : 0);
+            for (unsigned tries = 0; tries < ST_SOUNDS; tries++) {
+                current = (unsigned)(((int)current + delta + ST_SOUNDS) % ST_SOUNDS);
+                if (u->settings->sound_used & (1u << current)) {
+                    if (sound_matches(u, u->active_sound))
+                        (void)select_sound(u, current, now);
+                    else {
+                        u->pending_sound = (uint8_t)current;
+                        action(u, A_SELECT_SOUND, now);
+                    }
+                    break;
+                }
+            }
+        }
         return;
     }
     if (u->page == UI_GRID && button != 1) {
@@ -1003,8 +1178,8 @@ static void format(Ui *u, const Item *i, int v, char out[24]) {
         return;
     }
     bool one = i->ptr == &u->channel || i->ptr == &u->slot || i->ptr == &u->library_slot ||
-               i->ptr == &u->macro || i->ptr == &u->mod_slot || i->ptr == &u->sequence_step ||
-               i->ptr == &e->preset.studio.gate_clock;
+               i->ptr == &u->factory_slot || i->ptr == &u->macro || i->ptr == &u->mod_slot ||
+               i->ptr == &u->sequence_step || i->ptr == &e->preset.studio.gate_clock;
     snprintf(out, 24, "%d", v + (one ? 1 : 0));
 }
 static void waveform(Ui *u, int y, int height) {
@@ -1048,7 +1223,7 @@ static const char *page_title(unsigned page) {
                                          "SOUND",
                                          "ROUTE",
                                          "MOTION",
-                                         "SCENE",
+                                         "SETUP",
                                          "SYSTEM",
                                          "OSC",
                                          "AMP",
@@ -1071,7 +1246,12 @@ static const char *page_title(unsigned page) {
                                          "CV CALIBRATION",
                                          "INPUT MONITOR",
                                          "SN CLOCK STEPS",
-                                         "CHIP MIX"};
+                                         "CHIP MIX",
+                                         "MENU",
+                                         "MIDI INPUT",
+                                         "PARTS / SETUP",
+                                         "SAVE SOUND",
+                                         "FACTORY"};
     return page < UI_PAGES ? titles[page] : "PLAY";
 }
 void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
@@ -1084,56 +1264,78 @@ void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
         u->test_mode = 0;
     if (u->confirm) {
         header(u, "CONFIRM");
-        const char *name = u->confirm_action == A_SAVE         ? "SAVE SCENE?"
-                           : u->confirm_action == A_LOAD       ? "DISCARD + LOAD?"
-                           : u->confirm_action == A_BOOT       ? "ENTER USB UPDATE?"
-                           : u->confirm_action == A_LOAD_SOUND ? "LOAD SOUND?"
-                           : u->confirm_action == A_SAVE_SOUND ? "SAVE SOUND?"
-                           : u->confirm_action == A_INIT       ? "RESET SCENE?"
-                                                               : "SAVE / APPLY?";
-        text(u, 1, 18, name, 1, true);
+        const char *name = u->confirm_action == A_SAVE           ? "SAVE SETUP?"
+                           : u->confirm_action == A_LOAD         ? "LOAD SETUP?"
+                           : u->confirm_action == A_BOOT         ? "ENTER USB UPDATE?"
+                           : u->confirm_action == A_LOAD_SOUND   ? "LOAD SOUND?"
+                           : u->confirm_action == A_SELECT_SOUND ? "DISCARD SOUND EDITS?"
+                           : u->confirm_action == A_SINGLE       ? "USE SINGLE PLAY?"
+                           : u->confirm_action == A_FACTORY      ? "LOAD FACTORY SOUND?"
+                           : u->confirm_action == A_SAVE_SOUND   ? "SAVE SOUND?"
+                           : u->confirm_action == A_INIT         ? "NEW MULTI SETUP?"
+                                                                 : "SAVE / APPLY?";
+        text(u, 1, 15, name, 1, true);
+        if (u->confirm_action == A_SELECT_SOUND)
+            snprintf(title, sizeof(title), "%02u %.8s", u->pending_sound + 1,
+                     u->settings->sound_name[u->pending_sound]);
+        else if (u->confirm_action == A_SAVE_SOUND)
+            snprintf(title, sizeof(title), "USER %02u OVERWRITE", u->library_slot + 1);
+        else if (u->confirm_action == A_SINGLE)
+            snprintf(title, sizeof(title), "OTHER PARTS / CV OFF");
+        else
+            title[0] = 0;
+        text(u, 1, 25, title, 1, true);
         box(u, u->confirm_yes ? 72 : 6, 35, 48, 13, true);
         text(u, 18, 38, "NO", 1, u->confirm_yes);
         text(u, 84, 38, "YES", 1, !u->confirm_yes);
         footer(u, "OK:SET HOLD:CANCEL");
     } else if (!u->depth) {
-        snprintf(title, sizeof(title), "S%u %.8s", u->settings->selected + 1,
-                 e->preset.studio.name);
+        sync_sound(u);
+        StPart *part = &e->preset.studio.part[u->part];
+        bool single = studio_is_single(e, u->part);
+        if (u->active_sound < ST_SOUNDS)
+            snprintf(title, sizeof(title), "SOUND %02u / 16", u->active_sound + 1);
+        else if (u->active_sound < ST_SOUNDS * 2)
+            snprintf(title, sizeof(title), "FACTORY %02u", u->active_sound - ST_SOUNDS + 1);
+        else
+            snprintf(title, sizeof(title), "CUSTOM SOUND");
+        /* A star here means this sound differs from its stored sound, rather
+           than that some unrelated setup parameter has changed. */
+        bool setup_dirty = u->dirty;
+        u->dirty = !sound_matches(u, u->active_sound);
         header(u, title);
-        if (u->group == 0) {
-            snprintf(title, sizeof(title), "%c %s", 'A' + u->part,
-                     st_model_names[e->preset.studio.part[u->part].sound.model]);
-            text(u, 1, 16, title, 1, true);
-            waveform(u, 27, 14);
-            snprintf(title, sizeof(title), "%u NOTES   %s", studio_note_count(e, u->part),
-                     e->studio.running ? "RUN" : "STOP");
-            text(u, 1, 45, title, 1, true);
-        } else {
-            text(u, 1, 16, roots[u->group], 2, true);
-            snprintf(title, sizeof(title), "%u/6", u->group + 1);
-            text(u, 110, 20, title, 1, true);
-            if (u->group == 1) {
-                snprintf(title, sizeof(title), "PART %c %.8s", 'A' + u->part,
-                         e->preset.studio.part[u->part].name);
-                text(u, 1, 35, title, 1, true);
-                waveform(u, 44, 7);
-            } else if (u->group == 2) {
-                text(u, 1, 35, "USB TRS CV GATE", 1, true);
-                text(u, 1, 45, "INPUT > PART > SOUND", 1, true);
-            } else if (u->group == 3) {
-                snprintf(title, sizeof(title), "SN %s  %u BPM", references[e->preset.sn_reference],
-                         e->preset.tempo + 30);
-                text(u, 1, 35, title, 1, true);
-                text(u, 1, 45, "ARP / SEQ / MOD", 1, true);
-            } else if (u->group == 4) {
-                text(u, 1, 35, u->dirty ? "UNSAVED CHANGES" : "SCENE READY", 1, true);
-                text(u, 1, 45, "LOAD / SAVE / COPY", 1, true);
-            } else {
-                text(u, 1, 35, "CAL / I-O / VOICES", 1, true);
-                text(u, 1, 45, "DISPLAY / USB UPDATE", 1, true);
-            }
-        }
-        footer(u, "- +:SELECT OK:OPEN");
+        u->dirty = setup_dirty;
+        text(u, 2, 15, part->name, 2, true);
+        snprintf(title, sizeof(title), "%s %s", st_model_names[part->sound.model],
+                 single ? "" : "MULTI");
+        text(u, 2, 33, title, 1, true);
+        unsigned notes = studio_note_count(e, u->part);
+        unsigned capacity = part->sound.mode ? 1 : part->poly;
+        uint16_t channels = 0;
+        for (unsigned c = 0; c < 16; c++)
+            if ((e->preset.studio.route[0][c] | e->preset.studio.route[1][c]) & (1u << u->part))
+                channels |= (uint16_t)(1u << c);
+        if (!part->enabled)
+            snprintf(title, sizeof(title), "PART OFF");
+        else if (!channels)
+            snprintf(title, sizeof(title), "NO MIDI");
+        else if (channels & (channels - 1))
+            snprintf(title, sizeof(title), "MULTI %u/%u", notes, capacity);
+        else
+            snprintf(title, sizeof(title), "CH%u %u/%u", receive_channel(e, u->part) + 1, notes,
+                     capacity);
+        text(u, 2, 44, title, 1, true);
+        unsigned src = 2;
+        for (unsigned i = 0; i < 2; i++)
+            if (e->studio.midi_seen[i] && e->now - e->studio.midi_time[i] < 350)
+                src = i;
+        if (src < 2)
+            snprintf(title, sizeof(title), "%s CH%u", src ? "TRS" : "USB",
+                     e->studio.midi_channel[src] + 1);
+        else
+            snprintf(title, sizeof(title), "%s", status->usb ? "USB+TRS" : "TRS MIDI");
+        text(u, 78, 44, title, 1, true);
+        footer(u, (now / 3000) % 2 ? "HOLD OK:MENU" : "-+:SOUND OK:EDIT");
     } else if (u->page == UI_NAME) {
         header(u, "NAME");
         text(u, 4, 21, u->name, 2, true);
@@ -1181,7 +1383,18 @@ void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
         unsigned count = build(u, list);
         if (count && u->field >= count)
             u->field = 0;
-        snprintf(title, sizeof(title), "%c / %s", 'A' + u->part, page_title(u->page));
+        if (studio_is_single(e, u->part))
+            snprintf(title, sizeof(title), "%s", page_title(u->page));
+        else
+            snprintf(title, sizeof(title), "%c / %s", 'A' + u->part, page_title(u->page));
+        if (u->page == UI_FACTORY) {
+            StSound sound;
+            char name[9];
+            studio_factory(u->factory_slot, &sound, name);
+            snprintf(title, sizeof(title), "F%02u %.8s", u->factory_slot + 1, name);
+        }
+        if (u->page == UI_SAVE_SOUND)
+            snprintf(title, sizeof(title), "SAVE %.8s", e->preset.studio.part[u->part].name);
         if (u->page == UI_LIBRARY)
             snprintf(title, sizeof(title), "L%02u %.8s", u->library_slot + 1,
                      u->settings->sound_name[u->library_slot]);
@@ -1210,12 +1423,21 @@ void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
             footer(u, u->edit ? "OK:SET HOLD:CANCEL" : "OK:EDIT HOLD:BACK");
         } else if (u->edit && count) {
             Item *i = &list[u->field];
-            snprintf(title, sizeof(title), "%c:%s", 'A' + u->part, i->label);
+            if (studio_is_single(e, u->part))
+                snprintf(title, sizeof(title), "%s", i->label);
+            else
+                snprintf(title, sizeof(title), "%c:%s", 'A' + u->part, i->label);
             if (u->page == UI_SN_CLOCK)
                 snprintf(title, sizeof(title), "BOTH SN:%s", i->label);
             if (i->ptr == &u->library_slot)
                 snprintf(title, sizeof(title), "L%02u %.8s", u->library_slot + 1,
                          u->settings->sound_name[u->library_slot]);
+            if (i->ptr == &u->factory_slot) {
+                StSound sound;
+                char name[9];
+                studio_factory(u->factory_slot, &sound, name);
+                snprintf(title, sizeof(title), "F%02u %.8s", u->factory_slot + 1, name);
+            }
             if (i->ptr == &u->slot)
                 snprintf(title, sizeof(title), "S%02u %.8s", u->slot + 1,
                          u->settings->preset[u->slot].studio.enabled

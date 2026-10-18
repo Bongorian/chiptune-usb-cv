@@ -1,5 +1,5 @@
 {
-  "firmware": "v0.5.1-alpha",
+  "firmware": "v0.6.0-alpha",
   "host_tests_passed": true,
   "sanitizers": [
     "ASan",
@@ -9,37 +9,42 @@
     {
       "name": "engine_tests",
       "status": "run",
-      "seconds": 10.2093
+      "seconds": 10.4662
     },
     {
       "name": "roles_tests",
       "status": "run",
-      "seconds": 0.102185
+      "seconds": 0.102056
     },
     {
       "name": "performance_tests",
       "status": "run",
-      "seconds": 0.0629918
+      "seconds": 0.0627452
     },
     {
       "name": "studio_tests",
       "status": "run",
-      "seconds": 0.267559
+      "seconds": 0.262388
+    },
+    {
+      "name": "instrument_tests",
+      "status": "run",
+      "seconds": 0.0136985
     },
     {
       "name": "display_tests",
       "status": "run",
-      "seconds": 0.0120755
+      "seconds": 0.0121034
     }
   ],
   "ui_random_actions": 12000,
-  "ui_rendered_pages": 28,
+  "ui_rendered_pages": 33,
   "models_tested": 12,
   "settings_version": 5,
   "settings_bytes": 17308,
   "store_record_bytes": 17328,
-  "engine_bytes_host": 23504,
-  "ui_bytes_host": 5128,
+  "engine_bytes_host": 23512,
+  "ui_bytes_host": 5144,
   "settings_migration_tested": [
     1,
     2,
@@ -65,5 +70,16 @@
     "brightness reapply on reinitialization",
     "power loss and USB suspend/resume",
     "timer rollover"
+  ],
+  "instrument_regressions": [
+    "fresh single instrument on USB/TRS MIDI ch1",
+    "all 16 sounds play within hardware reservations",
+    "sound selection, short OK edit and long OK menu",
+    "edit discard protection",
+    "save rollback and reboot with the same sound",
+    "receive channel commit/cancel",
+    "v5 multi setup preservation",
+    "fixed factory sounds without changing user library",
+    "Program Change across all user sounds"
   ]
 }

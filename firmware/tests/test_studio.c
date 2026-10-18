@@ -282,11 +282,9 @@ static void test_ui(void) {
     setup();
     ui_init(&ui, &settings, &e, save, cal, NULL);
     assert(!ui.depth);
-    click(2);
-    assert(ui.group == 1);
     click(1);
     assert(ui.page == UI_SOUND && ui.depth == 1);
-    ui.field = 2;
+    ui.field = 6;
     click(1);
     assert(ui.page == UI_OSC);
     ui.field = 1;
@@ -505,7 +503,7 @@ static void test_route_change_while_high(void) {
     setup();
     ui_init(&ui, &settings, &e, save, cal, NULL);
     e.preset.studio.part[0].sound.shape = 3;
-    open_page(UI_SOUND, 1);
+    open_page(UI_OSC, 5);
     click(1);
     click(1);
     assert(e.preset.studio.part[0].sound.shape == 3);
