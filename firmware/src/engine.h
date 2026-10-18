@@ -2,15 +2,16 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "sn_clock.h"
+#include "studio_types.h"
 #define VOICES 14
 #define PATCHES 16
 #define PRESETS 8
 #define SOURCES 2
-#define SETTINGS_VERSION 4
+#define SETTINGS_VERSION 5
 #define CV_SCALES 8
 #define CV_ROLES 7
 #define ARP_MODES 8
-#define UI_GROUPS 12
+#define UI_GROUPS 12 /* legacy regression fixture; modern UI has six roots */
 
 typedef enum {
     TARGET_AUTO,
@@ -61,12 +62,17 @@ typedef struct {
     ToneControl tone[2]; /* SAA, SN; affects the software envelope only */
     uint8_t cv_scale[2], cv_root[2], cv_glide[2], cv_role[2], cv_range[2];
     uint8_t tempo, clock_policy, clock_sequence[8]; /* tempo 0..210 => 30..240 BPM */
+    StScene studio;
 } Preset;
 typedef struct {
     uint32_t version;
     Preset preset[PRESETS];
     float cv_zero[2], cv_codes_per_volt[2];
     uint8_t selected, padding[3];
+    StSound sounds[ST_SOUNDS];
+    char sound_name[ST_SOUNDS][9];
+    uint16_t sound_used;
+    uint8_t brightness;
 } Settings;
 typedef struct {
     const char *name;
@@ -83,6 +89,7 @@ typedef struct {
     uint16_t token;
     uint32_t age, elapsed, release_elapsed;
     float pitch, level, release_level;
+    uint8_t part;
 } Voice;
 typedef struct {
     uint8_t volume, expression, pan, modulation, sustain, program, bend_range;
@@ -94,7 +101,7 @@ typedef struct {
     void (*sn)(void *, uint8_t, uint8_t);
     void *ctx;
 } SoundSink;
-typedef struct {
+typedef struct Engine {
     Preset preset;
     Voice voice[VOICES];
     Channel channel[SOURCES][16];
@@ -111,6 +118,8 @@ typedef struct {
     bool cv_target_valid[2], cv_mod_valid[2], cv_quantized_valid[2], cv_control_gate[2];
     bool clock_seen, clock_running;
     SoundSink sink;
+    StRuntime studio;
+    const Settings *library;
 } Engine;
 void settings_default(Settings *s);
 bool settings_valid(const Settings *s);

@@ -1,7 +1,8 @@
 #pragma once
 #include "engine.h"
 #include <stddef.h>
-#define STORE_BANK_BYTES 4096
+#define STORE_BANK_BYTES 32768
+#define STORE_LEGACY_OFFSET (2u * 1024u * 1024u - 8192u)
 #define STORE_COMMIT 0x43545031u
 #define STORE_FLASH_OFFSET (2u * 1024u * 1024u - 2u * STORE_BANK_BYTES)
 typedef struct {

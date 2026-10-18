@@ -2,6 +2,7 @@
 #include "midi.h"
 #include "store.h"
 #include "ui.h"
+#include "studio.h"
 #include "power.h"
 #include "cv.h"
 #include "pinmap.h"
@@ -220,8 +221,10 @@ static void sound_on(void) {
     sn_clock_start();
     rail_on = true;
     status.power = true;
-    Preset current = engine.preset;
+    static Preset current;
+    current = engine.preset;
     engine_init(&engine, &current, (SoundSink){saa_write, sn_write, NULL});
+    engine.library = &settings;
     /* Discard stale UART data at rail transition. */
     uint32_t irq = save_and_disable_interrupts();
     uart_tail = uart_head;
@@ -409,6 +412,12 @@ static float cv_note(unsigned input) {
     return cv_pitch(&settings, input, status.cv_raw[input], engine.preset.cv[input].base_note);
 }
 static void cv_event(unsigned input, bool gate) {
+    if (engine.preset.studio.enabled) {
+        uint32_t now = to_ms_since_boot(get_absolute_time());
+        studio_cv(&engine, input, cv_volts(&settings, input, status.cv_raw[input]), gate,
+                  status.adc_ok && cv_sequence[input] && now - cv_time[input] < 100);
+        return;
+    }
     if (engine.preset.cv_role[input] == CV_PITCH)
         engine_cv(&engine, input, cv_note(input), gate);
     else
@@ -436,7 +445,8 @@ static void gate_tasks(uint32_t now) {
         gate_tail = (uint8_t)((gate_tail + 1) % GATE_RING);
         unsigned input = ev >> 1;
         last_gate[input] = ev & 1;
-        if (rail_on && cv_sequence[input] && now - cv_time[input] < 100)
+        if (rail_on &&
+            (engine.preset.studio.enabled || (cv_sequence[input] && now - cv_time[input] < 100)))
             cv_event(input, last_gate[input]);
     }
     for (unsigned input = 0; input < 2; input++) {
@@ -444,7 +454,10 @@ static void gate_tasks(uint32_t now) {
         status.gates[input] = gate;
         bool fresh = status.adc_ok && cv_sequence[input] && now - cv_time[input] < 100;
         if (rail_on) {
-            if (!fresh)
+            if (engine.preset.studio.enabled) {
+                studio_cv(&engine, input, cv_volts(&settings, input, status.cv_raw[input]), gate,
+                          fresh);
+            } else if (!fresh)
                 engine_cv_clear(&engine, input);
             else if (!ready[input] || gate != last_gate[input])
                 cv_event(input, gate);
@@ -516,6 +529,7 @@ static bool save_settings(void *ctx) {
 }
 static void oled_task(uint32_t now) {
     static bool display_on, pump_started;
+    static uint8_t contrast;
     if ((int32_t)(now - oled_next) < 0)
         return;
     if (!oled_ok) {
@@ -557,6 +571,14 @@ static void oled_task(uint32_t now) {
     if (!display_on) {
         oled_next = now + 20;
         return;
+    }
+    if (contrast != settings.brightness) {
+        uint8_t command[] = {0, 0x81, (uint8_t)(settings.brightness * 255u / 100u)};
+        if (i2c_write(0x3c, command, sizeof(command)) != (int)sizeof(command)) {
+            oled_ok = false;
+            return;
+        }
+        contrast = settings.brightness;
     }
     if (!oled_chunk && (int32_t)(now - render_next) >= 0) {
         ui_render(&ui, &status, now);
@@ -635,8 +657,16 @@ int main(void) {
         const StoreRecord *record =
             (const StoreRecord *)((const uint8_t *)banks + store_bank * STORE_BANK_BYTES);
         hard_assert(store_load(record, &settings, &store_sequence));
-    } else
-        settings_default(&settings);
+    } else {
+        /* v1-v4 used the last two 4KiB sectors. Never erase them before a v5 commit. */
+        const StoreRecord *old_a = (const StoreRecord *)(XIP_BASE + STORE_LEGACY_OFFSET);
+        const StoreRecord *old_b = (const StoreRecord *)(XIP_BASE + STORE_LEGACY_OFFSET + 4096);
+        int legacy = store_select(old_a, old_b);
+        if (legacy >= 0)
+            hard_assert(store_load(legacy ? old_b : old_a, &settings, &store_sequence));
+        else
+            settings_default(&settings);
+    }
     engine_init(&engine, &settings.preset[settings.selected],
                 (SoundSink){saa_write, sn_write, NULL});
     for (int s = 0; s < 2; s++)
@@ -715,6 +745,10 @@ int main(void) {
             for (int b = 0; b < 3; b++)
                 down[b] = !gpio_get(buttons[b]);
             ui_buttons(&ui, down, now);
+            if (ui.boot_requested) {
+                sound_off();
+                reset_usb_boot(0, 0);
+            }
         }
         if (time_us_32() - tick < 500)
             cv_adc_task(time_us_32());

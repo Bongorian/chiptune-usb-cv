@@ -1,233 +1,155 @@
-# Chiptune USB/CV firmware
+# Chiptune USB/CV firmware v0.5.0-alpha
 
-SAA1099 × 1、SN76489AN × 2を実物の音源として使う、専用基板向けRP2040ファームウェアです。
-音声は各ICのアナログ出力から出ます。RP2040は発音・音量・音程・ルーティングを制御します。
+RP2040、SAA1099、SN76489AN×2、128×64 OLEDを搭載した専用基板用のファームウェアです。3ボタンから、音作り・試聴・MIDI/CV/Gate割り当て・パターン編集・保存・USB更新モードへの移行を操作できます。
 
-**v0.4.0-alpha — 実機評価用。** RP2040用UF2のビルドとPC上の自動テストを通過しています。
-実基板での起動、USB列挙、音、消費電流、CV精度、OLED表示は未確認です。
-最新の[ビルド検証記録](dist/Verification.json)、[テスト記録](dist/Test_Verification.json)と[初回動作確認手順](BRINGUP.md)を参照してください。
+- [UF2](dist/chiptune-v0.5.0-alpha.uf2)
+- [Androidからの更新](ANDROID_UPDATE.md)
+- [ビルド検証](dist/Verification.json)／[テスト記録](dist/Test_Verification.json)
+- [実機確認項目](BRINGUP.md)
 
-## v0.4の追加機能
+RP2040専用です。Pico/Pico Wの端子配列用やRP2350用ではありません。今回の版の実機発音・OLED・Android更新は未確認です。波形図は設定から計算する模式図で、アナログ出力の測定表示ではありません。
 
-- CVの8種類のスケール設定、ルート音、境界ヒステリシス、左右ペア対応グライド。
-- CVをSNクロックの基本速度・変調深度・左右幅、音量、SAA定位、トレモロ深度へ割り当て。
-- MIDI受信チャンネル別の−24〜＋24半音移調、音域フィルター、4種類のVelocityカーブ。
-- SAA／SN別のソフトウェア包絡編集と、0.5–64 Hzのトレモロ。
-- アフタータッチによるビブラート、RPN 0によるベンド幅、Attack／Decay／Release CC。
-- 内部テンポ30–240 BPM、AUTO／EXTERNAL／INTERNAL、追加の固定コードパターン。
-- 保存可能な8ステップSNクロックパターンとCC30／31による編集。
-- v0.1／v0.2／v0.3からの設定移行。新機能の初期値は元の音作りを維持。
+## 操作
 
-操作、入力レンジ、適用先、演奏例は[演奏設定ガイドのv0.4追加機能](CHARACTER_GUIDE.md#v04演奏と音作りを広げる設定)を参照してください。
+| 状態 | − / ＋ | OK | OKを約0.7秒長押し |
+|---|---|---|---|
+| ホーム | 6つの入口を選択 | 開く | — |
+| 一覧 | 前 / 次の項目 | 開く・編集 | 一つ戻る |
+| 編集 | 値を変更 | 確定 | 変更を取り消す |
+| ステップ選択 | 前 / 次のステップ | 値の編集へ | 一つ戻る |
 
-## 音源の使い分け
+−/＋は長押しで連続移動・連続変更します。広い範囲の数値は長押し時間に応じて加速します。音量・ADSR・波形・変調などは編集しながら反映され、取り消すと元の値に戻ります。音源モデル・声数・有効化・ノイズクロックのように予約資源が変わる設定は、OKでの確定時に適用します。
 
-| 音源 | 使い方 | 管理する制約 |
-|---|---|---|
-| SAA1099 | 6声の矩形波、左右独立の音量、トーン＋ノイズ、ハードウェア包絡、動くステレオ定位 | 3声ごとの共有ノイズ生成器。包絡を使う声は専用のクロック用トーンを予約 |
-| SN76489AN 1 | 左側の3声の矩形波＋1声のノイズ | 対数2 dB刻みの音量。音程付き周期ノイズでは第3トーンを予約 |
-| SN76489AN 2 | 右側の3声の矩形波＋1声のノイズ | 左側とは独立して発音。音源クロックは2個共通。初期基準2 MHz、SN CLOCKで250 kHz–4 MHz |
+−と＋を約0.9秒同時長押しすると、PANICで全発音・試聴・シーケンスを停止します。同時押しの離し際に個別のクリックは発生しません。`PLAY > ALL NOTES OFF`も同じ操作です。停止時にHighだったGateは、一度Lowになるまで再発音しません。
 
-通常のトーン＋ノイズで最大14声。CV予約、ハードウェア包絡、音程付きノイズによって空き声数は減ります。
-初期設定はCV1にSAA1声、CV2にSN左右1ペアを予約します。MIDI用は矩形波のステレオ7和音＋ノイズ1組、CVはさらに2つのステレオ音です。
-[音源の使い分け・MIDI／CV設定ガイド](CHARACTER_GUIDE.md)に、初期のチャンネル割り当てと8つのプリセットを記載しています。
-SAA1099のノイズは既存の声に重ねる機能で、別の発音枠には数えません。
+`*`は未保存、`T`は試聴中を示します。編集を取り消しても、すでに進んだ発振位相や発音の時間までは巻き戻しません。
 
-SAA1099の包絡は内部クロックを使います。Philipsのデータシートに従い、トーン2／5（0始まり）に包絡、トーン1／4に専用の70 Hzクロックを割り当てます。
-異なるノイズ色を同じSAAの3声グループへ割り当てることは避けます。
-クロック用の声は通常のMIDI発音から必要に応じて確保しますが、予約中または発音中のCVの声を奪いません。
+## 最小の音出し
 
-SNの通常の矩形波の最低音は4 MHz時に約122.2 Hz、2 MHz時に約61.1 Hz、1 MHz時に約30.5 Hzです。新規設定の基準は2 MHzです。低い音はAUTOでSAAを優先します。
-範囲外の音程は分周器の上下限へクランプし、診断画面のカウンターに記録します。
-PERIODICではSN76489A系の15段周期を前提にクロックを15倍に補正します。
-実物ICの周期・誤差はチューナーやオシロスコープで確認してください。
-SN1は左、SN2は右に固定されています。SN STEREOは左右を1ノートとして発音し、MIDI Panを両側の音量に反映します。単声SNは固定の左右出力です。
+1. USBで給電し、右下のJ3（LINE OUT）をアンプなどへ接続します。
+2. ホームの`PLAY`をOKで開き、`PART A`を選びます。
+3. `TEST`を`REPEAT`にしてOKで確定します。初期音色のSAA ENVがC3で繰り返し鳴ります。
+4. `TEST=OFF`またはPANICで停止します。
 
-## 音色
+`SINGLE`は約400msのノートを一度、`REPEAT`は約1秒周期、`HOLD`は停止するまで保持します。試聴ベロシティは80です。`TEST NOTE`で音程を変更できます。長いアタックの確認には`HOLD`を使います。試聴中にSOUNDを編集することもできます。PARTを切り替えると試聴先も追従します。
 
-Program Changeは0–15、画面のPATCHも0始まりです。DAWが1始まり表示なら1–16に相当します。
-選択した音源で使えない音色は発音を断り、DIAGNOSTICSのREFUSEDを増やします。
+## 6つの入口
 
-| PC | 名前 | 特徴 |
-|---|---|---|
-| 0 | CHIP LEAD | 短いアタック、遅れて入るビブラート |
-| 1 | PLUCK | 減衰して消えるプラック |
-| 2 | WARM BASS | 持続する矩形波ベース。低音はSAA向け |
-| 3 | HW BELL | SAAの単発減衰包絡。SAA専用 |
-| 4 | HW TRIANGLE | SAAの反復三角包絡と左右反転。矩形波を包絡で変調する音色 |
-| 5 | STEREO PAD | 遅い立ち上がりと定位の移動 |
-| 6 | TONE NOISE | SAAのトーン＋ノイズ。SAA専用 |
-| 7 | WHITE SNARE | ホワイトノイズの短い減衰 |
-| 8 | HI HAT | 高速ノイズの短い減衰 |
-| 9 | PERIODIC | SNのトーン連動周期ノイズ。SN専用 |
-| 10 | KICK | 音程が下がるキック |
-| 11 | LASER | 大きなピッチ下降と定位の移動 |
-| 12 | CHORUS | 声ごとに位相が異なるビブラート。LAYERでステレオの厚みを作る |
-| 13 | SLOW ATTACK | 長いアタックとリリース |
-| 14 | NOISE PAD | 持続するノイズと定位の移動 |
-| 15 | DRY SQUARE | 短いリリースの矩形波 |
-
-ADSRはソフトウェア制御、HW BELL／HW TRIANGLEは実ICの包絡も併用します。
-SNの振幅は対数特性に合わせて変換し、最小音量より小さいレベルはミュートします。
-ディレイ・リバーブや、矩形波の自由なデューティ変更は含みません。
-音色の定義は[`src/engine.c`](src/engine.c)の`patches`です。
-
-## SNクロックの音作り
-
-[SN CLOCKの操作・音作り・CC一覧](SN_CLOCK.md)を参照してください。
-2個のSNに共通の実クロックを250 kHz–4 MHzで動かし、RISE／DIVE、TRIANGLE／SQUARE、RANDOM、SEQUENCEを重ねられます。
-ノイズ速度も変わり、SAAのクロックは独立して維持します。最高800 Hzの段階的な変調を選べます。
-初期設定のプリセット5–8に使用例を収録しています。MODE OFFではREFERENCEの4／2／1 MHzで、MIDI／CVの指定音程を保ちます。BASE DROP／DEPTHはその基準から音程・ノイズ速度を変調します。
-
-## MIDI
-
-USB MIDI 1.0デバイスと、TRS Type A MIDI入力を同時に受け付けます。
-USB鍵盤の直接接続には対応しません。PC／USBホストから演奏するか、TRS MIDIを使ってください。
-
-- USB／TRSごとに、WHOLE INPUTまたはBY CHANNELを選べます。チャンネルごとにAUTO／SAA／SN1／SN2／LAYER MONO／SN STEREO／SAA+SN STEREO／OFFと初期音色を設定できます。
-- LAYERはSAAの1声とSNの1声を重ねます。SN側はノート番号の偶奇で左右へ振り分けます。SAA専用音色はSAAだけで発音します。
-- Note On／Off、Velocity、Program Change、Pitch Bend ±2半音を処理します。
-- CC1 Modulation、CC7 Volume、CC10 Pan、CC11 Expression、CC64 Sustain、CC120 All Sound Off、CC121 Reset Controllers、CC123 All Notes Offを処理します。
-- 同音の重複発音はFIFOでNote Offを対応付け、USBとTRSのNote Offを独立させます。声のスティール後に古いNote Offが別のノートを消すことを防ぎます。
-- チャンネル10ではノート36＝KICK、38＝WHITE SNARE、42／44＝HI HATを選びます。GM全体の音色互換はありません。
-- ランニングステータス、途中に入るリアルタイムメッセージ、SysExを扱うパーサーを備えます。SysExはローカル音源では解釈しません。
-- TRSのTO USBをONにすると、入力をUSB MIDI INへ転送します。SysExとリアルタイムも転送対象で、ローカルのチャンネルフィルターとは独立です。
-- UARTエラー、転送キューあふれ、Active Sensingの300 ms超の途切れは消音・パーサー再同期で処理します。転送エラーではUSB側へCC120を送り直します。
-
-ARPEGGIOは、押した各ノートを根音としたメジャー／マイナー／オクターブの4ステップ音程変化です。
-コードの構成音を記憶して巡回するアルペジエーターではありません。
-選択したUSB／TRSのMIDI Clockを使い、Start／Continue／Stopに応答します。
-CLOCK MODEでAUTO／EXTERNAL／INTERNALを選び、内部テンポを30–240 BPM（初期120）に設定します。CLOCKS/STEPは1–16、初期値4です。
-Stopではステップを停止し、持続中の発音は残します。APPLY TOでALL／SAA／SNを選べ、新規設定はSAAのみです。
-
-## CV／ゲート
-
-ADS1115の差動AIN0–AIN1、AIN2–AIN3を交互に読みます。
-PGAは±2.048 V、860 SPSの単発変換で、読み出し待ちは状態機械で行います。
-ADCの最大変換速度だけで考えると各入力の上限は430サンプル/秒で、実際はI2C・描画・発音処理の時間が加わります。
-ゲートはGPIO割り込みで立ち上がり／立ち下がりをキューに記録し、直近のCVを使います。
-ADCが不調または100 ms以上古い場合は、そのCVの声をリリースし、変調入力は保存値へ戻します。
-
-入力ごとにENABLE、VOICE、PATCH、0V NOTE、SN STEREO、CV ROLE、SCALE／ROOT、GLIDE、MOD RANGEを設定できます。
-基準音を0 Vのノート番号として、1 Vにつき12半音を加えます。
-初期設定はCV1＝声0・PLUCK・0 V＝C3、CV2＝声6＋9のSN左右ペア・WARM BASS・0 V＝C2です。SN STEREOでは音程・ゲート・リリースを左右同時に反映します。
-
-| VOICE番号 | 出力先 |
+| 入口 | 内容 |
 |---|---|
-| 0–5 | SAAトーン1–6。HW包絡を使えるのは2／5 |
-| 6–8 | SN1トーン1–3、左 |
-| 9–11 | SN2トーン1–3、右 |
-| 12 | SN1ノイズ、左。PERIODICでは声8も必要 |
-| 13 | SN2ノイズ、右。PERIODICでは声11も必要 |
+| PLAY | パート選択、4マクロ、試聴、シーケンス開始/停止、ミュート、音量 |
+| SOUND | モデル、OSC、音量ADSR、声数、モノ/レガート、ピッチ、マクロ、音色ライブラリ |
+| ROUTE | USB/TRSのチャンネル別ルート、CVとGateの独立割り当て、変調マトリクス |
+| MOTION | 両SN共通クロック、アルペジオ、16ステップ、変調、テンポ/同期 |
+| SCENE | 8シーンの保存/読み込み、名前、A〜Nのパート設定、音色保存、初期化 |
+| SYSTEM | 資源表示、CV校正、入力モニター、明るさ、設定保存、USB UPDATE、VERSION |
 
-DIAGNOSTICSのCV RESERVEをONにするとCV用の声・左右ペア・専用クロックをMIDIから予約します。
-OFFでは最後のNote On／ゲート立ち上がりを優先します。
-継続するCVの音程更新だけで、MIDIの新しいノートを奪い返すことはありません。
-2つのCVへ同じ声を割り当てる操作は避け、声に適合する音色だけを選べるようにしています。
+同じ`PART`の選択を各ページで共有します。パートは一つの音色を持つ演奏単位です。パート数と和音数は別で、最大14パートの設定枠があっても、実際に使える声数はICの資源で決まります。
 
-校正は、CALIBRATEで入力ごとに正確な0 Vを加えてOK、その後正確な1 Vを加えてOKです。
-各段階で少なくとも0.5秒程度安定させてから操作してください。
-直近64サンプルの標準偏差が4コードを超える場合や、0 Vのオフセットが大きい場合、利得が異常な場合はCAL FAILEDになります。
-成功後にPRESETのSAVEでフラッシュへ保存してください。0 Vだけの未完了校正では保存を断ります。
-校正値は全プリセット共通です。
+![OLED表示例](assets/ui-v05.png)
 
-## 画面・ボタン
+## 初期シーン
 
-![実装済み画面のPCレンダリング](assets/oled-screens.png)
+| パート | モデル | 声数 | USB/TRS入力 |
+|---|---|---:|---|
+| A | SAA ENV | 2 | Ch.1 |
+| B | SAA TONE | 2 | Ch.2 |
+| C | SN TWIN | 2 | Ch.3 |
+| D | SN NOISE・Tone 3追従 | 1ステレオ組 | Ch.4 / Ch.10 |
 
-上の画像は実際のUI描画コードから作った画面です。モジュール上での表示確認は未完了です。
+初期構成は音程のあるステレオ6和音とステレオノイズ1組です。ENVのクロックに2チャンネル、左右SNのノイズ用クロックにTone 3を使っています。通常のSAA矩形波6声とSNステレオ3声に組み替えれば、音程のあるステレオ9和音と固定レートノイズも扱えます。
 
-| 操作 | 動作 |
-|---|---|
-| ホームで−／＋ | メニューを選択 |
-| OKを短押し | メニューに入る／値を編集／編集を終える／表示された操作を実行 |
-| メニューで−／＋ | 項目を選択。編集時は値を変更 |
-| 編集時に−／＋を長押し | 値を連続変更 |
-| OKを0.7秒長押し | ホームへ戻る |
-| 編集中以外に−を0.7秒長押し | 全音源のPANIC（消音） |
-| 電源投入時に−と＋を同時押し | USB ROMブートローダーへ入る |
+`SCENE > PART SETUP`でA〜Nの有効/無効、モデル、声数を変更できます。追加の前に既存パートの声数を減らすなどして資源を空け、ROUTEで入力を割り当てます。資源不足の変更は拒否し、確定前の構成を保ちます。構造の変更でチャンネル割り当てが動く場合は全発音を停止してから適用します。別パートの声を演奏中に借りることはありません。同じパートの声数を超えたノートは、そのパート内で古い声を置き換えます。
 
-MIXは発音を続けたまま変更できます。ルーティング・CV設定・プリセットの変更は発音を消音して反映します。
-PRESETは8枠を持ち、SLOT選択、SAVE、LOAD、INITを備えます。
-SAVEでは現在の設定を選択スロットへ入れ、8枠全部・選択枠・CV校正をまとめて保存します。
-INITはRAM上の初期化で、SAVEするまでフラッシュには書き込みません。
-保存中は消音し、受信の途中状態を捨てます。演奏中の保存は避けてください。
+`RESOURCE MAP`は基板上と同じSAA/SN左/SN右の順です。A〜Nはパート、Kは予約されたクロック、−は空き、下の点は発音中を表します。
 
-DIAGNOSTICSでは声のスティール、発音を断った回数、音程クランプ、CV生値・ゲート、音源更新の最大処理時間・更新遅れ、UARTエラー・USB転送落ちを表示します。
-ボタンは20 msのデバウンス、OLEDは16バイトずつの分割転送で、ADCと発音処理を優先します。
+## 音源モデル
 
-## 電源・保存
+- **SAA TONE**：矩形波。各声の左右音量を設定できます。
+- **SAA NOISE / SAA MIX**：ノイズ、またはIC内部のトーン＋ノイズ合成。同じ3チャンネル群のノイズ源を共有します。異なるノイズ色を両群に配置できるよう予約を探索します。Tone Followでは群の0/3番発振器も予約します。
+- **SAA ENV**：FE/NEを両方無効にし、チャンネル2/5のハードウェアENV自体を楽音にします。クロック元1/4は無音の専用資源です。
+- **SAA AM**：矩形波の振幅をハードウェアENVで変調します。`ENV CLK ST`はキャリアに対するENV用発振器の音程差です。音量ADSRは別です。
+- **SN TWIN**：左右のSNで1組のノート。デチューン、左右バランス、ADSRなどを設定できます。
+- **SN LEFT / SN RIGHT**：片側だけを使う独立音色です。配線で決まる出力先を越えたパン移動はできません。
+- **SN NOISE / SN NOISE L / SN NOISE R**：白色/周期ノイズ。固定3レート、またはTone 3追従です。
+- **SN METAL**：Tone 3追従ノイズと、そのクロック用トーン自体を混ぜます。`TONE MIX`で比率を設定します。
 
-USB構成記述子は500 mAを要求します。USB構成が済むか、CCで1.5 A／3 A相当の供給広告を250 ms検出した後に、5 V音源電源を有効にします。
-CCは基板の1/2分圧を戻し、公称0.68 Vで判定します。通常電流広告のUSB-A充電器だけでは起動しません。
-PCで構成された後のサスペンドでは、音源・表示・LEDを止め、CPUは割り込み待ちへ入ります。
-起動・動作・サスペンド電流、突入電流、CCの実測閾値は実基板での評価が必要です。USB適合検証済みではありません。
+### ENVの波形と音量を分ける
 
-電源OFF時は音源のバス・制御・クロックをHi-Zにし、給電後にクロックを開始して全ICをミュートします。
-SAAはDTACK待ちを使わず、データシートの固定待ち時間を満たす書き込みを行います。
-SNはREADYが基板に接続されていないため、クロック設定の最も遅い条件からWE保持を16–136 µsに計算し、前後にも待ちを入れます。
+`SOUND > OSCILLATOR`で、ZERO、MAX、単発下降、繰り返し下降、単発三角、繰り返し三角、単発上昇、繰り返し上昇を選択します。`STEPS=16/8`、`R INVERT`、`KEY RESET`もここで設定します。
 
-フラッシュの最後の8 KiBを、2つの4 KiB設定バンクに予約します。
-CRC、版、長さ、連番、設定値を検査し、新バンクのコミットマーカーを最後に書きます。
-保存が途中で途切れたときは旧バンクを使い、両方無効なら初期設定で起動します。
-リンカーのアプリ領域は2 MiB−8 KiBに制限しています。
-保存形式はv4です。CRCと値が正しいv0.1／v0.2／v0.3を読み込み、ルーティング・音色・校正を保ちます。
-移行時は従来の4 MHz基準・単声CV・全入力ルーティングを維持し、v0.2のクロック変調も維持します。
-新しい初期構成はPRESET INITで選べます。移行はRAM上で行い、SAVEするまで旧バンクは書き換えません。v0.3のペア設定と基準クロックも保ちます。旧版はv4形式を読めません。
+`SOUND > AMP ENVELOPE`はソフトウェアの音量ADSRです。発振用ENVの形を保ったまま、ノートのアタックやリリースを整えます。
 
-## 書き込み
+繰り返し三角はENVクロック元のトーン周波数を、目的の音程×16または×8にします。下降/上昇は×8または×4です。8/16切り替え時も、この換算で音程を維持します。上限を超えたENV OSCノートは、別の音程へ張り付けず無音にします。8MHz基準の理論上限は、16ステップ三角が約488Hz、16ステップ鋸歯状が約977Hzで、8ステップ時はそれぞれ倍です。[Philipsのデータシート](https://sam.speccy.cz/systech/saa-1099_data_sheet.pdf)と[SAASoundのENV実装](https://github.com/stripwax/SAASound/blob/master/src/SAAEnv.cpp)のカウンター進行を照合しています。実チップでの音程検証は必要です。
 
-[ビルド済みUF2](dist/chiptune-v0.4.0-alpha.uf2)を使います。
-初回は空のフラッシュからRP2040のUSB ROMブートローダーに入ります。
-以後は−と＋を押しながらUSBを接続し、`RPI-RP2`へUF2をコピーしてください。
-通常のUF2は設定領域を含みません。v1–v3は移行できますが、全フラッシュ消去では設定が失われます。
+`KEY RESET=ON`はノート開始時に該当ENVだけを再トリガーします。6つの周波数発振器をまとめてリセットする操作は使いません。OFFではENVの進行を維持します。単発波形は再トリガーしない限り終了状態を保ちます。`R INVERT`は左右の反転関係を作るため、モノラル合成では相殺し得ます。
 
-このUF2は専用基板のGPIO配線と2 MiBフラッシュ用です。一般のRaspberry Pi Pico向けには使わないでください。
-開発用USB VID/PIDは`0xcafe:0x4008`です。配布製品では割り当てを受けた値に変更してください。
+## マクロと変調
 
-## ビルドとテスト
+MODEL変更時は、そのモデル向けのマクロ割り当てへ初期化します。各音色に4つのマクロを持ち、PLAYには割り当てたパラメーター名を表示します。`SOUND > MACRO MAP`で対象と値を変更します。値は−100〜+100の加算変調で、0が基準音色のままです。ADSR時間は最大±4オクターブの倍率、ピッチは最大±24半音など、対象に応じて換算します。STEPS/R INVERTは閾値で切り替わります。音源が持たないパラメーターは、そのモデルでは効果がありません。
 
-Pico SDK 2.3.1、TinyUSBとpicotoolのコミットを固定しています。[依存関係](DEPENDENCIES.md)を参照してください。
-CMake 3.20以上、Ninja、Git、Python 3、Arm GNU Toolchain＋newlib＋C++ヘッダーが必要です。
-Ubuntu 24.04では`gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-dev`などを使用できます。
-SDKの例外・C++動的確保オーバーライドを無効にし、Cでリンクするため、巨大な`libstdc++-arm-none-eabi-newlib`は必要ありません。
+8枠の変調マトリクスでは、CV1/2、CC1、プレッシャー、各パートのLFO、各ステップレーンを、パートの音色または両SN共通クロックへ割り当てます。変調は保存した基準値を上書きしません。初期値はCC1とプレッシャーをAのビブラートへ割り当てています。
 
-リポジトリのルートで実行します。
+LFOはSINE/TRIANGLE/SQUARE/SAMPLE HOLD、0.5〜64Hzです。ハードウェアの矩形波デューティを変える機能や、存在しない音声フィルターを表示することはありません。
 
-```bash
-bash firmware/tools/bootstrap_sdk.sh .deps/pico-sdk
-cmake -S firmware -B build/firmware -G Ninja \
-  -DPICO_SDK_PATH="$PWD/.deps/pico-sdk" -DCMAKE_BUILD_TYPE=Release
-cmake --build build/firmware -j4
-```
+## MIDIとCV/Gate
 
-出力は`build/firmware/chiptune.uf2`です。
-カスタムツールチェーンは`-DPICO_TOOLCHAIN_PATH=/path/to/toolchain`で指定できます。
+### MIDI
 
-```bash
-cmake -S firmware -B build/tests -G Ninja -DCHIPTUNE_HOST_TESTS=ON
+`ROUTE > USB MIDI / TRS MIDI`でCHANNEL、PART、TO PARTを設定します。同じチャンネルを複数パートへONにするとレイヤーになり、各パートのLOW/HIGH NOTEでスプリットできます。音域とトランスポーズはパート共通です。USBとTRSのルート表は独立です。
+
+SOUNDのVOICEページにベロシティ曲線、POLY/MONO/LEGATO、グライドがあります。モノでは保持中の前のキーへ戻れます。ノートの所有元・元の音程・重複トークンを追跡するため、一方の入力のNote Offで別の入力の同音を止めません。ピッチベンド、RPN 0、サステイン、チャンネル/ポリプレッシャーも処理します。
+
+Program Change 0〜15は音色ライブラリ1〜16です。割り当て先の新しいモデルが収まらない場合は変更を拒否します。CC16〜19は4つのマクロを−100〜+100で操作します。従来のSNクロックCC20〜31も残し、CLOCK SOURCEで指定した入力から受けます。TRSからUSBへの転送はTRSページのTO USBで切り替えます。
+
+### CVとGate
+
+CV MODEはOFF/NOTE/MODです。NOTEは1V/octで、0V基準音・スケール・ルート音・グライドを設定できます。MODは対象、±の変調量、5V/10V範囲を選びます。SN BASE ALL/SN DEPTH ALLは両SN全体に作用します。
+
+GateはCVとは独立して、OFF/NOTE/RETRIGGER/STEP/FX TRIGGERと対象パートを選択します。対象パートに割り当てた新鮮なNOTE CVがあればその音程を使い、なければFIXED NOTEを使います。NOTE CVを同じパートへ2本同時に割り当てることはできません。CVの声を保持している間、MIDIはその声を奪いません。割り当てやGate用途を変更すると、旧割り当てのCVノートをリリースし、一度GateがLowになるまで再発音を待ちます。
+
+初期値はCV1/Gate1がAの音程/ノート、CV2がSNクロック深さ、Gate2がクロックFXトリガーです。SN FXを使うにはMOTIONでDIVEなどを選びます。CV変調量は基準値への加算です。
+
+ADCが古い/異常な場合は、そのCV由来のノートをリリースし、変調を外します。0Vは正当な入力なので、ケーブル抜けとしては判定しません。校正はSYSTEM > CV CALIBRATIONで各入力の0V、1Vの順に行い、最後にSAVE CALで保存します。
+
+## シーケンス・アルペジオ・クロック
+
+各パートに最大16ステップのNOTE/GATE/VELOCITY/MACRO1レーンを持ちます。NOTEを0〜127、GATEを0〜100%、VELOCITYを0〜127、MACRO1を−100〜+100で編集できます。GATE/VELOCITYの0は休符です。ステップ順はFORWARD/REVERSE/RANDOMです。PART ENABLEでパートごとの再生を選び、PLAYのSEQUENCEで全体を開始/停止します。
+
+アルペジオは実際に保持しているMIDIノートからUP/DOWN/UP DOWN/RANDOM/CHORDを作り、1〜4オクターブで展開します。各パートでシーケンスとアルペジオを同時に有効にすると、そのパートの声数を共有します。
+
+テンポは30〜240 BPM。CLOCK POLICYはAUTO/EXTERNAL/INTERNAL/GATEです。EXTERNAL/AUTOのMIDI SOURCEはUSB/TRS、GATEの入力は1/2です。Gateクロックは1エッジ=16分音符（6 MIDIクロック）です。GateのSTEP割り当ては、GATE同期を使わない場合に個別パートを1ステップずつ進めます。
+
+SNの基準は4/2/1MHzです。基準を変えると通常のノート用分周値を再計算します。FXはOFF/MANUAL/RISE/TRIANGLE/SQUARE/RANDOM/SEQUENCE/DIVE。クロックを動かした分だけ実際のSNの音程・ノイズの性格が変化します。両チップは同一クロックなので、パート別に独立したクロックにはできません。CLOCK STEPSで8段階の波形を編集できます。
+
+## 保存と移行
+
+- **SAVE SCENE**：選んだシーン枠へ、パート・音色・MIDI/CV/Gate・パターン・SNクロックをまとめて保存します。
+- **SAVE SOUND**：現在のパートの音色をライブラリへ保存します。ルーティングやパターンは含みません。
+- **SAVE LIBRARY / SAVE SYSTEM**：ライブラリ名、明るさ、校正などを保存します。作業中のシーンはSAVE SCENEするまで更新しません。
+- 名前は英大文字・数字・空白・ハイフンの8文字です。カーソルを選んでOK、文字を選んでOK、最後にDONEで名前を反映します。
+- 保存・読み込み・初期化・更新モードには確認画面があります。通常操作中の自動フラッシュ保存はしません。保存時は発音を止めます。
+
+設定形式はv5、末尾64KiBの2バンク（各32KiB）にCRC付きで保存します。電源断に備えて別バンクへ書き、コミット印を最後に書きます。UF2はこの領域を含みません。
+
+v1〜v4の記録は旧位置（末尾8KiB）から読み、CV校正を引き継ぎます。旧メニューの演奏設定は新UIでは初期4パート構成から開始します。v5の最初の保存は旧記録を消さない側のバンクを使います。旧ファームウェアはv5の設定を読めません。
+
+## ビルドと検証
+
+Pico SDK 2.3.1と固定したTinyUSB/picotoolを使います。[DEPENDENCIES.md](DEPENDENCIES.md)を参照してください。
+
+```sh
+cmake -S firmware -B build/tests -G Ninja -DCHIPTUNE_HOST_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/tests
 ctest --test-dir build/tests --output-on-failure
+
+bash firmware/tools/bootstrap_sdk.sh .deps/pico-sdk
+cmake -S firmware -B build/firmware -G Ninja -DPICO_SDK_PATH="$PWD/.deps/pico-sdk" -DCMAKE_BUILD_TYPE=Release
+cmake --build build/firmware -j4
+python3 firmware/tests/check_pio_clock.py build/firmware/sn_clock.pio.h
+python3 firmware/tools/verify_build.py build/firmware --output build/firmware/Verification.json
 ```
 
-PCテストではASan／UBSanを有効にします。MIDIの所有権・重複ノート・声の奪取・共有リソース・CV校正・クロック・電源ポリシー・画面操作・破損／途中保存を検査します。
-30,000件のMIDIイベントと5,000件のボタン操作によるストレステストも含みます。
+ホストテストはASan/UBSanを有効にします。既存エンジンの回帰テストに加え、12モデルの予約・ENVレジスター/音程換算・ステレオ所有権・CV・試聴・シーケンス/アルペジオ・3ボタン編集/取消/保存・v4校正移行と、12,000回のUI操作を検証します。`tests/legacy_ui.c`は旧エンジンの回帰用fixtureで、製品ファームウェアにはリンクしません。
 
-## 構成
-
-- `src/engine.*`：発音、音色、声の割り当て、音源レジスター変換。
-- `src/sn_clock.*`／`pio/sn_clock.pio`：共有SN実クロックの変調と波形生成。
-- `src/midi.*`：USB／UART共通のストリーム解析。
-- `src/cv.*`：CV音程変換と校正。
-- `src/ui.*`：3ボタン操作と128×64画面。
-- `src/store.*`：保存レコードとCRC、バンク選択。
-- `src/power.*`：音源電源の許可条件。
-- `src/main.c`：基板固有のGPIO、PWM、I2C、USB、UART、フラッシュ処理。
-- `pinmap.h`／`sound_bus.h`：基板のGPIOとデータバスのビット順。
-
-音源の制御には次の一次資料を参照しています。
-[Philips SAA1099（May 1985、1986 IC01 pp.141–158）](https://bitsavers.org/components/philips/_dataBooks/1986_IC01_Philips_Radio_Audio_and_Associated_Systems.pdf)、
-[TI SN76489AN](https://map.grauw.nl/resources/sound/texas_instruments_sn76489an.pdf)、
-[TI ADS1115](https://www.ti.com/product/ADS1115)、
-[RP2040 datasheet](https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf)、
-[Pico SDK](https://github.com/raspberrypi/pico-sdk/tree/079c6f39023649b154152db30f1d781e884879bc)。
+VID 0xcafe / PID 0x4008は開発用です。製品配布には割り当て済みの識別子を設定してください。

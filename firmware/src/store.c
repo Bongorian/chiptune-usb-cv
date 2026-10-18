@@ -90,6 +90,17 @@ typedef struct {
     uint32_t commit, version, sequence, length, crc;
     LegacySettings3 settings;
 } LegacyRecord3;
+typedef struct {
+    uint32_t version;
+    uint8_t preset[PRESETS][262];
+    float zero[2], gain[2];
+    uint8_t selected, padding[3];
+} LegacySettings4;
+typedef struct {
+    uint32_t commit, version, sequence, length, crc;
+    LegacySettings4 settings;
+} LegacyRecord4;
+_Static_assert(sizeof(LegacySettings4) == 2120, "v4 layout");
 _Static_assert(sizeof(LegacySettings3) == 840, "v3 settings layout must stay fixed");
 _Static_assert(sizeof(LegacyRecord3) == 860, "v3 record layout must stay fixed");
 _Static_assert(offsetof(Preset, performance) == 102, "legacy prefix must remain intact");
@@ -103,15 +114,17 @@ bool store_load(const void *raw, Settings *settings, uint32_t *sequence) {
     }
     uint32_t header[5];
     memcpy(header, raw, sizeof(header));
-    if (header[0] != STORE_COMMIT || (header[1] != 1 && header[1] != 2 && header[1] != 3))
+    if (header[0] != STORE_COMMIT || header[1] < 1 || header[1] > 4)
         return false;
     unsigned version = header[1];
     unsigned length = version == 1   ? sizeof(LegacySettings)
                       : version == 2 ? sizeof(LegacySettings2)
-                                     : sizeof(LegacySettings3);
+                      : version == 3 ? sizeof(LegacySettings3)
+                                     : sizeof(LegacySettings4);
     if (header[3] != length)
         return false;
-    uint8_t copy[sizeof(LegacyRecord3)] = {0};
+    static uint8_t copy[sizeof(LegacyRecord4)];
+    memset(copy, 0, sizeof(copy));
     memcpy(copy, raw, length + sizeof(header));
     memset(copy + 16, 0, 4);
     if (header[4] != store_crc(copy + 4, length + sizeof(header) - 4))
@@ -122,18 +135,21 @@ bool store_load(const void *raw, Settings *settings, uint32_t *sequence) {
         return false;
     /* Called only from the single main thread; keep the expanded image off the 4KiB stack. */
     static Settings migrated;
-    memset(&migrated, 0, sizeof(migrated));
+    settings_default(&migrated);
     migrated.version = SETTINGS_VERSION;
+    migrated.brightness = 70;
     unsigned preset_size = version == 1   ? sizeof(LegacyPreset)
                            : version == 2 ? sizeof(LegacyPreset2)
-                                          : sizeof(LegacyPreset3);
+                           : version == 3 ? sizeof(LegacyPreset3)
+                                          : 262;
     for (unsigned i = 0; i < PRESETS; i++) {
         LegacyPreset old;
         memcpy(&old, copy + 24 + i * preset_size, sizeof(old));
         Preset *n = &migrated.preset[i];
+        memset(n, 0, sizeof(*n));
         preset_performance_default(n);
-        if (version == 3) {
-            memcpy(n, copy + 24 + i * preset_size, sizeof(LegacyPreset3));
+        if (version >= 3) {
+            memcpy(n, copy + 24 + i * preset_size, preset_size);
             continue;
         }
         memcpy(n->mix, old.mix, sizeof(n->mix));

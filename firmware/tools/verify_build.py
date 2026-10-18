@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 
 FLASH_BASE = 0x10000000
-STORE_START = FLASH_BASE + 2 * 1024 * 1024 - 8192
+STORE_START = FLASH_BASE + 2 * 1024 * 1024 - 65536
 FAMILY = 0xE48BFF56
 
 
@@ -73,18 +73,18 @@ def verify(build: Path, nm: str):
     device = symbol('device')
     assert len(device) == 18 and device[0:2] == bytes([18, 1]) and device[7] == 64
     assert struct.unpack_from('<H', device, 2)[0] == 0x0200
-    assert struct.unpack_from('<H', device, 12)[0] == 0x0040, 'Expected firmware USB revision 0.4'
+    assert struct.unpack_from('<H', device, 12)[0] == 0x0050, 'Expected firmware USB revision 0.5'
     bss = symbols['__bss_end__'][0] - symbols['__bss_start__'][0]
     assert bss < 200 * 1024, 'Insufficient RP2040 RAM margin'
     stack = symbols['__StackTop'][0] - symbols['__StackBottom'][0]
     assert stack == 4096, 'Expected the dedicated 4KiB core-0 scratch stack'
     return {
-        'firmware': 'v0.4.0-alpha', 'target': 'RP2040 dedicated Chiptune USB/CV board',
+        'firmware': 'v0.5.0-alpha', 'target': 'RP2040 dedicated Chiptune USB/CV board',
         'hardware_tested': False, 'checks_passed': True,
         'application_bytes': len(binary), 'bss_bytes': bss, 'stack_bytes': stack, 'uf2_bytes': len(uf2),
         'uf2_blocks': count, 'uf2_family_id': hex(FAMILY),
         'application_end': hex(flash_end), 'settings_start': hex(STORE_START),
-        'settings_reserved_bytes': 8192, 'settings_region_untouched': True,
+        'settings_reserved_bytes': 65536, 'settings_region_untouched': True,
         'usb': {'vid': hex(struct.unpack_from('<H', device, 8)[0]),
                 'pid': hex(struct.unpack_from('<H', device, 10)[0]),
                 'power_ma': config[8] * 2, 'midi_version': '1.0',

@@ -1,4 +1,5 @@
 #include "engine.h"
+#include "studio.h"
 #include <math.h>
 #include <string.h>
 #include <limits.h>
@@ -86,21 +87,41 @@ static bool modulation(const Engine *e, unsigned role, float *v) {
     return false;
 }
 SnClockConfig engine_effective_clock(const Engine *e) {
-    Preset p = e->preset;
+    SnClockConfig result = e->preset.sn_clock;
+    unsigned reference = e->preset.sn_reference;
+    if (e->preset.studio.enabled) {
+        result.base = (uint8_t)limit(result.base + e->studio.clock_base, 0, 48);
+        result.depth = (uint8_t)limit(result.depth + e->studio.clock_depth, 0, 48);
+        if (result.mode == SN_CLOCK_OFF && e->studio.clock_base != 0)
+            result.mode = SN_CLOCK_MANUAL;
+        unsigned base = (result.mode == SN_CLOCK_OFF ? 0 : result.base) + reference * 12u;
+        result.base = (uint8_t)(base > 48 ? 48 : base);
+        if (result.mode == SN_CLOCK_OFF) {
+            result.mode = SN_CLOCK_MANUAL;
+            result.depth = 0;
+        }
+        return result;
+    }
     float amount;
     if (modulation(e, CV_SN_BASE, &amount)) {
-        p.sn_clock.base = (uint8_t)lroundf(amount * 48);
-        if (p.sn_clock.mode == SN_CLOCK_OFF)
-            p.sn_clock.mode = SN_CLOCK_MANUAL;
+        result.base = (uint8_t)lroundf(amount * 48);
+        if (result.mode == SN_CLOCK_OFF)
+            result.mode = SN_CLOCK_MANUAL;
     }
     if (modulation(e, CV_SN_DEPTH, &amount))
-        p.sn_clock.depth = (uint8_t)lroundf(amount * 48);
-    return engine_clock_config(&p);
+        result.depth = (uint8_t)lroundf(amount * 48);
+    unsigned base = (result.mode == SN_CLOCK_OFF ? 0 : result.base) + reference * 12u;
+    result.base = (uint8_t)(base > 48 ? 48 : base);
+    if (result.mode == SN_CLOCK_OFF) {
+        result.mode = SN_CLOCK_MANUAL;
+        result.depth = 0;
+    }
+    return result;
 }
 uint32_t engine_transport_clocks(const Engine *e) {
     if (e->preset.clock_policy == 2)
         return e->internal_clocks;
-    if (e->preset.clock_policy == 1 ||
+    if (e->preset.clock_policy == 1 || e->preset.clock_policy == 3 ||
         (e->clock_seen && (!e->clock_running || e->now - e->last_clock < 600)))
         return e->clocks;
     return e->internal_clocks;
@@ -191,6 +212,10 @@ bool engine_cv_config_valid(const Preset *p) {
 void settings_default(Settings *s) {
     memset(s, 0, sizeof(*s));
     s->version = SETTINGS_VERSION;
+    s->brightness = 70;
+    for (unsigned i = 0; i < ST_SOUNDS; i++)
+        studio_factory(i, &s->sounds[i], s->sound_name[i]);
+    s->sound_used = 0xffff;
     for (int i = 0; i < PRESETS; ++i) {
         Preset *p = &s->preset[i];
         preset_performance_default(p);
@@ -297,7 +322,7 @@ static bool preset_valid(const Preset *p) {
     for (unsigned i = 0; i < 8; i++)
         if (p->clock_sequence[i] > 100)
             return false;
-    if (p->tempo > 210 || p->clock_policy > 2)
+    if (p->tempo > 210 || p->clock_policy > 3 || !studio_valid(&p->studio))
         return false;
     return p->reserve_cv <= 1 && p->arp_mode < ARP_MODES && p->arp_rate >= 1 && p->arp_rate <= 16 &&
            p->clock_source < SOURCES && sn_clock_valid(&p->sn_clock);
@@ -308,6 +333,16 @@ bool settings_valid(const Settings *s) {
     for (int i = 0; i < PRESETS; i++)
         if (!preset_valid(&s->preset[i]))
             return false;
+    if (s->brightness < 10 || s->brightness > 100)
+        return false;
+    for (unsigned i = 0; i < ST_SOUNDS; i++)
+        if (s->sound_used & (1u << i)) {
+            if (!studio_sound_valid(&s->sounds[i]) || s->sound_name[i][8])
+                return false;
+            for (unsigned c = 0; c < 8; c++)
+                if (s->sound_name[i][c] < 32 || s->sound_name[i][c] > 90)
+                    return false;
+        }
     for (int i = 0; i < 2; i++)
         if (!isfinite(s->cv_zero[i]) || fabsf(s->cv_zero[i]) > 16000 ||
             !isfinite(s->cv_codes_per_volt[i]) || s->cv_codes_per_volt[i] < 500 ||
@@ -402,6 +437,8 @@ void engine_init(Engine *e, const Preset *p, SoundSink sink) {
     memset(e->sn_atten, 0xff, sizeof(e->sn_atten));
     memset(e->sn_noise, 0xff, sizeof(e->sn_noise));
     channels_reset(e);
+    if (p->studio.enabled)
+        studio_reset(e);
     saa(e, 0x1c, 2);
     for (int i = 0; i < 6; i++)
         saa(e, (uint8_t)i, 0);
@@ -417,6 +454,8 @@ void engine_init(Engine *e, const Preset *p, SoundSink sink) {
         }
 }
 void engine_panic(Engine *e, int source) {
+    if (e->preset.studio.enabled)
+        studio_panic(e, source);
     if (source < 0) {
         memset(e->cv_target_valid, 0, sizeof(e->cv_target_valid));
         memset(e->cv_mod_valid, 0, sizeof(e->cv_mod_valid));
@@ -443,6 +482,8 @@ void engine_transport_reset(Engine *e) {
 void engine_preset(Engine *e, const Preset *p) {
     engine_panic(e, -1);
     e->preset = *p;
+    if (p->studio.enabled)
+        studio_reset(e);
     engine_transport_reset(e);
     channels_reset(e);
 }
@@ -709,7 +750,7 @@ void engine_message(Engine *e, uint8_t s, const uint8_t *m, uint8_t len) {
         return;
     uint8_t status = m[0];
     if (status >= 0xf8) {
-        if (status <= 0xfc && e->preset.clock_policy == 2)
+        if (status <= 0xfc && (e->preset.clock_policy == 2 || e->preset.clock_policy == 3))
             return;
         if (status <= 0xfc && s != e->preset.clock_source)
             return;
@@ -736,17 +777,30 @@ void engine_message(Engine *e, uint8_t s, const uint8_t *m, uint8_t len) {
         }
         if (status == 0xff)
             engine_panic(e, s);
+        if (e->preset.studio.enabled)
+            studio_realtime(e, status, s);
         return;
     }
     if (status < 0x80 || status >= 0xf0)
         return;
     int c = status & 15, kind = status >> 4;
-    if (e->preset.route[s].channel && c + 1 != e->preset.route[s].channel)
+    if (!e->preset.studio.enabled && e->preset.route[s].channel &&
+        c + 1 != e->preset.route[s].channel)
         return;
     if (len < (kind == 0xc || kind == 0xd ? 2 : 3))
         return;
     int a = m[1] & 127, b = len > 2 ? m[2] & 127 : 0;
     Channel *ch = &e->channel[s][c];
+    if (e->preset.studio.enabled && kind == 0xc) {
+        studio_program(e, s, (unsigned)c, (unsigned)a);
+        return;
+    }
+    if (e->preset.studio.enabled && kind == 0xb)
+        studio_control(e, s, (unsigned)c, (unsigned)a, (unsigned)b);
+    if (e->preset.studio.enabled && (kind == 8 || kind == 9)) {
+        studio_message(e, s, m, len);
+        return;
+    }
     if (kind == 8 || (kind == 9 && b == 0)) {
         off(e, s, c, a);
         return;
@@ -994,6 +1048,10 @@ void engine_tick(Engine *e, uint32_t dt) {
         e->internal_phase += dt * (e->preset.tempo + 30u) * 24u;
         e->internal_clocks += e->internal_phase / 60000u;
         e->internal_phase %= 60000u;
+    }
+    if (e->preset.studio.enabled) {
+        studio_tick(e, dt);
+        return;
     }
     static const uint16_t glide_ms[] = {0, 10, 30, 60, 120, 250, 500, 1000};
     for (unsigned input = 0; input < 2; input++)

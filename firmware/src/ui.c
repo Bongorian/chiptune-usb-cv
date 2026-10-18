@@ -1,24 +1,10 @@
 #include "ui.h"
+#include "studio.h"
 #include <stdio.h>
 #include <string.h>
-static const char *groups[] = {"MIX",         "USB MIDI", "TRS MIDI",  "CV/GATE 1",
-                               "CV/GATE 2",   "PRESET",   "ARPEGGIO",  "CALIBRATE",
-                               "DIAGNOSTICS", "SN CLOCK", "TONE EDIT", "CLOCK STEPS"};
-#define GROUPS (sizeof(groups) / sizeof(groups[0]))
-_Static_assert(GROUPS == UI_GROUPS, "UI group inventory must stay in sync");
-static const char *clock_modes[] = {"OFF",    "MANUAL", "RISE",     "TRIANGLE",
-                                    "SQUARE", "RANDOM", "SEQUENCE", "DIVE"};
-static const char *targets[] = {"AUTO",       "SAA1099",   "SN1 LEFT",      "SN2 RIGHT",
-                                "LAYER MONO", "SN STEREO", "SAA+SN STEREO", "OFF"};
-static const uint8_t counts[] = {4, 11, 12, 10, 10, 4, 6, 4, 5, 11, 7, 2};
-static const char *cv_roles[] = {"PITCH 1V/OCT", "SN BASE DROP", "SN FX DEPTH",  "SN PAIR WIDTH",
-                                 "MASTER LEVEL", "SAA PAN",      "TREMOLO DEPTH"};
-static const char *cv_scales[] = {"OFF",    "CHROMATIC",   "MAJOR",       "NATURAL MINOR",
-                                  "DORIAN", "MINOR PENTA", "MAJOR PENTA", "WHOLE TONE"};
-static const unsigned glide_ms[] = {0, 10, 30, 60, 120, 250, 500, 1000};
-static const char *arp_names[] = {"OFF",     "MAJOR",   "MINOR",   "OCTAVE",
-                                  "MAJOR 7", "MINOR 7", "MINOR 6", "POWER"};
-/* A small 5x7 alphabet, column bits from top to bottom. */
+#include <math.h>
+#include <stddef.h>
+#include <stdlib.h>
 static const uint8_t glyph[36][5] = {
     {0x3e, 0x51, 0x49, 0x45, 0x3e}, {0, 0x42, 0x7f, 0x40, 0},       {0x42, 0x61, 0x51, 0x49, 0x46},
     {0x21, 0x41, 0x45, 0x4b, 0x31}, {0x18, 0x14, 0x12, 0x7f, 0x10}, {0x27, 0x45, 0x45, 0x45, 0x39},
@@ -32,8 +18,826 @@ static const uint8_t glyph[36][5] = {
     {0x7f, 0x09, 0x19, 0x29, 0x46}, {0x46, 0x49, 0x49, 0x49, 0x31}, {0x01, 0x01, 0x7f, 0x01, 0x01},
     {0x3f, 0x40, 0x40, 0x40, 0x3f}, {0x1f, 0x20, 0x40, 0x20, 0x1f}, {0x3f, 0x40, 0x38, 0x40, 0x3f},
     {0x63, 0x14, 0x08, 0x14, 0x63}, {0x07, 0x08, 0x70, 0x08, 0x07}, {0x61, 0x51, 0x49, 0x45, 0x43}};
-static void text(Ui *u, int x, int y, const char *s) {
-    for (; *s && x < 124; s++, x += 6) {
+/* All ordinary pages share the same selection/edit/back state machine. */
+typedef enum { U8, I8, U16, LINK, ACTION } ItemType;
+typedef struct {
+    const char *label;
+    void *ptr;
+    int min, max, step;
+    const char *const *names;
+    ItemType type;
+    unsigned key;
+    bool structural;
+} Item;
+enum {
+    A_PANIC = 100,
+    A_SAVE,
+    A_LOAD,
+    A_INIT,
+    A_SAVE_SOUND,
+    A_LOAD_SOUND,
+    A_NAME_SCENE,
+    A_NAME_PART,
+    A_NAME_SOUND,
+    A_COPY,
+    A_SAVE_SYSTEM,
+    A_BOOT,
+    A_CAL0,
+    A_CAL1,
+    A_CAL2,
+    A_CAL3,
+    A_GRID_NOTE,
+    A_GRID_GATE,
+    A_GRID_VEL,
+    A_GRID_MOD,
+    A_CLOCK_GRID,
+    A_VERSION
+};
+static const char *const roots[] = {"PLAY", "SOUND", "ROUTE", "MOTION", "SCENE", "SYSTEM"};
+static const char *const yesno[] = {"OFF", "ON"};
+static const char *const shape_names[] = {"ZERO",  "MAX",      "DECAY 1",  "SAW DOWN",
+                                          "TRI 1", "TRIANGLE", "ATTACK 1", "SAW UP"};
+static const char *const modes[] = {"POLY", "MONO", "LEGATO"};
+static const char *const cv_modes[] = {"OFF", "NOTE", "MOD"};
+static const char *const gates[] = {"OFF", "NOTE", "RETRIGGER", "STEP", "FX TRIGGER"};
+static const char *const scales[] = {"OFF",    "CHROMATIC", "MAJOR",     "MINOR",
+                                     "DORIAN", "MIN PENTA", "MAJ PENTA", "WHOLE TONE"};
+static const char *const glide_names[] = {"0 MS",   "10 MS",  "30 MS",  "60 MS",
+                                          "120 MS", "250 MS", "500 MS", "1000 MS"};
+static const char *const references[] = {"4 MHZ", "2 MHZ", "1 MHZ"};
+static const char *const clock_modes[] = {"OFF",    "MANUAL", "RISE",     "TRIANGLE",
+                                          "SQUARE", "RANDOM", "SEQUENCE", "DIVE"};
+static const char *const arp_names[] = {"OFF", "UP", "DOWN", "UP DOWN", "RANDOM", "CHORD"};
+static const char *const dir_names[] = {"FORWARD", "REVERSE", "RANDOM"};
+static const char *const lfo_names[] = {"SINE", "TRIANGLE", "SQUARE", "SAMPLE HOLD"};
+static const char *const test_names[] = {"OFF", "SINGLE", "REPEAT", "HOLD"};
+static const char *const rates[] = {"0.5 HZ", "1 HZ",  "2 HZ",  "4 HZ",
+                                    "8 HZ",   "16 HZ", "32 HZ", "64 HZ"};
+static void toast(Ui *u, const char *s, uint32_t now) {
+    snprintf(u->toast, sizeof(u->toast), "%s", s);
+    u->toast_until = now + 1400;
+}
+static int read_item(const Item *i) {
+    if (i->type == I8)
+        return *(int8_t *)i->ptr;
+    if (i->type == U16)
+        return *(uint16_t *)i->ptr;
+    return *(uint8_t *)i->ptr;
+}
+static void write_item(const Item *i, void *ptr, int v) {
+    if (i->type == I8)
+        *(int8_t *)ptr = (int8_t)v;
+    else if (i->type == U16)
+        *(uint16_t *)ptr = (uint16_t)v;
+    else
+        *(uint8_t *)ptr = (uint8_t)v;
+}
+static unsigned build(Ui *u, Item a[32]) {
+    Engine *e = u->engine;
+    StScene *scene = &e->preset.studio;
+    StPart *p = &scene->part[u->part];
+    StSound *s = &p->sound;
+    unsigned n = 0;
+#define V(l, p, t, lo, hi, st, opt)                                                                \
+    a[n++] = (Item) {                                                                              \
+        l, p, lo, hi, st, opt, t, 0, false                                                         \
+    }
+#define S(l, p, t, lo, hi, st, opt)                                                                \
+    do {                                                                                           \
+        V(l, p, t, lo, hi, st, opt);                                                               \
+        a[n - 1].structural = true;                                                                \
+    } while (0)
+#define L(l, page) a[n++] = (Item){.label = l, .type = LINK, .key = page}
+#define A(l, id)                                                                                   \
+    a[n++] = (Item) {                                                                              \
+        .label = l, .type = ACTION, .key = id                                                      \
+    }
+#define PART() V("PART", &u->part, U8, 0, ST_PARTS - 1, 1, NULL)
+    switch (u->page) {
+    case UI_PLAY:
+        PART();
+        for (unsigned k = 0; k < 4; k++)
+            V(st_param_names[s->macro_dest[k]], &s->macro[k], I8, -100, 100, 1, NULL);
+        V("TEST", &u->test_mode, U8, 0, 3, 1, test_names);
+        V("TEST NOTE", &u->test_note, U8, 0, 127, 1, NULL);
+        V("SEQUENCE", &e->studio.running, U8, 0, 1, 1, yesno);
+        V("MUTE", &e->studio.mute[u->part], U8, 0, 1, 1, yesno);
+        V("MASTER", &e->preset.mix[0], U8, 0, 100, 1, NULL);
+        L("CHIP MIX", UI_MIX);
+        A("ALL NOTES OFF", A_PANIC);
+        break;
+    case UI_SOUND:
+        PART();
+        S("MODEL", &s->model, U8, 0, ST_MODELS - 1, 1, st_model_names);
+        L("OSCILLATOR", UI_OSC);
+        L("AMP ENVELOPE", UI_AMP);
+        L("VOICE / PITCH", UI_VOICE);
+        L("MACRO MAP", UI_MACROS);
+        L("SOUND LIBRARY", UI_LIBRARY);
+        L("PART SETUP", UI_PARTS);
+        V("TEST", &u->test_mode, U8, 0, 3, 1, test_names);
+        break;
+    case UI_OSC:
+        if (s->model == ST_SAA_ENV || s->model == ST_SAA_AM) {
+            V("WAVE", &s->shape, U8, 0, 7, 1, shape_names);
+            V("STEPS", &s->steps, U8, 8, 16, 8, NULL);
+            V("R INVERT", &s->invert, U8, 0, 1, 1, yesno);
+            V("KEY RESET", &s->retrigger, U8, 0, 1, 1, yesno);
+            if (s->model == ST_SAA_AM)
+                V("ENV CLK ST", &s->noise_mix, U8, 0, 100, 1, NULL);
+        } else if (s->model == ST_SAA_NOISE || s->model == ST_SAA_MIX || s->model >= ST_SN_NOISE) {
+            if (s->model >= ST_SN_NOISE)
+                V("WHITE NOISE", &s->shape, U8, 0, 1, 1, yesno);
+            if (s->model != ST_SN_METAL)
+                S("NOISE RATE", &s->noise_rate, U8, 0, 3, 1, NULL);
+            if (s->model == ST_SN_METAL)
+                V("TONE MIX", &s->noise_mix, U8, 0, 100, 1, NULL);
+        }
+        V("SWEEP ST", &s->sweep, I8, -48, 48, 1, NULL);
+        L("RESOURCE MAP", UI_RESOURCES);
+        break;
+    case UI_AMP:
+        V("ATTACK MS", &s->attack, U16, 0, 8000, 5, NULL);
+        V("DECAY MS", &s->decay, U16, 0, 8000, 10, NULL);
+        V("SUSTAIN", &s->sustain, U8, 0, 100, 1, NULL);
+        V("RELEASE MS", &s->release, U16, 0, 8000, 10, NULL);
+        V("LEVEL", &s->level, U8, 0, 100, 1, NULL);
+        V("PAN", &s->pan, U8, 0, 100, 1, NULL);
+        break;
+    case UI_VOICE:
+        S("POLYPHONY", &p->poly, U8, 1, (int)studio_limit(s->model), 1, NULL);
+        V("MODE", &s->mode, U8, 0, 2, 1, modes);
+        V("GLIDE", &s->glide, U8, 0, 7, 1, glide_names);
+        V("TRANSPOSE", &s->transpose, I8, -48, 48, 1, NULL);
+        V("FINE CENT", &s->fine, I8, -50, 50, 1, NULL);
+        V("DETUNE CENT", &s->detune, U8, 0, 50, 1, NULL);
+        V("LOW NOTE", &p->low, U8, 0, 127, 1, NULL);
+        V("HIGH NOTE", &p->high, U8, 0, 127, 1, NULL);
+        V("VELOCITY", &p->velocity_curve, U8, 0, 3, 1, NULL);
+        L("RESOURCE MAP", UI_RESOURCES);
+        break;
+    case UI_MACROS:
+        V("MACRO", &u->macro, U8, 0, 3, 1, NULL);
+        V("DESTINATION", &s->macro_dest[u->macro], U8, 0, ST_PARAMS - 1, 1, st_param_names);
+        V("VALUE", &s->macro[u->macro], I8, -100, 100, 1, NULL);
+        V("VIBRATO ST", &s->vibrato, U8, 0, 100, 1, NULL);
+        V("TREMOLO", &s->tremolo, U8, 0, 100, 1, NULL);
+        V("LFO RATE", &s->lfo_rate, U8, 0, 7, 1, rates);
+        V("LFO SHAPE", &p->lfo_shape, U8, 0, 3, 1, lfo_names);
+        break;
+    case UI_ROUTE:
+        L("USB MIDI", UI_USB);
+        L("TRS MIDI", UI_TRS);
+        A("CV / GATE 1", UI_CV);
+        A("CV / GATE 2", UI_GATE);
+        L("MOD MATRIX", UI_MOD);
+        break;
+    case UI_USB:
+    case UI_TRS:
+        u->target_part = (scene->route[u->page == UI_TRS][u->channel] & (1u << u->part)) != 0;
+        V("CHANNEL", &u->channel, U8, 0, 15, 1, NULL);
+        PART();
+        V("TO PART", &u->target_part, U8, 0, 1, 1,
+          yesno); /* virtual bit value; refreshed by ui_open/edit */
+        V("LOW NOTE", &p->low, U8, 0, 127, 1, NULL);
+        V("HIGH NOTE", &p->high, U8, 0, 127, 1, NULL);
+        V("TRANSPOSE", &s->transpose, I8, -48, 48, 1, NULL);
+        if (u->page == UI_TRS)
+            V("TO USB", &e->preset.route[1].forward, U8, 0, 1, 1, yesno);
+        break;
+    case UI_CV: {
+        StCv *c = &scene->cv[u->cv_input];
+        V("MODE", &c->mode, U8, 0, 2, 1, cv_modes);
+        if (c->mode == 2 && c->parameter >= ST_CLOCK_BASE) {
+            L("GLOBAL BOTH SN", UI_SN_CLOCK);
+        } else
+            V("TO PART", &c->part, U8, 0, ST_PARTS - 1, 1, NULL);
+        if (c->mode == 1) {
+            V("0V NOTE", &c->base_note, U8, 0, 127, 1, NULL);
+            V("SCALE", &c->scale, U8, 0, CV_SCALES - 1, 1, scales);
+            V("ROOT", &c->root, U8, 0, 11, 1, NULL);
+            V("GLIDE", &c->glide, U8, 0, 7, 1, glide_names);
+        }
+        if (c->mode == 2) {
+            V("PARAMETER", &c->parameter, U8, 0, ST_PARAMS - 1, 1, st_param_names);
+            V("AMOUNT", &c->amount, I8, -100, 100, 1, NULL);
+            V("10V RANGE", &c->range, U8, 0, 1, 1, yesno);
+        }
+        L("GATE ROUTE", UI_GATE);
+        break;
+    }
+    case UI_GATE: {
+        StCv *c = &scene->cv[u->cv_input];
+        V("FUNCTION", &c->gate, U8, 0, 4, 1, gates);
+        V("TO PART", &c->gate_part, U8, 0, ST_PARTS - 1, 1, NULL);
+        V("FIXED NOTE", &c->gate_note, U8, 0, 127, 1, NULL);
+        L("CV ROUTE", UI_CV);
+        break;
+    }
+    case UI_MOTION:
+        PART();
+        L("SN CLOCK: BOTH", UI_SN_CLOCK);
+        L("ARPEGGIATOR", UI_ARP);
+        L("SEQUENCER", UI_SEQ);
+        L("MOD MATRIX", UI_MOD);
+        L("TEMPO / SYNC", UI_TEMPO);
+        break;
+    case UI_SN_CLOCK:
+        V("BASE", &e->preset.sn_reference, U8, 0, 2, 1, references);
+        V("FX", &e->preset.sn_clock.mode, U8, 0, SN_CLOCK_MODES - 1, 1, clock_modes);
+        V("BASE DROP ST", &e->preset.sn_clock.base, U8, 0, 48, 1, NULL);
+        V("DEPTH ST", &e->preset.sn_clock.depth, U8, 0, 48, 1, NULL);
+        V("RATE", &e->preset.sn_clock.rate, U8, 0, 15, 1, NULL);
+        V("SYNC DIV", &e->preset.sn_clock.sync, U8, 0, 8, 1, NULL);
+        V("RETRIGGER", &e->preset.sn_clock.retrigger, U8, 0, 1, 1, yesno);
+        V("TRIGGER SRC", &e->preset.sn_trigger_source, U8, 0, 7, 1, NULL);
+        L("CLOCK STEPS", UI_CLOCK_STEPS);
+        break;
+    case UI_SEQ:
+        V("PART ENABLE", &p->sequence, U8, 0, 1, 1, yesno);
+        V("TRANSPORT", &e->studio.running, U8, 0, 1, 1, yesno);
+        V("LENGTH", &p->length, U8, 1, 16, 1, NULL);
+        V("TICKS/STEP", &p->division, U8, 1, 24, 1, NULL);
+        V("DIRECTION", &p->direction, U8, 0, 2, 1, dir_names);
+        A("NOTE STEPS", A_GRID_NOTE);
+        A("GATE STEPS", A_GRID_GATE);
+        A("VEL STEPS", A_GRID_VEL);
+        A("MACRO1 STEPS", A_GRID_MOD);
+        break;
+    case UI_ARP:
+        V("MODE", &p->arp, U8, 0, 5, 1, arp_names);
+        V("OCTAVES", &p->arp_octaves, U8, 1, 4, 1, NULL);
+        V("TICKS/STEP", &p->division, U8, 1, 24, 1, NULL);
+        break;
+    case UI_MOD:
+        V("SLOT", &u->mod_slot, U8, 0, ST_MODS - 1, 1, NULL);
+        V("SOURCE", &scene->mod[u->mod_slot].source, U8, 0, 4 + ST_PARTS * 2, 1, NULL);
+        V("TO PART", &scene->mod[u->mod_slot].part, U8, 0, ST_PARTS - 1, 1, NULL);
+        V("PARAMETER", &scene->mod[u->mod_slot].parameter, U8, 0, ST_PARAMS - 1, 1, st_param_names);
+        V("AMOUNT", &scene->mod[u->mod_slot].amount, I8, -100, 100, 1, NULL);
+        break;
+    case UI_TEMPO:
+        V("BPM", &e->preset.tempo, U8, 0, 210, 1, NULL);
+        V("CLOCK POLICY", &e->preset.clock_policy, U8, 0, 3, 1, NULL);
+        V("MIDI SOURCE", &e->preset.clock_source, U8, 0, 1, 1, NULL);
+        V("GATE CLOCK", &scene->gate_clock, U8, 0, 1, 1, NULL);
+        break;
+    case UI_SCENE:
+        V("SLOT", &u->slot, U8, 0, PRESETS - 1, 1, NULL);
+        A("SAVE SCENE", A_SAVE);
+        A("DISCARD + LOAD", A_LOAD);
+        A("NAME", A_NAME_SCENE);
+        L("PART SETUP", UI_PARTS);
+        L("SOUND LIBRARY", UI_LIBRARY);
+        A("NEW SCENE", A_INIT);
+        break;
+    case UI_PARTS:
+        PART();
+        S("ENABLED", &p->enabled, U8, 0, 1, 1, yesno);
+        S("MODEL", &s->model, U8, 0, ST_MODELS - 1, 1, st_model_names);
+        S("POLYPHONY", &p->poly, U8, 1, (int)studio_limit(s->model), 1, NULL);
+        A("PART NAME", A_NAME_PART);
+        V("COPY TO", &u->target_part, U8, 0, ST_PARTS - 1, 1, NULL);
+        A("COPY SOUND", A_COPY);
+        L("RESOURCE MAP", UI_RESOURCES);
+        break;
+    case UI_LIBRARY:
+        V("SLOT", &u->library_slot, U8, 0, ST_SOUNDS - 1, 1, NULL);
+        A("LOAD SOUND", A_LOAD_SOUND);
+        A("SAVE SOUND", A_SAVE_SOUND);
+        A("NAME SOUND", A_NAME_SOUND);
+        A("SAVE LIBRARY", A_SAVE_SYSTEM);
+        break;
+    case UI_SYSTEM:
+        L("RESOURCE MAP", UI_RESOURCES);
+        L("CV CALIBRATION", UI_CAL);
+        L("INPUT MONITOR", UI_MONITOR);
+        V("BRIGHTNESS", &u->settings->brightness, U8, 10, 100, 5, NULL);
+        A("SAVE SYSTEM", A_SAVE_SYSTEM);
+        A("USB UPDATE", A_BOOT);
+        A("VERSION", A_VERSION);
+        break;
+    case UI_CAL:
+        A("CV1 SET 0V", A_CAL0);
+        A("CV1 SET 1V", A_CAL1);
+        A("CV2 SET 0V", A_CAL2);
+        A("CV2 SET 1V", A_CAL3);
+        A("SAVE CAL", A_SAVE_SYSTEM);
+        break;
+    case UI_CLOCK_STEPS:
+        V("STEP", &u->sequence_step, U8, 0, 7, 1, NULL);
+        V("VALUE", &e->preset.clock_sequence[u->sequence_step], U8, 0, 100, 1, NULL);
+        break;
+    case UI_MIX:
+        V("MASTER", &e->preset.mix[0], U8, 0, 100, 1, NULL);
+        V("SAA", &e->preset.mix[1], U8, 0, 100, 1, NULL);
+        V("SN LEFT", &e->preset.mix[2], U8, 0, 100, 1, NULL);
+        V("SN RIGHT", &e->preset.mix[3], U8, 0, 100, 1, NULL);
+        break;
+    case UI_GRID:
+        if (u->grid_lane == 0)
+            V("NOTE", &p->note[u->grid_step], U8, 0, 127, 1, NULL);
+        if (u->grid_lane == 1)
+            V("GATE", &p->gate[u->grid_step], U8, 0, 100, 1, NULL);
+        if (u->grid_lane == 2)
+            V("VELOCITY", &p->velocity[u->grid_step], U8, 0, 127, 1, NULL);
+        if (u->grid_lane == 3)
+            V("MACRO 1", &p->motion[u->grid_step], I8, -100, 100, 1, NULL);
+        break;
+    default:
+        break;
+    }
+#undef V
+#undef S
+#undef L
+#undef A
+#undef PART
+    return n;
+}
+static Item scratch[32];
+unsigned ui_count(Ui *u) {
+    return build(u, scratch);
+}
+void ui_open(Ui *u, unsigned page) {
+    if (page >= UI_PAGES)
+        return;
+    for (unsigned i = 1; i < u->depth; i++)
+        if (u->path[i] == page) {
+            u->depth = (uint8_t)i;
+            u->page = (uint8_t)page;
+            u->field = u->cursor[i];
+            u->edit = false;
+            return;
+        }
+    if (u->depth < 4) {
+        u->path[u->depth] = u->page;
+        u->cursor[u->depth] = u->field;
+        u->depth++;
+    }
+    u->page = (uint8_t)page;
+    u->field = u->memory[page];
+    u->edit = false;
+    u->menu = true;
+    unsigned count = ui_count(u);
+    if (count && u->field >= count)
+        u->field = 0;
+}
+void ui_init(Ui *u, Settings *settings, Engine *e, bool (*save)(void *),
+             bool (*calibrate)(void *, unsigned, bool), void *ctx) {
+    memset(u, 0, sizeof(*u));
+    u->settings = settings;
+    u->engine = e;
+    u->save = save;
+    u->calibrate = calibrate;
+    u->ctx = ctx;
+    u->slot = settings->selected;
+    u->test_note = 48;
+    e->library = settings;
+    studio_activate(e);
+    for (unsigned i = 0; i < 2; i++)
+        e->preset.route[i].channel = 0;
+}
+static bool set_value(Ui *u, const Item *item, int value) {
+    Engine *e = u->engine;
+    unsigned previous_part = u->part;
+    uintptr_t ptr = (uintptr_t)item->ptr, begin = (uintptr_t)&e->preset.studio,
+              end = begin + sizeof(StScene);
+    if (ptr >= begin && ptr < end) {
+        u->candidate = e->preset.studio;
+        write_item(item, (uint8_t *)&u->candidate + (ptr - begin), value);
+        if (item->ptr == &e->preset.studio.part[u->part].sound.model &&
+            value != e->preset.studio.part[u->part].sound.model) {
+            StPart *p = &u->candidate.part[u->part];
+            StSound defaults;
+            studio_sound_default(&defaults, (unsigned)value);
+            memcpy(p->sound.macro_dest, defaults.macro_dest, 4);
+            memset(p->sound.macro, 0, 4);
+            p->poly =
+                (uint8_t)(p->poly > studio_limit((unsigned)value) ? studio_limit((unsigned)value)
+                                                                  : p->poly);
+            if (value == ST_SAA_ENV || value == ST_SAA_AM)
+                p->sound.shape = 5;
+            else if (value >= ST_SN_NOISE) {
+                p->sound.shape = value == ST_SN_METAL ? 0 : 1;
+                if (value == ST_SN_METAL)
+                    p->sound.noise_rate = 3;
+            }
+        }
+        return studio_apply(e, &u->candidate);
+    }
+    write_item(item, item->ptr, value);
+    if (item->ptr == &u->part && u->part != previous_part && e->studio.test_on)
+        studio_test(e, u->part, u->test_note, u->test_mode);
+    if (item->ptr == &u->settings->brightness)
+        u->system_dirty = true;
+    if (item->ptr == &u->target_part && (u->page == UI_USB || u->page == UI_TRS)) {
+        uint16_t *route = &e->preset.studio.route[u->page == UI_TRS][u->channel];
+        if (value)
+            *route |= (uint16_t)(1u << u->part);
+        else
+            *route &= (uint16_t) ~(1u << u->part);
+    }
+    if (item->ptr == &e->studio.running)
+        studio_run(e, value != 0);
+    if (item->ptr == &u->test_mode || item->ptr == &u->test_note)
+        studio_test(e, u->part, u->test_note, u->test_mode);
+    return true;
+}
+static void back(Ui *u, uint32_t now) {
+    if (u->confirm) {
+        u->confirm = false;
+        return;
+    }
+    if (u->edit) {
+        Item *list = scratch;
+        unsigned n = build(u, list);
+        if (u->page == UI_NAME)
+            u->name[u->name_cursor] = (char)u->original;
+        else if (u->previewed && u->field < n)
+            (void)set_value(u, &list[u->field], u->original);
+        u->edit = false;
+        u->previewed = false;
+        u->dirty = u->was_dirty;
+        u->system_dirty = u->was_system_dirty;
+        return;
+    }
+    if (u->depth) {
+        u->memory[u->page] = u->field;
+        u->depth--;
+        u->page = u->path[u->depth];
+        u->field = u->cursor[u->depth];
+        u->menu = u->depth != 0;
+    }
+    (void)now;
+}
+static void perform(Ui *u, unsigned action, uint32_t now) {
+    Engine *e = u->engine;
+    Settings *s = u->settings;
+    switch (action) {
+    case A_PANIC:
+        engine_panic(e, -1);
+        u->test_mode = 0;
+        u->edit = u->confirm = u->previewed = false;
+        toast(u, "ALL NOTES OFF", now);
+        return;
+    case A_SAVE: {
+        u->undo = s->preset[u->slot];
+        uint8_t old = s->selected;
+        s->preset[u->slot] = e->preset;
+        s->selected = u->slot;
+        if (u->save && u->save(u->ctx)) {
+            u->dirty = false;
+            u->system_dirty = false;
+            toast(u, "SCENE SAVED", now);
+        } else {
+            s->preset[u->slot] = u->undo;
+            s->selected = old;
+            toast(u, "SAVE FAILED", now);
+        }
+        break;
+    }
+    case A_LOAD:
+        engine_preset(e, &s->preset[u->slot]);
+        studio_activate(e);
+        s->selected = u->slot;
+        u->test_mode = 0;
+        u->dirty = false;
+        toast(u, "SCENE LOADED", now);
+        break;
+    case A_INIT:
+        u->candidate = e->preset.studio;
+        studio_default(&u->candidate);
+        u->candidate.enabled = 1;
+        (void)studio_apply(e, &u->candidate);
+        u->dirty = true;
+        toast(u, "NEW SCENE", now);
+        break;
+    case A_SAVE_SOUND: {
+        StSound old = s->sounds[u->library_slot];
+        char name[9];
+        memcpy(name, s->sound_name[u->library_slot], 9);
+        uint16_t used = s->sound_used;
+        s->sounds[u->library_slot] = e->preset.studio.part[u->part].sound;
+        memcpy(s->sound_name[u->library_slot], e->preset.studio.part[u->part].name, 9);
+        s->sound_used |= (uint16_t)(1u << u->library_slot);
+        if (u->save && u->save(u->ctx)) {
+            u->system_dirty = false;
+            toast(u, "SOUND SAVED", now);
+        } else {
+            s->sounds[u->library_slot] = old;
+            memcpy(s->sound_name[u->library_slot], name, 9);
+            s->sound_used = used;
+            toast(u, "SAVE FAILED", now);
+        }
+        break;
+    }
+    case A_LOAD_SOUND:
+        if (!(s->sound_used & (1u << u->library_slot))) {
+            toast(u, "EMPTY SLOT", now);
+            break;
+        }
+        u->candidate = e->preset.studio;
+        u->candidate.part[u->part].sound = s->sounds[u->library_slot];
+        u->candidate.part[u->part].poly = (uint8_t)fminf(
+            u->candidate.part[u->part].poly, (float)studio_limit(s->sounds[u->library_slot].model));
+        if (studio_apply(e, &u->candidate)) {
+            memcpy(e->preset.studio.part[u->part].name, s->sound_name[u->library_slot], 9);
+            u->dirty = true;
+            toast(u, "SOUND LOADED", now);
+        } else
+            toast(u, "NO ROOM: RESOURCES", now);
+        break;
+    case A_COPY:
+        u->candidate = e->preset.studio;
+        u->candidate.part[u->target_part].sound = e->preset.studio.part[u->part].sound;
+        if (studio_apply(e, &u->candidate)) {
+            u->dirty = true;
+            toast(u, "SOUND COPIED", now);
+        } else
+            toast(u, "NO ROOM: RESOURCES", now);
+        break;
+    case A_SAVE_SYSTEM:
+        if (u->save && u->save(u->ctx)) {
+            u->system_dirty = false;
+            toast(u, "SYSTEM SAVED", now);
+        } else
+            toast(u, "SAVE FAILED", now);
+        break;
+    case A_BOOT:
+        engine_panic(e, -1);
+        u->boot_requested = true;
+        break;
+    default:
+        break;
+    }
+}
+static void action(Ui *u, unsigned a, uint32_t now) {
+    if (a == A_VERSION) {
+        toast(u, "V0.5.0 ALPHA", now);
+        return;
+    }
+    if (u->page == UI_ROUTE && (a == UI_CV || a == UI_GATE)) {
+        u->cv_input = (uint8_t)(a == UI_GATE);
+        ui_open(u, UI_CV);
+        return;
+    }
+    if (a >= A_CAL0 && a <= A_CAL3) {
+        unsigned k = a - A_CAL0;
+        toast(u,
+              u->calibrate && u->calibrate(u->ctx, k / 2, (k & 1) != 0) ? "CAL OK: SAVE SYSTEM"
+                                                                        : "CAL FAILED",
+              now);
+        return;
+    }
+    if (a >= A_GRID_NOTE && a <= A_GRID_MOD) {
+        u->grid_lane = (uint8_t)(a - A_GRID_NOTE);
+        u->grid_step = 0;
+        ui_open(u, UI_GRID);
+        return;
+    }
+    if (a == A_NAME_SCENE || a == A_NAME_PART || a == A_NAME_SOUND) {
+        u->name_target = (uint8_t)(a - A_NAME_SCENE);
+        memcpy(u->name,
+               a == A_NAME_SCENE  ? u->engine->preset.studio.name
+               : a == A_NAME_PART ? u->engine->preset.studio.part[u->part].name
+                                  : u->settings->sound_name[u->library_slot],
+               9);
+        if (!u->name[0])
+            memcpy(u->name, "SOUND   ", 9);
+        u->name_cursor = 0;
+        ui_open(u, UI_NAME);
+        return;
+    }
+    if (a == A_PANIC) {
+        perform(u, a, now);
+        return;
+    }
+    u->confirm = true;
+    u->confirm_yes = false;
+    u->confirm_action = (uint8_t)a;
+}
+void ui_click(Ui *u, unsigned button, bool long_press, uint32_t now) {
+    if (button > 2)
+        return;
+    if (long_press && button == 1) {
+        back(u, now);
+        return;
+    }
+    int delta = button == 0 ? -1 : 1;
+    if (u->confirm) {
+        if (button == 1) {
+            bool yes = u->confirm_yes;
+            unsigned a = u->confirm_action;
+            u->confirm = false;
+            if (yes)
+                perform(u, a, now);
+        } else
+            u->confirm_yes = !u->confirm_yes;
+        return;
+    }
+    if (u->page == UI_NAME && u->depth) {
+        static const char chars[] = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-";
+        if (u->edit) {
+            if (button == 1)
+                u->edit = false;
+            else {
+                const char *p = strchr(chars, u->name[u->name_cursor]);
+                int i = p ? (int)(p - chars) : 0;
+                u->name[u->name_cursor] =
+                    chars[(i + delta + (int)sizeof(chars) - 1) % ((int)sizeof(chars) - 1)];
+            }
+        } else if (button == 1) {
+            if (u->name_cursor == 8) {
+                if (u->name_target == 0)
+                    memcpy(u->engine->preset.studio.name, u->name, 9);
+                else if (u->name_target == 1)
+                    memcpy(u->engine->preset.studio.part[u->part].name, u->name, 9);
+                else {
+                    memcpy(u->settings->sound_name[u->library_slot], u->name, 9);
+                    u->system_dirty = true;
+                }
+                u->dirty = true;
+                back(u, now);
+            } else {
+                u->edit = true;
+                u->original = u->name[u->name_cursor];
+            }
+        } else
+            u->name_cursor = (uint8_t)((u->name_cursor + delta + 9) % 9);
+        return;
+    }
+    Item *list = scratch;
+    unsigned count = build(u, list);
+    if (u->edit) {
+        if (u->field >= count) {
+            u->edit = false;
+            return;
+        }
+        Item *i = &list[u->field];
+        if (button == 1) {
+            if (set_value(u, i, u->draft)) {
+                u->edit = false;
+                u->dirty = true;
+            } else {
+                unsigned conflict = 0;
+                char message[22];
+                if (i->ptr == &u->engine->preset.studio.part[u->part].poly) {
+                    unsigned max = (unsigned)u->draft;
+                    while (max > 1) {
+                        u->candidate.part[u->part].poly = (uint8_t)--max;
+                        if (studio_plan(&u->candidate, NULL, NULL, NULL))
+                            break;
+                    }
+                    snprintf(message, sizeof(message), "%c MAX %u VOICES", 'A' + u->part, max % 10);
+                } else if (!studio_plan(&u->candidate, NULL, NULL, &conflict))
+                    snprintf(message, sizeof(message), "NO ROOM: PART %c", 'A' + conflict);
+                else
+                    snprintf(message, sizeof(message), "INVALID SETTING");
+                toast(u, message, now);
+            }
+
+        } else {
+            int multiplier =
+                (!i->names && i->max - i->min >= 100 && u->acceleration) ? u->acceleration : 1;
+            int value = u->draft + delta * i->step * multiplier;
+            if (value < i->min)
+                value = i->min;
+            if (value > i->max)
+                value = i->max;
+            u->draft = value;
+            if (!i->structural && set_value(u, i, value))
+                u->previewed = true;
+        }
+        return;
+    }
+    if (!u->depth) {
+        if (button == 1) {
+            u->page = u->group;
+            ui_open(u, u->group);
+        } else
+            u->group = (uint8_t)((u->group + delta + 6) % 6);
+        return;
+    }
+    if (u->page == UI_GRID && button != 1) {
+        unsigned len = u->engine->preset.studio.part[u->part].length;
+        u->grid_step = (uint8_t)((u->grid_step + delta + (int)len) % (int)len);
+        return;
+    }
+    if (button != 1) {
+        if (count)
+            u->field = (uint8_t)((u->field + delta + (int)count) % (int)count);
+        return;
+    }
+    if (!count)
+        return;
+    if (u->field >= count)
+        u->field = 0;
+    Item *i = &list[u->field];
+    if (i->type == LINK) {
+        ui_open(u, i->key);
+        return;
+    }
+    if (i->type == ACTION) {
+        action(u, i->key, now);
+        return;
+    }
+    if ((u->page == UI_USB || u->page == UI_TRS) && i->ptr == &u->target_part)
+        u->target_part =
+            (u->engine->preset.studio.route[u->page == UI_TRS][u->channel] & (1u << u->part)) != 0;
+    u->edit = true;
+    u->previewed = false;
+    u->was_dirty = u->dirty;
+    u->was_system_dirty = u->system_dirty;
+    u->original = read_item(i);
+    u->undo = u->engine->preset;
+    u->draft = u->original;
+}
+void ui_buttons(Ui *u, const bool down[3], uint32_t now) {
+    /* Chord capture precedes individual actions. A release cannot leak a click. */
+    bool both = down[0] && down[2];
+    if (both && !u->chord) {
+        u->chord = true;
+        u->chord_sent = false;
+        u->chord_since = now;
+    }
+    if (u->chord) {
+        for (unsigned b = 0; b < 3; b++) {
+            u->raw[b] = u->stable[b] = down[b];
+            u->long_sent[b] = true;
+            u->changed[b] = now;
+        }
+        if (both && !u->chord_sent && now - u->chord_since >= 900) {
+            perform(u, A_PANIC, now);
+            u->chord_sent = true;
+        }
+        if (!down[0] && !down[1] && !down[2])
+            u->chord = false;
+        return;
+    }
+    for (unsigned b = 0; b < 3; b++) {
+        if (down[b] != u->raw[b]) {
+            u->raw[b] = down[b];
+            u->changed[b] = now;
+        }
+        if (down[b] != u->stable[b] && now - u->changed[b] >= 20) {
+            u->stable[b] = down[b];
+            if (down[b]) {
+                u->pressed[b] = u->repeat[b] = now;
+                u->long_sent[b] = false;
+            } else if (!u->long_sent[b])
+                ui_click(u, b, false, now);
+        }
+        if (u->stable[b] && b == 1 && !u->long_sent[b] && now - u->pressed[b] >= 700) {
+            u->long_sent[b] = true;
+            ui_click(u, b, true, now);
+        }
+        if (u->stable[b] && b != 1 && now - u->pressed[b] >= 450 && now - u->repeat[b] >= 80) {
+            u->repeat[b] = now;
+            u->long_sent[b] = true;
+            u->acceleration = (uint8_t)(now - u->pressed[b] > 5000   ? 64
+                                        : now - u->pressed[b] > 3000 ? 16
+                                        : now - u->pressed[b] > 1500 ? 4
+                                                                     : 1);
+            ui_click(u, b, false, now);
+            u->acceleration = 1;
+        }
+    }
+}
+static void pixel(Ui *u, int x, int y, bool white) {
+    if (x < 0 || x > 127 || y < 0 || y > 63)
+        return;
+    uint8_t *p = &u->frame[(y / 8) * 128 + x];
+    uint8_t mask = (uint8_t)(1u << (y % 8));
+    if (white)
+        *p |= mask;
+    else
+        *p &= (uint8_t)~mask;
+}
+static void box(Ui *u, int x, int y, int w, int h, bool white) {
+    for (int yy = y; yy < y + h; yy++)
+        for (int xx = x; xx < x + w; xx++)
+            pixel(u, xx, yy, white);
+}
+static void line(Ui *u, int x, int y, int x1, int y1) {
+    int dx = abs(x1 - x), sx = x < x1 ? 1 : -1, dy = -abs(y1 - y), sy = y < y1 ? 1 : -1,
+        err = dx + dy;
+    for (;;) {
+        pixel(u, x, y, true);
+        if (x == x1 && y == y1)
+            break;
+        int e = 2 * err;
+        if (e >= dy) {
+            err += dy;
+            x += sx;
+        }
+        if (e <= dx) {
+            err += dx;
+            y += sy;
+        }
+    }
+}
+static void text(Ui *u, int x, int y, const char *s, int scale, bool white) {
+    for (; *s && x < 128; s++, x += 6 * scale) {
         uint8_t g[5] = {0};
         char c = *s;
         if (c >= 'a' && c <= 'z')
@@ -42,657 +846,447 @@ static void text(Ui *u, int x, int y, const char *s) {
             memcpy(g, glyph[c - '0'], 5);
         else if (c >= 'A' && c <= 'Z')
             memcpy(g, glyph[10 + c - 'A'], 5);
-        else if (c == '#') {
-            g[0] = 0x14;
-            g[1] = 0x7f;
-            g[2] = 0x14;
-            g[3] = 0x7f;
-            g[4] = 0x14;
-        } else if (c == '-')
-            g[0] = g[1] = g[2] = g[3] = g[4] = 8;
+        else if (c == '-')
+            memset(g, 8, 5);
+        else if (c == '+') {
+            g[1] = 8;
+            g[2] = 62;
+            g[3] = 8;
+        } else if (c == ':')
+            g[2] = 20;
         else if (c == '.')
-            g[2] = 0x40;
-        else if (c == ':')
-            g[2] = 0x14;
-        else if (c == '/') {
-            g[0] = 0x40;
-            g[1] = 0x20;
-            g[2] = 0x10;
+            g[2] = 64;
+        else if (c == '*') {
+            g[0] = 20;
+            g[1] = 8;
+            g[2] = 62;
+            g[3] = 8;
+            g[4] = 20;
+        } else if (c == '/') {
+            g[0] = 64;
+            g[1] = 32;
+            g[2] = 16;
             g[3] = 8;
             g[4] = 4;
         } else if (c == '>') {
-            g[1] = 0x41;
-            g[2] = 0x22;
-            g[3] = 0x14;
+            g[1] = 65;
+            g[2] = 34;
+            g[3] = 20;
             g[4] = 8;
-        } else if (c == '+') {
-            g[1] = 8;
-            g[2] = 0x3e;
-            g[3] = 8;
+        } else if (c == '?') {
+            g[0] = 2;
+            g[1] = 1;
+            g[2] = 81;
+            g[3] = 9;
+            g[4] = 6;
+        } else if (c == '#') {
+            g[0] = 20;
+            g[1] = 127;
+            g[2] = 20;
+            g[3] = 127;
+            g[4] = 20;
         }
         for (int col = 0; col < 5; col++)
             for (int row = 0; row < 7; row++)
-                if (g[col] & (1 << row)) {
-                    int yy = y + row;
-                    if (x + col >= 0 && x + col < 128 && yy >= 0 && yy < 64)
-                        u->frame[(yy / 8) * 128 + x + col] |= (uint8_t)(1 << (yy % 8));
-                }
+                if (g[col] & (1u << row))
+                    box(u, x + col * scale, y + row * scale, scale, scale, white);
     }
 }
-static void toast(Ui *u, const char *s, uint32_t now) {
-    snprintf(u->toast, sizeof(u->toast), "%s", s);
-    u->toast_until = now + 1600;
+static void footer(Ui *u, const char *s) {
+    line(u, 0, 53, 127, 53);
+    text(u, 1, 56, s, 1, true);
 }
-void ui_init(Ui *u, Settings *s, Engine *e, bool (*save)(void *),
-             bool (*calibrate)(void *, unsigned, bool), void *ctx) {
-    memset(u, 0, sizeof(*u));
-    u->settings = s;
-    u->engine = e;
-    u->save = save;
-    u->calibrate = calibrate;
-    u->ctx = ctx;
+static void header(Ui *u, const char *s) {
+    char title[18];
+    snprintf(title, sizeof(title), "%.17s", s);
+    text(u, 0, 0, title, 1, true);
+    if (u->engine->studio.test_on)
+        text(u, 107, 0, "T", 1, true);
+    if (u->dirty)
+        text(u, 121, 0, "*", 1, true);
+    line(u, 0, 10, 127, 10);
 }
-static uint8_t *value(Ui *u, uint8_t *maximum, const char **label) {
-    Preset *p = &u->engine->preset;
-    uint8_t f = u->field;
-    *maximum = 100;
-    if (u->group == 0) {
-        static const char *names[] = {"MASTER", "SAA MIX", "SN1 MIX", "SN2 MIX"};
-        *label = names[f];
-        return &p->mix[f];
-    }
-    if (u->group == 1 || u->group == 2) {
-        Route *r = &p->route[u->group - 1];
-        if (f == 0) {
-            *label = "CHANNEL";
-            *maximum = 16;
-            return &r->channel;
-        }
-        if (f == 1) {
-            *label = "TARGET";
-            *maximum = TARGET_COUNT - 1;
-            return &r->target;
-        }
-        if (f == 2) {
-            *label = "PATCH";
-            *maximum = PATCHES - 1;
-            return &r->program;
-        }
-        unsigned source = u->group - 1;
-        if (f == (source == 0 ? 3 : 7)) {
-            *label = "CHANNEL MAP";
-            *maximum = 1;
-            return &p->channel_map[source];
-        }
-        if (f == 3) {
-            *label = "TO USB";
-            *maximum = 1;
-            return &r->forward;
-        }
-        if (f == 4) {
-            *label = "EDIT CHANNEL";
-            *maximum = 15;
-            return &u->route_channel[source];
-        }
-        MidiPart *part = &p->part[source][u->route_channel[source]];
-        if (f == 5) {
-            *label = "PART TARGET";
-            *maximum = TARGET_COUNT - 1;
-            return &part->target;
-        }
-        if (f == 6) {
-            *label = "PART PATCH";
-            *maximum = PATCHES - 1;
-            return &part->program;
-        }
-        unsigned index = f - (source == 0 ? 7u : 8u);
-        PartPerformance *performance = &p->performance[source][u->route_channel[source]];
-        static const char *names[] = {"PART TRANSPOSE", "LOW NOTE", "HIGH NOTE", "VELOCITY"};
-        *label = names[index];
-        *maximum = index == 0 ? 48 : index == 3 ? 3 : 127;
-        return index == 0   ? &performance->transpose
-               : index == 1 ? &performance->low
-               : index == 2 ? &performance->high
-                            : &performance->velocity;
-    }
-    if (u->group == 3 || u->group == 4) {
-        CvConfig *cv = &p->cv[u->group - 3];
-        if (f == 0) {
-            *label = "ENABLE";
-            *maximum = 1;
-            return &cv->enabled;
-        }
-        if (f == 1) {
-            *label = "VOICE";
-            *maximum = VOICES - 1;
-            return &cv->voice;
-        }
-        if (f == 2) {
-            *label = "PATCH";
-            *maximum = PATCHES - 1;
-            return &cv->program;
-        }
-        if (f == 3) {
-            *label = "0V NOTE";
-            *maximum = 127;
-            return &cv->base_note;
-        }
-        unsigned input = u->group - 3;
-        static const char *names[] = {"SN STEREO",  "CV ROLE", "SCALE",
-                                      "SCALE ROOT", "GLIDE",   "MOD RANGE"};
-        *label = names[f - 4];
-        *maximum = f == 5 ? CV_ROLES - 1 : f == 6 ? CV_SCALES - 1 : f == 7 ? 11 : f == 8 ? 7 : 1;
-        return f == 4   ? &p->cv_pair[input]
-               : f == 5 ? &p->cv_role[input]
-               : f == 6 ? &p->cv_scale[input]
-               : f == 7 ? &p->cv_root[input]
-               : f == 8 ? &p->cv_glide[input]
-                        : &p->cv_range[input];
-    }
-    if (u->group == 5) {
-        *maximum = PRESETS - 1;
-        *label = "SLOT";
-        return f == 0 ? &u->settings->selected : NULL;
-    }
-    if (u->group == 6) {
-        if (f == 4) {
-            *label = "INTERNAL BPM";
-            *maximum = 210;
-            return &p->tempo;
-        }
-        if (f == 5) {
-            *label = "CLOCK MODE";
-            *maximum = 2;
-            return &p->clock_policy;
-        }
-        if (f == 3) {
-            *label = "APPLY TO";
-            *maximum = 2;
-            return &p->arp_target;
-        }
-        if (f == 2) {
-            *maximum = 1;
-            *label = "CLOCK USB/TRS";
-            return &p->clock_source;
-        }
-        *maximum = f == 0 ? ARP_MODES - 1 : 16;
-        *label = f == 0 ? "CHORD" : "CLOCKS/STEP";
-        return f == 0 ? &p->arp_mode : &p->arp_rate;
-    }
-    if (u->group == 9) {
-        SnClockConfig *clock = &p->sn_clock;
-        static const char *names[] = {
-            "MODE",           "BASE DROP",       "DEPTH",   "RATE",      "MIDI CLOCKS/CYCLE",
-            "NOTE RETRIGGER", "CLOCK/CC SOURCE", "TRIGGER", "REFERENCE", "PAIR WIDTH",
-            "TRIGGER FROM"};
-        *label = names[f];
-        *maximum = f == 0             ? SN_CLOCK_MODES - 1
-                   : f == 1 || f == 2 ? 48
-                   : f == 3           ? SN_CLOCK_RATES - 1
-                   : f == 4           ? 8
-                   : f == 8           ? 2
-                   : f == 9           ? 30
-                   : f == 10          ? 7
-                                      : 1;
-        switch (f) {
-        case 0:
-            return &clock->mode;
-        case 1:
-            return &clock->base;
-        case 2:
-            return &clock->depth;
-        case 3:
-            return &clock->rate;
-        case 4:
-            return &clock->sync;
-        case 5:
-            return &clock->retrigger;
-        case 6:
-            return &p->clock_source;
-        case 8:
-            return &p->sn_reference;
-        case 9:
-            return &p->sn_width;
-        case 10:
-            return &p->sn_trigger_source;
-        default:
-            return NULL;
-        }
-    }
-    if (u->group == 10) {
-        static const char *names[] = {"SOUND GROUP",   "ATTACK SCALE", "DECAY SCALE", "SUSTAIN",
-                                      "RELEASE SCALE", "TREMOLO",      "TREMOLO RATE"};
-        *label = names[f];
-        *maximum = f == 0 ? 1 : f == 5 ? 100 : f == 6 ? 7 : 127;
-        ToneControl *control = &p->tone[u->tone_chip];
-        return f == 0   ? &u->tone_chip
-               : f == 1 ? &control->attack
-               : f == 2 ? &control->decay
-               : f == 3 ? &control->sustain
-               : f == 4 ? &control->release
-               : f == 5 ? &control->tremolo
-                        : &control->rate;
-    }
-    if (u->group == 11) {
-        *label = f == 0 ? "STEP" : "DROP PERCENT";
-        *maximum = f == 0 ? 7 : 100;
-        return f == 0 ? &u->sequence_step : &p->clock_sequence[u->sequence_step];
-    }
-    *label = "ACTION";
-    return NULL;
+static void note_name(char out[12], int n) {
+    static const char *const pitch[] = {"C",  "C#", "D",  "D#", "E",  "F",
+                                        "F#", "G",  "G#", "A",  "A#", "B"};
+    snprintf(out, 12, "%s%d", pitch[n % 12], n / 12 - 1);
 }
-static void change(Ui *u, int delta, uint32_t now) {
-    uint8_t max;
-    const char *label;
-    uint8_t *v = value(u, &max, &label);
-    if (!v)
+static void format(Ui *u, const Item *i, int v, char out[24]) {
+    Engine *e = u->engine;
+    if (i->names && v >= i->min && v <= i->max) {
+        snprintf(out, 24, "%s", i->names[v - i->min]);
         return;
-    Preset *p = &u->engine->preset;
-    uint8_t old = *v;
-    int next = (int)old + delta;
-    int min = u->group == 6 && u->field == 1 ? 1 : 0;
-    if (next < min)
-        next = max;
-    if (next > max)
-        next = min;
-    if (u->group == 10 && u->field == 3 && next > 100 && next < 127)
-        next = delta > 0 ? 127 : 100;
-    if (u->group == 0) {
-        next = (int)old + delta * 5;
-        if (next < 0)
-            next = 0;
-        if (next > 100)
-            next = 100;
     }
-    if ((u->group == 1 || u->group == 2) && (u->field == 2 || u->field == 6)) {
-        unsigned source = u->group - 1;
-        uint8_t target = u->field == 2 ? p->route[source].target
-                                       : p->part[source][u->route_channel[source]].target;
-        for (int n = 0; n < PATCHES && !engine_target_patch_ok(target, next); n++)
-            next = (next + PATCHES + delta) % PATCHES;
+    bool part_value = i->ptr == &u->part || (i->ptr == &u->target_part && u->page == UI_PARTS);
+    if (u->page == UI_CV)
+        part_value |= i->ptr == &e->preset.studio.cv[u->cv_input].part;
+    if (u->page == UI_GATE)
+        part_value |= i->ptr == &e->preset.studio.cv[u->cv_input].gate_part;
+    if (u->page == UI_MOD)
+        part_value |= i->ptr == &e->preset.studio.mod[u->mod_slot].part;
+    if (part_value) {
+        snprintf(out, 24, "%c%s", 'A' + v, e->preset.studio.part[v].enabled ? "" : " OFF");
+        return;
     }
-    if (u->group == 3 || u->group == 4) {
-        unsigned input = u->group - 3;
-        CvConfig old_cv = p->cv[input];
-        uint8_t old_pair = p->cv_pair[input];
-        CvConfig *cv = &p->cv[input];
-        if (u->field == 1 && old_pair) {
-            static const uint8_t choices[] = {6, 7, 8, 12};
-            unsigned index = 0;
-            while (index < 3 && choices[index] != old)
-                index++;
-            next = choices[(index + 4 + delta) % 4];
-        }
-        if (u->field == 2)
-            for (int n = 0; n < PATCHES && !engine_cv_patch_ok(cv->voice, next); n++) {
-                next = (next + PATCHES + delta) % PATCHES;
+    if (!strcmp(i->label, "FIXED NOTE") || !strcmp(i->label, "TEST NOTE") ||
+        !strcmp(i->label, "0V NOTE") || !strcmp(i->label, "LOW NOTE") ||
+        !strcmp(i->label, "HIGH NOTE") || (u->page == UI_GRID && u->grid_lane == 0)) {
+        char tmp[12];
+        note_name(tmp, v);
+        snprintf(out, 24, "%s", tmp);
+        return;
+    }
+    if (i->ptr == &e->preset.tempo) {
+        snprintf(out, 24, "%d BPM", v + 30);
+        return;
+    }
+    if (i->ptr == &e->preset.clock_policy) {
+        static const char *const names[] = {"AUTO", "EXTERNAL", "INTERNAL", "GATE 1/16"};
+        snprintf(out, 24, "%s", names[v]);
+        return;
+    }
+    if (i->ptr == &e->preset.clock_source) {
+        snprintf(out, 24, "%s", v ? "TRS" : "USB");
+        return;
+    }
+    if (u->page == UI_MOD && i->ptr == &e->preset.studio.mod[u->mod_slot].source) {
+        if (!v)
+            snprintf(out, 24, "OFF");
+        else if (v <= 4) {
+            static const char *const names[] = {"CV 1", "CV 2", "CC 1", "PRESSURE"};
+            snprintf(out, 24, "%s", names[v - 1]);
+        } else if (v < 5 + ST_PARTS)
+            snprintf(out, 24, "LFO %c", 'A' + v - 5);
+        else
+            snprintf(out, 24, "STEP %c", 'A' + v - 5 - ST_PARTS);
+        return;
+    }
+    if (i->ptr == &e->preset.sn_clock.sync) {
+        static const char *const names[] = {"FREE", "1/96", "1/48", "1/32", "1/24",
+                                            "1/16", "1/12", "1/8",  "1/4"};
+        snprintf(out, 24, "%s", names[v]);
+        return;
+    }
+    if (i->ptr == &e->preset.sn_trigger_source) {
+        static const char *const names[] = {"ALL",  "MIDI", "CV1",   "CV2",
+                                            "CH10", "TONE", "NOISE", "MELODY"};
+        snprintf(out, 24, "%s", names[v]);
+        return;
+    }
+    if (u->page == UI_OSC && !strcmp(i->label, "NOISE RATE")) {
+        static const char *const names[] = {"FIX HIGH", "FIX MID", "FIX LOW", "TONE FOLLOW"};
+        snprintf(out, 24, "%s", names[v]);
+        return;
+    }
+    if (!strcmp(i->label, "ENV CLK ST")) {
+        snprintf(out, 24, "%+d ST", v - 48);
+        return;
+    }
+    if (i->ptr == &e->preset.sn_clock.rate) {
+        unsigned rate = sn_clock_rate_millihz[v];
+        if (rate < 1000)
+            snprintf(out, 24, "0.%02u HZ", rate / 10);
+        else
+            snprintf(out, 24, "%u HZ", rate / 1000);
+        return;
+    }
+    if (!strcmp(i->label, "TICKS/STEP")) {
+        if (96 % v == 0)
+            snprintf(out, 24, "1/%d", 96 / v);
+        else
+            snprintf(out, 24, "%d TICKS", v);
+        return;
+    }
+    if (u->page == UI_VOICE && !strcmp(i->label, "VELOCITY")) {
+        static const char *const names[] = {"NORMAL", "SOFT", "HARD", "FIXED 110"};
+        snprintf(out, 24, "%s", names[v]);
+        return;
+    }
+    bool one = i->ptr == &u->channel || i->ptr == &u->slot || i->ptr == &u->library_slot ||
+               i->ptr == &u->macro || i->ptr == &u->mod_slot || i->ptr == &u->sequence_step ||
+               i->ptr == &e->preset.studio.gate_clock;
+    snprintf(out, 24, "%d", v + (one ? 1 : 0));
+}
+static void waveform(Ui *u, int y, int height) {
+    StSound s = u->engine->studio.effective[u->part];
+    int previous = 0;
+    for (int x = 0; x < 122; x++) {
+        float phase = (float)(x % 61) / 61, value;
+        if (s.model == ST_SAA_ENV || s.model == ST_SAA_AM) {
+            switch (s.shape) {
+            case 0:
+                value = 0;
+                break;
+            case 1:
+                value = 1;
+                break;
+            case 2:
+            case 3:
+                value = 1 - phase;
+                break;
+            case 4:
+            case 5:
+                value = 1 - fabsf(phase * 2 - 1);
+                break;
+            default:
+                value = phase;
+                break;
             }
-        *v = (uint8_t)next;
-        if (u->field == 4 && next) {
-            if (cv->voice < 6) {
-                p->cv_pair[input] = old_pair;
-                toast(u, "SELECT SN VOICE", now);
-                return;
-            }
-            if (cv->voice >= 9 && cv->voice < 12)
-                cv->voice -= 3;
-            if (cv->voice == 13)
-                cv->voice = 12;
-        }
-        if (u->field == 1 && cv->voice < 6)
-            p->cv_pair[input] = 0;
-        if (!engine_cv_patch_ok(cv->voice, cv->program))
-            cv->program = cv->voice >= 12 ? 8 : 0;
-        if (!engine_cv_config_valid(p)) {
-            p->cv[input] = old_cv;
-            p->cv_pair[input] = old_pair;
-            *v = old;
-            toast(u, "RESOURCE IN USE", now);
-            return;
-        }
-        engine_panic(u->engine, -1);
-        return;
-    }
-    if ((u->group == 1 || u->group == 2) && u->field >= (u->group == 1 ? 7 : 8)) {
-        unsigned source = u->group - 1;
-        PartPerformance *performance = &p->performance[source][u->route_channel[source]];
-        if ((v == &performance->low && next > performance->high) ||
-            (v == &performance->high && next < performance->low)) {
-            toast(u, "INVALID NOTE RANGE", now);
-            return;
-        }
-    }
-    if (u->group != 0 && u->group != 6 && u->group != 9 && u->group != 10 && u->group != 11 &&
-        !((u->group == 1 || u->group == 2) && u->field == 4))
-        engine_panic(u->engine, -1);
-    if (u->group == 9 && u->field == 8)
-        engine_panic(u->engine, -1);
-    *v = (uint8_t)next;
-    if ((u->group == 6 && (u->field == 2 || u->field == 5)) || (u->group == 9 && u->field == 6))
-        engine_transport_reset(u->engine);
-    if (u->group == 1 || u->group == 2) {
-        unsigned source = u->group - 1;
-        if (u->field == 1 &&
-            !engine_target_patch_ok(p->route[source].target, p->route[source].program))
-            p->route[source].program = 0;
-        if (u->field == 5) {
-            MidiPart *part = &p->part[source][u->route_channel[source]];
-            if (!engine_target_patch_ok(part->target, part->program))
-                part->program = 0;
-        }
-        if (u->field == 1 || u->field == 2 || u->field == 5 || u->field == 6 ||
-            u->field == (source == 0 ? 3 : 7))
-            engine_routes_reset(u->engine, source);
+            value = roundf(value * (s.steps - 1)) / (s.steps - 1);
+        } else if (s.model == ST_SAA_NOISE || s.model >= ST_SN_NOISE)
+            value = (float)((x * x * 19 + x * 73) % 101) / 100;
+        else
+            value = phase < .5f ? 1 : 0;
+        int yy = y + (int)lroundf((1 - value) * (float)(height - 1));
+        if (x)
+            line(u, x + 1, previous, x + 2, yy);
+        previous = yy;
     }
 }
-static void action(Ui *u, uint32_t now) {
-    if (u->group == 9 && u->field == 7) {
-        u->engine->sn_manual_trigger++;
-        toast(u, "CLOCK TRIGGERED", now);
-        return;
-    }
-    if (u->group == 5 && u->field > 0) {
-        unsigned slot = u->settings->selected;
-        if (u->field == 1) {
-            u->settings->preset[slot] = u->engine->preset;
-            toast(u, u->save && u->save(u->ctx) ? "SAVED" : "SAVE FAILED", now);
-        }
-        if (u->field == 2) {
-            engine_preset(u->engine, &u->settings->preset[slot]);
-            toast(u, "LOADED", now);
-        }
-        if (u->field == 3) {
-            static Settings fresh;
-            settings_default(&fresh);
-            engine_preset(u->engine, &fresh.preset[slot]);
-            toast(u, "INIT - NOT SAVED", now);
-        }
-        return;
-    }
-    if (u->group == 7) {
-        unsigned input = u->field / 2;
-        bool one = u->field % 2;
-        toast(u,
-              u->calibrate && u->calibrate(u->ctx, input, one)
-                  ? (one ? "CAL OK - SAVE SLOT" : "ZERO OK - APPLY 1V")
-                  : "CAL FAILED",
-              now);
-        return;
-    }
-    if (u->group == 8) {
-        if (u->field)
-            return;
-        u->engine->preset.reserve_cv = !u->engine->preset.reserve_cv;
-        engine_panic(u->engine, -1);
-        toast(u, u->engine->preset.reserve_cv ? "CV VOICES RESERVED" : "LAST NOTE WINS", now);
-        return;
-    }
-    u->edit = !u->edit;
+static const char *page_title(unsigned page) {
+    static const char *const titles[] = {"PLAY",
+                                         "SOUND",
+                                         "ROUTE",
+                                         "MOTION",
+                                         "SCENE",
+                                         "SYSTEM",
+                                         "OSC",
+                                         "AMP",
+                                         "VOICE",
+                                         "MACROS",
+                                         "USB MIDI",
+                                         "TRS MIDI",
+                                         "CV",
+                                         "GATE",
+                                         "MOD MATRIX",
+                                         "BOTH SN / CLOCK",
+                                         "SEQUENCER",
+                                         "STEP EDIT",
+                                         "ARPEGGIATOR",
+                                         "TEMPO / SYNC",
+                                         "PART SETUP",
+                                         "SOUND LIBRARY",
+                                         "NAME",
+                                         "VOICE RESERVATION",
+                                         "CV CALIBRATION",
+                                         "INPUT MONITOR",
+                                         "SN CLOCK STEPS",
+                                         "CHIP MIX"};
+    return page < UI_PAGES ? titles[page] : "PLAY";
 }
-static void short_press(Ui *u, int b, uint32_t now) {
-    if (!u->menu) {
-        if (b == 1) {
-            u->menu = true;
-            u->field = 0;
-        } else
-            u->group = (uint8_t)((u->group + (b == 0 ? GROUPS - 1 : 1)) % GROUPS);
-        return;
-    }
-    if (b == 1) {
-        action(u, now);
-        return;
-    }
-    int delta = b == 0 ? -1 : 1;
-    if (u->edit)
-        change(u, delta, now);
-    else
-        u->field = (uint8_t)((u->field + counts[u->group] + delta) % counts[u->group]);
-}
-void ui_buttons(Ui *u, const bool down[3], uint32_t now) {
-    for (int b = 0; b < 3; b++) {
-        if (down[b] != u->raw[b]) {
-            u->raw[b] = down[b];
-            u->changed[b] = now;
-        }
-        if (now - u->changed[b] >= 20 && u->stable[b] != u->raw[b]) {
-            u->stable[b] = u->raw[b];
-            if (u->stable[b]) {
-                u->pressed[b] = now;
-                u->repeat[b] = now;
-                u->long_sent[b] = false;
-            } else if (!u->long_sent[b])
-                short_press(u, b, now);
-        }
-        if (u->stable[b] && !u->long_sent[b] && now - u->pressed[b] >= 700) {
-            u->long_sent[b] = true;
-            if (b == 0 && !u->edit) {
-                engine_panic(u->engine, -1);
-                toast(u, "PANIC", now);
-            } else if (b == 1 || !u->edit) {
-                u->edit = false;
-                u->menu = false;
-            } else
-                short_press(u, b, now);
-        }
-        if (u->stable[b] && u->edit && b != 1 && now - u->pressed[b] >= 700 &&
-            now - u->repeat[b] >= 100) {
-            u->repeat[b] = now;
-            short_press(u, b, now);
-        }
-    }
-}
-void ui_render(Ui *u, const UiStatus *s, uint32_t now) {
+void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
     memset(u->frame, 0, sizeof(u->frame));
-    char line[64];
-    text(u, 0, 0, groups[u->group]);
-    for (int x = 0; x < 128; x++)
-        u->frame[128 + x] = 1;
-    if (!u->menu) {
-        snprintf(line, sizeof(line), "NOTES %u VOICES %u", engine_active_notes(u->engine),
-                 engine_active(u->engine));
-        text(u, 0, 19, line);
-        snprintf(line, sizeof(line), "USB %s  CV %s", s->usb ? "ON" : "OFF",
-                 s->adc_ok ? "OK" : "ERR");
-        text(u, 0, 31, line);
-        text(u, 0, 43, "-/+ MENU  OK OPEN");
-    } else if (u->group == 7) {
-        static const char *a[] = {"CV1 APPLY 0V", "CV1 APPLY 1V", "CV2 APPLY 0V", "CV2 APPLY 1V"};
-        text(u, 0, 20, a[u->field]);
-        text(u, 0, 32, "STABLE SOURCE THEN OK");
-        snprintf(line, sizeof(line), "RAW %d / %d", s->cv_raw[0], s->cv_raw[1]);
-        text(u, 0, 44, line);
-    } else if (u->group == 8) {
-        if (u->field == 0) {
-            snprintf(line, sizeof(line), "CV RESERVE %s",
-                     u->engine->preset.reserve_cv ? "ON" : "OFF");
-            text(u, 0, 20, line);
-            text(u, 0, 34, "OK TO TOGGLE");
-        } else if (u->field == 1) {
-            snprintf(line, sizeof(line), "STEAL %lu", (unsigned long)u->engine->steals);
-            text(u, 0, 19, line);
-            snprintf(line, sizeof(line), "REFUSED %lu", (unsigned long)u->engine->refused);
-            text(u, 0, 30, line);
-            snprintf(line, sizeof(line), "PITCH CLAMP %lu", (unsigned long)u->engine->pitch_clamps);
-            text(u, 0, 41, line);
-        } else if (u->field == 2) {
-            snprintf(line, sizeof(line), "CV %d / %d", s->cv_raw[0], s->cv_raw[1]);
-            text(u, 0, 19, line);
-            snprintf(line, sizeof(line), "GATE %u / %u", s->gates[0], s->gates[1]);
-            text(u, 0, 32, line);
-        } else if (u->field == 3) {
-            snprintf(line, sizeof(line), "MAX TICK %luUS", (unsigned long)s->tick_us);
-            text(u, 0, 19, line);
-            snprintf(line, sizeof(line), "OVERRUN %lu", (unsigned long)s->tick_overruns);
-            text(u, 0, 32, line);
+    Engine *e = u->engine;
+    u->dirty = u->system_dirty ||
+               memcmp(&e->preset, &u->settings->preset[u->settings->selected], sizeof(Preset)) != 0;
+    char title[40], value[24];
+    if (!e->studio.test_on)
+        u->test_mode = 0;
+    if (u->confirm) {
+        header(u, "CONFIRM");
+        const char *name = u->confirm_action == A_SAVE         ? "SAVE SCENE?"
+                           : u->confirm_action == A_LOAD       ? "DISCARD + LOAD?"
+                           : u->confirm_action == A_BOOT       ? "ENTER USB UPDATE?"
+                           : u->confirm_action == A_LOAD_SOUND ? "LOAD SOUND?"
+                           : u->confirm_action == A_SAVE_SOUND ? "SAVE SOUND?"
+                           : u->confirm_action == A_INIT       ? "RESET SCENE?"
+                                                               : "SAVE / APPLY?";
+        text(u, 1, 18, name, 1, true);
+        box(u, u->confirm_yes ? 72 : 6, 35, 48, 13, true);
+        text(u, 18, 38, "NO", 1, u->confirm_yes);
+        text(u, 84, 38, "YES", 1, !u->confirm_yes);
+        footer(u, "OK:SET HOLD:CANCEL");
+    } else if (!u->depth) {
+        snprintf(title, sizeof(title), "S%u %.8s", u->settings->selected + 1,
+                 e->preset.studio.name);
+        header(u, title);
+        if (u->group == 0) {
+            snprintf(title, sizeof(title), "%c %s", 'A' + u->part,
+                     st_model_names[e->preset.studio.part[u->part].sound.model]);
+            text(u, 1, 16, title, 1, true);
+            waveform(u, 27, 14);
+            snprintf(title, sizeof(title), "%u NOTES   %s", studio_note_count(e, u->part),
+                     e->studio.running ? "RUN" : "STOP");
+            text(u, 1, 45, title, 1, true);
         } else {
-            snprintf(line, sizeof(line), "UART ERROR %lu", (unsigned long)s->uart_overflow);
-            text(u, 0, 19, line);
-            snprintf(line, sizeof(line), "USB DROP %lu", (unsigned long)s->usb_dropped);
-            text(u, 0, 32, line);
-        }
-    } else {
-        uint8_t max;
-        const char *label;
-        uint8_t *v = value(u, &max, &label);
-        (void)max;
-        if (u->group == 9 && u->field == 7) {
-            text(u, 0, 23, "TRIGGER CLOCK");
-            text(u, 0, 36, "OK TO EXECUTE");
-        } else if (u->group == 5 && u->field > 0) {
-            static const char *actions[] = {"SLOT", "SAVE ALL TO FLASH", "LOAD SLOT",
-                                            "INIT SLOT IN RAM"};
-            text(u, 0, 23, actions[u->field]);
-            text(u, 0, 36, "OK TO EXECUTE");
-        } else {
-            text(u, 0, 20, label);
-            if (v) {
-                snprintf(line, sizeof(line), "%u", *v);
-                if (u->group == 5)
-                    snprintf(line, sizeof(line), "%u", *v + 1);
-                if ((u->group == 1 || u->group == 2) && u->field == 0 && !*v)
-                    snprintf(line, sizeof(line), "OMNI");
-                if ((u->group == 1 || u->group == 2) && (u->field == 1 || u->field == 5))
-                    snprintf(line, sizeof(line), "%s", targets[*v]);
-                if ((u->field == 2 && u->group >= 1 && u->group <= 4) ||
-                    (u->field == 6 && (u->group == 1 || u->group == 2)))
-                    snprintf(line, sizeof(line), "%u %s", *v, patches[*v].name);
-                if ((u->group == 2 && u->field == 3) ||
-                    ((u->group == 3 || u->group == 4) && u->field == 0))
-                    snprintf(line, sizeof(line), "%s", *v ? "ON" : "OFF");
-                if ((u->group == 1 || u->group == 2) && u->field == 4)
-                    snprintf(line, sizeof(line), "%u", *v + 1);
-                if ((u->group == 1 && u->field == 3) || (u->group == 2 && u->field == 7))
-                    snprintf(line, sizeof(line), "%s", *v ? "BY CHANNEL" : "WHOLE INPUT");
-                if ((u->group == 3 || u->group == 4) && u->field == 4)
-                    snprintf(line, sizeof(line), "%s", *v ? "PAIRED LEFT+RIGHT" : "SINGLE VOICE");
-                if ((u->group == 3 || u->group == 4) && u->field == 1) {
-                    if (u->engine->preset.cv_pair[u->group - 3]) {
-                        if (*v == 12)
-                            snprintf(line, sizeof(line), "12 SN NOISE PAIR");
-                        else
-                            snprintf(line, sizeof(line), "%u SN PAIR T%u", *v, *v - 5);
-                    } else if (*v < 6)
-                        snprintf(line, sizeof(line), "%u SAA T%u", *v, *v + 1);
-                    else if (*v < 12)
-                        snprintf(line, sizeof(line), "%u SN%u T%u", *v, (*v - 6) / 3 + 1,
-                                 (*v - 6) % 3 + 1);
-                    else
-                        snprintf(line, sizeof(line), "%u SN%u NOISE", *v, *v - 11);
-                }
-                if ((u->group == 3 || u->group == 4) && u->field == 3) {
-                    static const char *names[] = {"C",  "C#", "D",  "D#", "E",  "F",
-                                                  "F#", "G",  "G#", "A",  "A#", "B"};
-                    snprintf(line, sizeof(line), "%u %s%d", *v, names[*v % 12], *v / 12 - 1);
-                }
-                if (u->group == 6 && u->field == 0) {
-                    snprintf(line, sizeof(line), "%s", arp_names[*v]);
-                }
-                if (u->group == 6 && u->field == 3) {
-                    static const char *scopes[] = {"ALL", "SAA", "SN"};
-                    snprintf(line, sizeof(line), "%s", scopes[*v]);
-                }
-                if (u->group == 6 && u->field == 2)
-                    snprintf(line, sizeof(line), "%s", *v ? "TRS" : "USB");
-                if ((u->group == 1 && u->field >= 7) || (u->group == 2 && u->field >= 8)) {
-                    unsigned index = u->field - (u->group == 1 ? 7u : 8u);
-                    if (index == 0)
-                        snprintf(line, sizeof(line), "%+d SEMITONES", (int)*v - 24);
-                    if (index == 3) {
-                        static const char *names[] = {"LINEAR", "SOFT", "HARD", "FIXED 110"};
-                        snprintf(line, sizeof(line), "%s", names[*v]);
-                    }
-                }
-                if (u->group == 3 || u->group == 4) {
-                    if (u->field == 5)
-                        snprintf(line, sizeof(line), "%s", cv_roles[*v]);
-                    if (u->field == 6)
-                        snprintf(line, sizeof(line), "%s", cv_scales[*v]);
-                    if (u->field == 7) {
-                        static const char *names[] = {"C",  "C#", "D",  "D#", "E",  "F",
-                                                      "F#", "G",  "G#", "A",  "A#", "B"};
-                        snprintf(line, sizeof(line), "%s", names[*v]);
-                    }
-                    if (u->field == 8)
-                        snprintf(line, sizeof(line), "%u MS", glide_ms[*v]);
-                    if (u->field == 9)
-                        snprintf(line, sizeof(line), "0-%u V", *v ? 10 : 5);
-                }
-                if (u->group == 6 && u->field == 4)
-                    snprintf(line, sizeof(line), "%u BPM", *v + 30);
-                if (u->group == 6 && u->field == 5) {
-                    static const char *names[] = {"AUTO", "EXTERNAL", "INTERNAL"};
-                    snprintf(line, sizeof(line), "%s", names[*v]);
-                }
-                if (u->group == 10) {
-                    if (u->field == 0)
-                        snprintf(line, sizeof(line), "%s", *v ? "SN1+SN2" : "SAA1099");
-                    if (u->field == 1 || u->field == 2 || u->field == 4)
-                        snprintf(line, sizeof(line), "%u PERCENT",
-                                 engine_time_scale(*v) * 100 / 256);
-                    if (u->field == 3 && *v == 127)
-                        snprintf(line, sizeof(line), "PATCH VALUE");
-                    if (u->field == 6) {
-                        static const char *rate[] = {"0.5", "1", "2", "4", "8", "16", "32", "64"};
-                        snprintf(line, sizeof(line), "%s HZ", rate[*v]);
-                    }
-                }
-                if (u->group == 11 && u->field == 0)
-                    snprintf(line, sizeof(line), "%u OF 8", *v + 1);
-                if (u->group == 9) {
-                    if (u->field == 0)
-                        snprintf(line, sizeof(line), "%s", clock_modes[*v]);
-                    if (u->field == 1)
-                        snprintf(
-                            line, sizeof(line), "%u SEMI %luKHZ", *v,
-                            (unsigned long)(sn_clock_hz(sn_clock_half(
-                                                (uint16_t)((*v +
-                                                            u->engine->preset.sn_reference * 12u) *
-                                                           256))) /
-                                            1000));
-                    if (u->field == 2)
-                        snprintf(line, sizeof(line), "%u SEMITONES", *v);
-                    if (u->field == 3) {
-                        uint32_t rate = sn_clock_rate_millihz[*v];
-                        snprintf(line, sizeof(line), "%lu.%02lu HZ", (unsigned long)(rate / 1000),
-                                 (unsigned long)((rate % 1000) / 10));
-                    }
-                    if (u->field == 4)
-                        snprintf(line, sizeof(line), "%s%u", *v ? "CLOCKS " : "FREE ",
-                                 sn_clock_sync_clocks[*v]);
-                    if (u->field == 5)
-                        snprintf(line, sizeof(line), "%s", *v ? "ON" : "OFF");
-                    if (u->field == 6)
-                        snprintf(line, sizeof(line), "%s", *v ? "TRS" : "USB");
-                    if (u->field == 8)
-                        snprintf(
-                            line, sizeof(line), "%lu MHZ",
-                            (unsigned long)(engine_sn_reference(&u->engine->preset) / 1000000));
-                    if (u->field == 9)
-                        snprintf(line, sizeof(line), "%u CENTS TOTAL", *v);
-                    if (u->field == 10) {
-                        static const char *sources[] = {"ANY SN",   "MIDI SN",   "CV1",
-                                                        "CV2",      "DRUM CH10", "SN TONES",
-                                                        "SN NOISE", "MELODY/CV"};
-                        snprintf(line, sizeof(line), "%s", sources[*v]);
-                    }
-                }
-                text(u, 0, 34, line);
+            text(u, 1, 16, roots[u->group], 2, true);
+            snprintf(title, sizeof(title), "%u/6", u->group + 1);
+            text(u, 110, 20, title, 1, true);
+            if (u->group == 1) {
+                snprintf(title, sizeof(title), "PART %c %.8s", 'A' + u->part,
+                         e->preset.studio.part[u->part].name);
+                text(u, 1, 35, title, 1, true);
+                waveform(u, 44, 7);
+            } else if (u->group == 2) {
+                text(u, 1, 35, "USB TRS CV GATE", 1, true);
+                text(u, 1, 45, "INPUT > PART > SOUND", 1, true);
+            } else if (u->group == 3) {
+                snprintf(title, sizeof(title), "SN %s  %u BPM", references[e->preset.sn_reference],
+                         e->preset.tempo + 30);
+                text(u, 1, 35, title, 1, true);
+                text(u, 1, 45, "ARP / SEQ / MOD", 1, true);
+            } else if (u->group == 4) {
+                text(u, 1, 35, u->dirty ? "UNSAVED CHANGES" : "SCENE READY", 1, true);
+                text(u, 1, 45, "LOAD / SAVE / COPY", 1, true);
+            } else {
+                text(u, 1, 35, "CAL / I-O / VOICES", 1, true);
+                text(u, 1, 45, "DISPLAY / USB UPDATE", 1, true);
             }
-            text(u, 0, 45, u->edit ? "> EDIT -/+  OK DONE" : "OK EDIT  -/+ SELECT");
+        }
+        footer(u, "- +:SELECT OK:OPEN");
+    } else if (u->page == UI_NAME) {
+        header(u, "NAME");
+        text(u, 4, 21, u->name, 2, true);
+        if (u->name_cursor < 8)
+            line(u, 4 + u->name_cursor * 12, 39, 13 + u->name_cursor * 12, 39);
+        else
+            box(u, 98, 42, 28, 9, true);
+        text(u, 100, 43, "DONE", 1, u->name_cursor != 8);
+        footer(u, u->edit ? "OK:SET HOLD:CANCEL" : "OK:EDIT HOLD:BACK");
+    } else if (u->page == UI_RESOURCES) {
+        header(u, "VOICE RESERVATION");
+        for (unsigned row = 0; row < 3; row++) {
+            text(u, 0, 15 + (int)row * 13, row == 0 ? "SAA" : row == 1 ? "SNL" : "SNR", 1, true);
+            unsigned count = row ? 4 : 6;
+            for (unsigned i = 0; i < count; i++) {
+                unsigned v = row == 0   ? i
+                             : row == 1 ? (i == 3 ? 12 : 6 + i)
+                                        : (i == 3 ? 13 : 9 + i);
+                unsigned p = studio_owner(e, v);
+                int x = 28 + (int)i * (row ? 21 : 16), y = 14 + (int)row * 13;
+                box(u, x, y, row ? 18 : 13, 10, true);
+                char label[2] = {(char)(p < ST_PARTS
+                                            ? ((e->studio.outputs[p] & (1u << v)) ? 'A' + p : 'K')
+                                            : '-'),
+                                 0};
+                text(u, x + (row ? 6 : 4), y + 2, label, 1, false);
+                if (e->voice[v].active)
+                    pixel(u, x, y + 10, true);
+            }
+        }
+        footer(u, "K:CLOCK DOT:ACTIVE");
+    } else if (u->page == UI_MONITOR) {
+        header(u, "INPUT MONITOR");
+        snprintf(title, sizeof(title), "USB %s ADC %s", status->usb ? "ON" : "OFF",
+                 status->adc_ok ? "OK" : "--");
+        text(u, 0, 15, title, 1, true);
+        for (unsigned i = 0; i < 2; i++) {
+            snprintf(title, sizeof(title), "CV%u %6d G%u %s", i + 1, status->cv_raw[i], i + 1,
+                     status->gates[i] ? "ON" : "OFF");
+            text(u, 0, 27 + (int)i * 12, title, 1, true);
+        }
+        footer(u, "HOLD:BACK");
+    } else {
+        Item *list = scratch;
+        unsigned count = build(u, list);
+        if (count && u->field >= count)
+            u->field = 0;
+        snprintf(title, sizeof(title), "%c / %s", 'A' + u->part, page_title(u->page));
+        if (u->page == UI_LIBRARY)
+            snprintf(title, sizeof(title), "L%02u %.8s", u->library_slot + 1,
+                     u->settings->sound_name[u->library_slot]);
+        if (u->page == UI_SCENE)
+            snprintf(title, sizeof(title), "S%02u %.8s", u->slot + 1,
+                     u->settings->preset[u->slot].studio.enabled
+                         ? u->settings->preset[u->slot].studio.name
+                         : "NEW     ");
+        if (u->page == UI_CV || u->page == UI_GATE)
+            snprintf(title, sizeof(title), "%s %u", page_title(u->page), u->cv_input + 1);
+        if (u->page == UI_SN_CLOCK || u->page == UI_CLOCK_STEPS)
+            snprintf(title, sizeof(title), "BOTH SN / CLOCK");
+        if (u->page == UI_GRID) {
+            snprintf(title, sizeof(title), "%c STEP %02u/%02u", 'A' + u->part, u->grid_step + 1,
+                     e->preset.studio.part[u->part].length);
+            header(u, title);
+            Item *i = &list[0];
+            format(u, i, u->edit ? u->draft : read_item(i), value);
+            text(u, 1, 17, value, strlen(value) < 10 ? 2 : 1, true);
+            for (unsigned k = 0; k < e->preset.studio.part[u->part].length; k++) {
+                int x = 4 + (int)(k % 8) * 15, y = k < 8 ? 36 : 45;
+                box(u, x, y, 10, 5, true);
+                if (k != u->grid_step)
+                    box(u, x + 1, y + 1, 8, 3, false);
+            }
+            footer(u, u->edit ? "OK:SET HOLD:CANCEL" : "OK:EDIT HOLD:BACK");
+        } else if (u->edit && count) {
+            Item *i = &list[u->field];
+            snprintf(title, sizeof(title), "%c:%s", 'A' + u->part, i->label);
+            if (u->page == UI_SN_CLOCK)
+                snprintf(title, sizeof(title), "BOTH SN:%s", i->label);
+            if (i->ptr == &u->library_slot)
+                snprintf(title, sizeof(title), "L%02u %.8s", u->library_slot + 1,
+                         u->settings->sound_name[u->library_slot]);
+            if (i->ptr == &u->slot)
+                snprintf(title, sizeof(title), "S%02u %.8s", u->slot + 1,
+                         u->settings->preset[u->slot].studio.enabled
+                             ? u->settings->preset[u->slot].studio.name
+                             : "NEW     ");
+            header(u, title);
+            format(u, i, u->draft, value);
+            text(u, 1, 17, value, strlen(value) < 11 ? 2 : 1, true);
+            if (u->page == UI_OSC)
+                waveform(u, 35, 16);
+            else if (u->page == UI_AMP) {
+                StSound *s = &e->preset.studio.part[u->part].sound;
+                int a = 5 + (int)(s->attack / 320), d = a + 8 + (int)(s->decay / 500),
+                    sustain = 51 - (int)(s->sustain * 17 / 100);
+                if (d > 75)
+                    d = 75;
+                line(u, 3, 50, a, 32);
+                line(u, a, 32, d, sustain);
+                line(u, d, sustain, 90, sustain);
+                line(u, 90, sustain, 123, 50);
+            } else if (u->page == UI_SN_CLOCK) {
+                int prev = 0;
+                for (int x = 0; x < 122; x++) {
+                    float phase = (float)x / 121, v = e->preset.sn_clock.mode == SN_CLOCK_OFF ? .5f
+                                                      : e->preset.sn_clock.mode == SN_CLOCK_DIVE
+                                                          ? phase
+                                                          : 1 - fabsf(phase * 2 - 1);
+                    int yy = 34 + (int)(v * 15);
+                    if (x)
+                        line(u, x + 1, prev, x + 2, yy);
+                    prev = yy;
+                }
+            } else if (i->max > i->min)
+                box(u, 2, 43, (u->draft - i->min) * 123 / (i->max - i->min), 5, true);
+            footer(u, "OK:SET HOLD:CANCEL");
+        } else {
+            header(u, title);
+            unsigned start = u->field ? u->field - 1 : 0;
+            if (count > 3 && start > count - 3)
+                start = count - 3;
+            for (unsigned k = start; k < count && k < start + 3; k++) {
+                Item *i = &list[k];
+                int y = 15 + (int)(k - start) * 12;
+                bool selected = k == u->field;
+                if (selected)
+                    box(u, 0, y - 1, 128, 10, true);
+                if (i->type == LINK || i->type == ACTION) {
+                    snprintf(title, sizeof(title), "%.20s", i->label);
+                    text(u, 2, y, title, 1, !selected);
+                    if (i->type == LINK)
+                        text(u, 120, y, ">", 1, !selected);
+                } else {
+                    format(u, i, read_item(i), value);
+                    unsigned width = (unsigned)strlen(value);
+                    if (width > 10) {
+                        value[10] = 0;
+                        width = 10;
+                    }
+                    unsigned maxlabel = 20 - width;
+                    snprintf(title, sizeof(title), "%.*s", (int)maxlabel, i->label);
+                    text(u, 2, y, title, 1, !selected);
+                    text(u, 126 - (int)width * 6, y, value, 1, !selected);
+                }
+            }
+            footer(u, "OK:OPEN HOLD:BACK");
         }
     }
-    if ((int32_t)(u->toast_until - now) > 0) {
-        for (int i = 7 * 128; i < 1024; i++)
-            u->frame[i] = 0;
-        text(u, 0, 56, u->toast);
-    } else if (u->menu && (u->group == 1 || u->group == 2) && u->field >= 4) {
-        unsigned source = u->group - 1;
-        snprintf(line, sizeof(line), "CH %u MAP %s", u->route_channel[source] + 1,
-                 u->engine->preset.channel_map[source] ? "ON" : "OFF");
-        text(u, 0, 56, line);
-    } else if (u->menu && u->group == 9) {
-        snprintf(line, sizeof(line), "SN1+SN2 %luKHZ", (unsigned long)(s->clock_hz / 1000));
-        text(u, 0, 56, line);
-    } else
-        text(u, 0, 56, "HOLD OK BACK - PANIC");
+    if (u->toast_until && (int32_t)(u->toast_until - now) > 0) {
+        box(u, 1, 23, 126, 15, false);
+        line(u, 1, 23, 126, 23);
+        line(u, 1, 37, 126, 37);
+        text(u, (128 - (int)strlen(u->toast) * 6) / 2, 27, u->toast, 1, true);
+    }
 }
