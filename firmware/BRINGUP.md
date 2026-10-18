@@ -4,10 +4,19 @@ PC上のレジスター・状態・保存検証と、実基板での測定を分
 
 ## 更新と最小試聴
 
-1. [UF2](dist/chiptune-v0.5.0-alpha.uf2)を、−/＋を押しながらUSB接続して出るBOOTSELから書き込みます。[Android手順](ANDROID_UPDATE.md)も使えます。
-2. `SYSTEM > VERSION`が`V0.5.0 ALPHA`であることを確認します。
+1. [UF2](dist/chiptune-v0.5.1-alpha.uf2)を、−/＋を押しながらUSB接続して出るBOOTSELから書き込みます。[Android手順](ANDROID_UPDATE.md)も使えます。
+2. `SYSTEM > VERSION`が`V0.5.1 ALPHA`であることを確認します。
 3. 右下J3（LINE OUT）を外部アンプへ接続します。ホームPLAYを開き、PART A、TEST REPEAT、TEST NOTE C3で音を確認します。PANICで停止することを確認します。
 4. 同じ試聴をB、C、Dで行い、SAAの左右、SN TWINの左右、SNノイズを確認します。モデルや声数を変更する前にシーンを保存します。
+
+## OLED復旧の確認
+
+v0.5.0ではMacでUSB MIDIとして認識されてもOLEDが表示されず、v0.4.0に戻すと表示が戻る報告があります。v0.5.1ではCV処理の重複を減らし、OLED/ADCに最大4msのサービス待ち時間を設けています。
+
+- コールド起動、UF2書き込み直後、USB抜き差しで表示されることを確認します。
+- CV/Gate未接続・接続、MIDI発音中でも画面とボタンが更新されることを確認します。
+- MacのUSBスリープ復帰後にも明るさと画面が復旧することを確認します。
+- 修正版の実機での表示復旧は確認待ちです。PCでの転送・負荷・再試行テストと区別します。
 
 ## UI
 

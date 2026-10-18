@@ -1,5 +1,5 @@
 {
-  "firmware": "v0.5.0-alpha",
+  "firmware": "v0.5.1-alpha",
   "host_tests_passed": true,
   "sanitizers": [
     "ASan",
@@ -9,22 +9,27 @@
     {
       "name": "engine_tests",
       "status": "run",
-      "seconds": 10.2521
+      "seconds": 10.2093
     },
     {
       "name": "roles_tests",
       "status": "run",
-      "seconds": 0.095864
+      "seconds": 0.102185
     },
     {
       "name": "performance_tests",
       "status": "run",
-      "seconds": 0.0602097
+      "seconds": 0.0629918
     },
     {
       "name": "studio_tests",
       "status": "run",
-      "seconds": 0.267046
+      "seconds": 0.267559
+    },
+    {
+      "name": "display_tests",
+      "status": "run",
+      "seconds": 0.0120755
     }
   ],
   "ui_random_actions": 12000,
@@ -52,5 +57,13 @@
   ],
   "android_on_hardware_tested": false,
   "audio_on_hardware_tested": false,
-  "oled_on_hardware_tested": false
+  "oled_on_hardware_tested": false,
+  "display_regressions": [
+    "busy loop missing every 250us idle window",
+    "complete 1024-byte framebuffer transfer",
+    "I2C failures on each startup transaction",
+    "brightness reapply on reinitialization",
+    "power loss and USB suspend/resume",
+    "timer rollover"
+  ]
 }

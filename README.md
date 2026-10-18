@@ -4,7 +4,7 @@ SAA1099 × 1、SN76489AN × 2、RP2040を搭載した小型チップチューン
 USB MIDI、TRS MIDI、2系統のCV／ゲート入力と、OLED・3ボタンによる操作を想定しています。
 回路図、配線済みPCB、JLCPCB向け製造データ、設計資料を収録しています。
 
-**開発状況:** PCBの配線と設計ルール検査は完了しています。ファームウェアv0.5.0-alphaはUF2のビルドとPCテストを通過しています。v0.5の実機評価は未完了です。
+**開発状況:** PCBの配線と設計ルール検査は完了しています。ファームウェアv0.5.1-alphaはUF2のビルドとPCテストを通過しています。v0.5の実機評価は未完了です。
 
 ![PCB配線図](outputs/review/routing-traces-all.png)
 
@@ -73,7 +73,7 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 
 ## ファームウェア
 
-[v0.5の操作資料](firmware/README.md)と[配布UF2](firmware/dist/chiptune-v0.5.0-alpha.uf2)を収録しています。
+[v0.5の操作資料](firmware/README.md)と[配布UF2](firmware/dist/chiptune-v0.5.1-alpha.uf2)を収録しています。
 本体の3ボタンで、SAAのENV発振・独立ADSR、SNのステレオ音色・実クロック変調、MIDI/CV/Gateの割り当て、パターン編集と保存を操作できます。
 [Androidからの更新手順](firmware/ANDROID_UPDATE.md)、[実機確認項目](firmware/BRINGUP.md)、[検証記録](firmware/dist/Verification.json)も参照してください。
 −と＋を押しながらUSBを接続するか、SYSTEM > USB UPDATEからROMブートローダーへ入れます。
@@ -82,7 +82,7 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 
 - 基板検査: DRC 0、未接続0、回路図との一致問題0、ERC 0。
 - 設計照合: 152フットプリントの配置・端子接続と、音源バスの768ケースを検査済み。
-- ファームウェア: v0.5.0-alpha。6つの入口の3ボタンUI、ENV発振と独立ADSR、音源資源の予約、A〜Nのパート、MIDI/CV/Gateルート、4マクロと8変調枠、16ステップ、アルペジオ、8シーン・16音色保存、USB更新モードを実装。ARMビルドとASan／UBSan付きPCテストを通過。実機評価は未完了。
+- ファームウェア: v0.5.1-alpha。6つの入口の3ボタンUI、ENV発振と独立ADSR、音源資源の予約、A〜Nのパート、MIDI/CV/Gateルート、4マクロと8変調枠、16ステップ、アルペジオ、8シーン・16音色保存、USB更新モードを実装。ARMビルドとASan／UBSan付きPCテストを通過。実機評価は未完了。
 - 実機検証: 電源電流・突入電流、音声出力、CV校正、取り付け公差の評価は未完了。
 
 [OLEDの描画例](firmware/assets/ui-v05.png)は、実装したCの描画処理から生成しています。

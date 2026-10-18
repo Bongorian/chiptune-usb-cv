@@ -3,6 +3,8 @@
 #include "store.h"
 #include "ui.h"
 #include "studio.h"
+#include "oled.h"
+#include "service.h"
 #include "power.h"
 #include "cv.h"
 #include "pinmap.h"
@@ -52,9 +54,7 @@ static unsigned cv_count[2], cv_pos[2];
 static bool cal_zero_set[2];
 static int adc_input = -1;
 static uint32_t adc_started, adc_poll_due;
-static bool oled_ok;
-static unsigned oled_chunk;
-static uint32_t oled_next, render_next;
+static Oled oled;
 static SnClock clock_fx;
 static struct repeating_timer clock_timer;
 static bool clock_timer_active;
@@ -428,6 +428,8 @@ static void gate_tasks(uint32_t now) {
     static bool ready[2], previous_power;
     static uint32_t seen[2];
     static bool last_gate[2];
+    static uint32_t poll_due;
+    static bool poll_started;
     if (rail_on != previous_power) {
         ready[0] = ready[1] = false;
         previous_power = rail_on;
@@ -449,6 +451,12 @@ static void gate_tasks(uint32_t now) {
             (engine.preset.studio.enabled || (cv_sequence[input] && now - cv_time[input] < 100)))
             cv_event(input, last_gate[input]);
     }
+    /* Queued gate edges above stay immediate. Poll CV/UI edits at 1kHz rather than
+       repeating two floating-point pitch quantizers on every main-loop spin. */
+    if (poll_started && (int32_t)(now - poll_due) < 0)
+        return;
+    poll_started = true;
+    poll_due = now + 1;
     for (unsigned input = 0; input < 2; input++) {
         bool gate = !gpio_get(input ? PIN_GATE2_N : PIN_GATE1_N);
         status.gates[input] = gate;
@@ -527,76 +535,13 @@ static bool save_settings(void *ctx) {
     usb_tail = usb_head;
     return ok;
 }
-static void oled_task(uint32_t now) {
-    static bool display_on, pump_started;
-    static uint8_t contrast;
-    if ((int32_t)(now - oled_next) < 0)
-        return;
-    if (!oled_ok) {
-        uint8_t init[] = {0,    0xae, 0xd5, 0x80, 0xa8, 0x3f, 0xd3, 0,    0x40, 0x8d, 0x10, 0x20, 2,
-                          0xa1, 0xc8, 0xda, 0x12, 0x81, 0x50, 0xd9, 0xf1, 0xdb, 0x40, 0xa4, 0xa6};
-        oled_ok = i2c_write(0x3c, init, sizeof(init)) == (int)sizeof(init);
-        oled_next = now + (oled_ok ? 1 : 1000);
-        display_on = false;
-        pump_started = false;
-        oled_chunk = 0;
-        return;
-    }
-    if (rail_on && !pump_started) {
-        const uint8_t pump[] = {0, 0x8d, 0x14};
-        if (i2c_write(0x3c, pump, 3) != 3) {
-            oled_ok = false;
-            return;
-        }
-        pump_started = true;
-        oled_next = now + 100;
-        return; /* Module-recommended charge-pump settling */
-    }
-    if (!rail_on && (display_on || pump_started)) {
-        const uint8_t off[] = {0, 0xae, 0x8d, 0x10};
-        if (i2c_write(0x3c, off, 4) != 4) {
-            oled_ok = false;
-            return;
-        }
-        display_on = pump_started = false;
-    }
-    if (rail_on && !display_on) {
-        const uint8_t on[] = {0, 0xaf};
-        if (i2c_write(0x3c, on, 2) != 2) {
-            oled_ok = false;
-            return;
-        }
-        display_on = true;
-    }
-    if (!display_on) {
-        oled_next = now + 20;
-        return;
-    }
-    if (contrast != settings.brightness) {
-        uint8_t command[] = {0, 0x81, (uint8_t)(settings.brightness * 255u / 100u)};
-        if (i2c_write(0x3c, command, sizeof(command)) != (int)sizeof(command)) {
-            oled_ok = false;
-            return;
-        }
-        contrast = settings.brightness;
-    }
-    if (!oled_chunk && (int32_t)(now - render_next) >= 0) {
-        ui_render(&ui, &status, now);
-        render_next = now + 100;
-    }
-    /* 16 data bytes per transaction, <0.5 ms at 400kHz. Frame buffer is frozen during each frame.
-     */
-    unsigned page = oled_chunk / 8, col = (oled_chunk % 8) * 16;
-    uint8_t cmd[] = {0, (uint8_t)(0xb0 | page), (uint8_t)(col & 15), (uint8_t)(0x10 | (col >> 4))};
-    uint8_t data[17] = {0x40};
-    memcpy(data + 1, ui.frame + page * 128 + col, 16);
-    if (i2c_write(0x3c, cmd, 4) != 4 || i2c_write(0x3c, data, 17) != 17) {
-        oled_ok = false;
-        oled_next = now + 1000;
-        return;
-    }
-    oled_chunk = (oled_chunk + 1) % 64;
-    oled_next = now + 1;
+static bool oled_write(void *ctx, const uint8_t *bytes, size_t length) {
+    (void)ctx;
+    return i2c_write(0x3c, bytes, length) == (int)length;
+}
+static void oled_render(void *ctx, uint32_t now) {
+    (void)ctx;
+    ui_render(&ui, &status, now);
 }
 int main(void) {
     /* No stdio: GP12 remains SAA A0, GP13 is UART0 RX only. */
@@ -672,20 +617,20 @@ int main(void) {
     for (int s = 0; s < 2; s++)
         midi_init(&parsers[s], midi_received, &source_id[s]);
     ui_init(&ui, &settings, &engine, save_settings, calibrate, NULL);
+    oled_init(&oled, ui.frame, oled_write, oled_render, NULL);
     clock_sm = pio_claim_unused_sm(clock_pio, true);
     clock_offset = pio_add_program(clock_pio, &sn_clock_program);
     tusb_init();
     uint32_t tick = time_us_32(), power_due = 0;
     bool suspend_handled = false;
+    uint32_t oled_serviced = tick, adc_serviced = tick;
     for (;;) {
         tud_task();
         uint32_t now_us = time_us_32(), now = to_ms_since_boot(get_absolute_time());
         if (usb_suspended) {
             if (!suspend_handled) {
                 sound_off();
-                const uint8_t sleep_oled[] = {0, 0xae, 0x8d, 0x10};
-                i2c_write(0x3c, sleep_oled, sizeof(sleep_oled));
-                oled_ok = false;
+                oled_suspend(&oled);
                 gpio_put(PIN_STATUS_LED, 0);
                 suspend_handled = true;
             }
@@ -750,10 +695,18 @@ int main(void) {
                 reset_usb_boot(0, 0);
             }
         }
-        if (time_us_32() - tick < 500)
-            cv_adc_task(time_us_32());
-        if (time_us_32() - tick < 250)
-            oled_task(now);
+        /* Busy audio/CV work may miss every idle window. Force each bounded
+           background service after 4ms instead of leaving the screen dark. */
+        uint32_t service_us = time_us_32();
+        if (service_ready(service_us, tick, adc_serviced, 500, 4000)) {
+            adc_serviced = service_us;
+            cv_adc_task(service_us);
+        }
+        service_us = time_us_32();
+        if (service_ready(service_us, tick, oled_serviced, 250, 4000)) {
+            oled_serviced = service_us;
+            oled_task(&oled, to_ms_since_boot(get_absolute_time()), rail_on, settings.brightness);
+        }
         gpio_put(PIN_STATUS_LED, rail_on && (engine_active(&engine) > 0 || (now % 2000) < 50));
         tight_loop_contents();
     }

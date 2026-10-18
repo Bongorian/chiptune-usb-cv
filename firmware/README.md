@@ -1,8 +1,10 @@
-# Chiptune USB/CV firmware v0.5.0-alpha
+# Chiptune USB/CV firmware v0.5.1-alpha
 
 RP2040、SAA1099、SN76489AN×2、128×64 OLEDを搭載した専用基板用のファームウェアです。3ボタンから、音作り・試聴・MIDI/CV/Gate割り当て・パターン編集・保存・USB更新モードへの移行を操作できます。
 
-- [UF2](dist/chiptune-v0.5.0-alpha.uf2)
+v0.5.1は、音源/CV処理がOLEDの実行枠を使い切ると画面更新が止まり得る問題への修正版です。CVのポーリングを1kHzに制限し、音程クオンタイズをNOTE入力のみに行い、OLEDとADCの処理枠を最大4msの待ち時間で再確保します。OLEDの通信失敗後は明るさを含めて再初期化します。v0.5.0で画面が出ず、v0.4.0では表示される実機報告があります。修正版の実機での表示復旧は確認待ちです。
+
+- [UF2](dist/chiptune-v0.5.1-alpha.uf2)
 - [Androidからの更新](ANDROID_UPDATE.md)
 - [ビルド検証](dist/Verification.json)／[テスト記録](dist/Test_Verification.json)
 - [実機確認項目](BRINGUP.md)

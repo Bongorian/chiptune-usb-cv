@@ -729,12 +729,12 @@ void studio_cv(Engine *e, unsigned input, float volts, bool gate, bool fresh) {
     r->cv_valid[input] = fresh;
     if (fresh) {
         r->cv[input] = bound(volts / (c->range ? 10.0f : 5.0f), 0, 1);
-        float pitch = engine_quantize(c->base_note + volts * 12, c->scale, c->root);
-        if (c->scale && fabsf((c->base_note + volts * 12) - r->cv_note[input]) <=
-                            fabsf((c->base_note + volts * 12) - pitch) + .16f)
-            pitch = r->cv_note[input];
-        r->cv_note[input] = pitch;
-        if (c->mode == 1)
+        if (c->mode == 1) {
+            float pitch = engine_quantize(c->base_note + volts * 12, c->scale, c->root);
+            if (c->scale && fabsf((c->base_note + volts * 12) - r->cv_note[input]) <=
+                                fabsf((c->base_note + volts * 12) - pitch) + .16f)
+                pitch = r->cv_note[input];
+            r->cv_note[input] = pitch;
             for (unsigned v = 0; v < 14; v++)
                 if (e->voice[v].active && e->voice[v].held &&
                     (e->voice[v].source == 2 || e->voice[v].source == 3) &&
@@ -743,6 +743,7 @@ void studio_cv(Engine *e, unsigned input, float volts, bool gate, bool fresh) {
                     if (!c->glide)
                         e->voice[v].pitch = pitch;
                 }
+        }
     } else {
         part_off(e, c->gate_part, input + 2);
         if (c->mode == 1)

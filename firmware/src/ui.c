@@ -573,7 +573,7 @@ static void perform(Ui *u, unsigned action, uint32_t now) {
 }
 static void action(Ui *u, unsigned a, uint32_t now) {
     if (a == A_VERSION) {
-        toast(u, "V0.5.0 ALPHA", now);
+        toast(u, "V0.5.1 ALPHA", now);
         return;
     }
     if (u->page == UI_ROUTE && (a == UI_CV || a == UI_GATE)) {
