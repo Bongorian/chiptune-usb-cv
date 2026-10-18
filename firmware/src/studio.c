@@ -1352,7 +1352,8 @@ void studio_tick(Engine *e, uint32_t dt) {
                     e->sn_noise[ch] = (uint8_t)value;
                 }
                 if (rate == 3)
-                    divisor(e, ch, 2, hz * (s.shape ? 1 : 15), due || x->elapsed == dt, &clamped);
+                    divisor(e, ch, 2, sn_noise_clock_hz(hz, s.shape != 0), due || x->elapsed == dt,
+                            &clamped);
                 if (s.model == ST_SN_METAL) {
                     sn_used[ch][2] = true;
                     attenuation(e, ch, 2, gain * s.noise_mix / 100.0f);

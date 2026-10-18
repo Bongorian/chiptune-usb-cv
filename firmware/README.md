@@ -1,8 +1,8 @@
-# Chiptune USB/CV firmware v0.6.0-alpha
+# Chiptune USB/CV firmware v0.6.1-alpha
 
 SAA1099とSN76489AN×2をMIDIで演奏する、専用RP2040基板用のファームウェアです。音色を選んで弾き、3つのボタンで音を調整して保存できます。
 
-- [UF2をダウンロード](dist/chiptune-v0.6.0-alpha.uf2)
+- [UF2をダウンロード](dist/chiptune-v0.6.1-alpha.uf2)
 - [OLED画面例](assets/ui-v06.png)
 - [Androidからの更新](ANDROID_UPDATE.md)
 - [ビルド検証](dist/Verification.json)／[テスト記録](dist/Test_Verification.json)
@@ -91,6 +91,16 @@ Program Change 0〜15はUSER音色1〜16です。CC16〜19はマクロ1〜4（�
 `PARTS / SETUP`で選択パートを変え、PART SETUPで有効化・声数を指定できます。MIDIルートを同じチャンネルから複数パートへ割り当てるとレイヤー、音域を分けるとスプリットになります。A〜Nは音色を置く演奏パートで、物理ICそのものの名前ではありません。利用できる声数は全パートで共有します。RESOURCE MAPに予約を表示します。
 
 セットアップは音色の配置・MIDI/CV/Gate・パターン・SN共通クロックをまとめる8枠の保存単位です。
+
+## ノイズ音色の確認
+
+SNのNOISE RATEはFAST/MID/SLOW/KEY TRACKです。FAST〜SLOWは固定の分周比、KEY TRACKはトーン3をノイズ用クロックに使います。KEY TRACKは通常トーンの1声分も予約します。
+
+v0.6.1では、KEY TRACKのホワイトノイズでMIDI音程を更新速度へ直接使っていた点を変更しました。低いノートを送ると、更新速度も数十Hzになり、低い段差やクリックのような音に偏っていました。ホワイトノイズでは更新用クロックを音程の32倍（+5オクターブ）にし、ノートはノイズの明るさを動かす入力として扱います。これは音色のマッピングで、ホワイトノイズに楽音としての基本周波数を保証するものではありません。周期ノイズの15倍換算は維持します。FAST〜SLOW、通常トーン、SAAノイズの音程変換は変更しません。
+
+旧MULTI初期パートDにMIDI ch10のD2を送る例では、SNノイズの更新速度は約73Hzから約2.35kHzへ変わります。ホワイト/周期の切り替え、左右の音量、トーン3の分周値、再トリガー、SAAノイズの有効化と振幅を、送出レジスターを解釈するPCテストで確認します。実機の音声確認は未完了です。
+
+最小の聴取テストは、固定レートのHI HATまたはSN SNAREをFACTORY SOUNDSから読み込み、TOOLS / AUDITIONでTESTをREPEATにします。これで固定レートのノイズとKEY TRACKを切り分けられます。これらは短い減衰音なので、HOLDで開始しても鳴り続けません。連続音として確認したい場合はAMP ENVELOPEのSUSTAINを100にしてからHOLDを使います。
 
 ## CV/Gate、パターン、SNクロック
 

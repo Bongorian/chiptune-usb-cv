@@ -1,5 +1,5 @@
 {
-  "firmware": "v0.6.0-alpha",
+  "firmware": "v0.6.1-alpha",
   "host_tests_passed": true,
   "sanitizers": [
     "ASan",
@@ -9,32 +9,37 @@
     {
       "name": "engine_tests",
       "status": "run",
-      "seconds": 10.4662
+      "seconds": 11.1221
     },
     {
       "name": "roles_tests",
       "status": "run",
-      "seconds": 0.102056
+      "seconds": 0.0945609
     },
     {
       "name": "performance_tests",
       "status": "run",
-      "seconds": 0.0627452
+      "seconds": 0.0565871
     },
     {
       "name": "studio_tests",
       "status": "run",
-      "seconds": 0.262388
+      "seconds": 0.250247
     },
     {
       "name": "instrument_tests",
       "status": "run",
-      "seconds": 0.0136985
+      "seconds": 0.0138445
+    },
+    {
+      "name": "noise_tests",
+      "status": "run",
+      "seconds": 0.0175871
     },
     {
       "name": "display_tests",
       "status": "run",
-      "seconds": 0.0121034
+      "seconds": 0.0119032
     }
   ],
   "ui_random_actions": 12000,
@@ -81,5 +86,14 @@
     "v5 multi setup preservation",
     "fixed factory sounds without changing user library",
     "Program Change across all user sounds"
+  ],
+  "noise_regressions": [
+    "SN white/periodic mode and all rate encodings",
+    "stereo and individual L/R noise attenuation",
+    "tone3 frequency and muted carrier for plain noise",
+    "metal carrier mixing",
+    "same-note LFSR reset and no reset on each tick",
+    "SAA noise enable, amplitude, rate and envelope disable",
+    "legacy default ch10 D2 white-noise clock about 2.35kHz instead of 73Hz"
   ]
 }

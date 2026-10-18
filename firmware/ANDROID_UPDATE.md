@@ -2,7 +2,7 @@
 
 USBホスト/OTGに対応するAndroid端末と、データ通信できるUSBケーブルを使います。USB-C接続でも充電専用ケーブルは使用できません。必要ならOTGアダプターを使います。端末が給電不足になる場合は給電付きUSBハブを利用します。
 
-この基板用のファイルは[**chiptune-v0.6.0-alpha.uf2**](dist/chiptune-v0.6.0-alpha.uf2)です。GitHubでファイルを開いた場合はDownloadから、先にAndroidのDownloadsへ保存してください。Pico/Pico W用やRP2350用のファイルは使いません。
+この基板用のファイルは[**chiptune-v0.6.1-alpha.uf2**](dist/chiptune-v0.6.1-alpha.uf2)です。GitHubでファイルを開いた場合はDownloadから、先にAndroidのDownloadsへ保存してください。Pico/Pico W用やRP2350用のファイルは使いません。
 
 ## 1. 本体をBOOTSELにする
 
@@ -24,7 +24,7 @@ AndroidのファイルアプリがRPI-RP2へ書き込めない場合にも使え
 4. **Flash**画面のファイル欄から、Downloadsに保存したこの基板用UF2を選択します。
 5. **Flash Device**を押して完了表示を待ちます。
 6. **Reboot**で通常起動します。切断済みなどで実行できなければ、ボタンを離した状態でUSBを抜き差しします。
-7. ホームでOK長押し → `SYSTEM > VERSION`で`V0.6.0 ALPHA`を確認します。MIDI ch1で弾くか、メニューの`TOOLS / AUDITION`でTESTをREPEATにして音を確認します。
+7. ホームでOK長押し → `SYSTEM > VERSION`で`V0.6.1 ALPHA`を確認します。MIDI ch1で弾くか、メニューの`TOOLS / AUDITION`でTESTをREPEATにして音を確認します。
 
 通常のFlash画面を使います。AdvancedのErase Flashや全フラッシュ消去は、通常の更新には不要です。UF2とアプリケーション部分だけを更新し、設定用の末尾64KiBを残します。新しいUF2は旧v0.4の校正領域も含みません。
 

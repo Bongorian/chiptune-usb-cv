@@ -380,6 +380,13 @@ uint16_t sn_divider_clock(float hz, uint32_t clock, bool *clamped) {
 uint16_t sn_divider(float hz, bool *clamped) {
     return sn_divider_clock(hz, 4000000, clamped);
 }
+/* Tone-derived white noise has no note-frequency fundamental. Clocking its
+   shift register at a bass/drum note rate produces slow steps, not broadband
+   percussion. Use five octaves of colour offset; periodic noise uses its
+   15-stage repeat length to retain the requested pitched fundamental. */
+float sn_noise_clock_hz(float note_hz, bool white) {
+    return note_hz * (white ? 32.0f : 15.0f);
+}
 uint8_t sn_attenuation(float gain) {
     static const float threshold[15] = {0.891251f, 0.707946f, 0.562341f, 0.446684f, 0.354813f,
                                         0.281838f, 0.223872f, 0.177828f, 0.141254f, 0.112202f,
@@ -1185,7 +1192,7 @@ void engine_tick(Engine *e, uint32_t dt) {
             int chip = chip_for(v) - 1, chidx = v >= 12 ? 3 : (v - (chip == 0 ? 6 : 9));
             if (chidx < 3 || p->noise_rate == 3) {
                 uint16_t divider =
-                    sn_divider_clock(hz * (v >= 12 && x->program == 9 ? 15.0f : 1.0f),
+                    sn_divider_clock(v >= 12 ? sn_noise_clock_hz(hz, x->program != 9) : hz,
                                      engine_sn_reference(&e->preset), &clamp);
                 int dest = chidx < 3 ? chidx : 2;
                 if (e->sn_div[chip][dest] != divider &&

@@ -11,7 +11,7 @@
 #define CV_SCALES 8
 #define CV_ROLES 7
 #define ARP_MODES 8
-#define UI_GROUPS 12 /* legacy regression fixture; modern UI has six roots */
+#define UI_GROUPS 12 /* legacy regression fixture; sound-first UI uses its own pages */
 
 typedef enum {
     TARGET_AUTO,
@@ -141,6 +141,7 @@ bool engine_target_patch_ok(int target, int program);
 void engine_routes_reset(Engine *e, unsigned source);
 void saa_frequency(float hz, uint8_t *octave, uint8_t *frequency, bool *clamped);
 uint8_t sn_attenuation(float gain);
+float sn_noise_clock_hz(float note_hz, bool white);
 unsigned engine_active(const Engine *e);
 unsigned engine_active_notes(const Engine *e);
 

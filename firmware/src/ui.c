@@ -61,6 +61,7 @@ static const char *const yesno[] = {"OFF", "ON"};
 static const char *const shape_names[] = {"ZERO",  "MAX",      "DECAY 1",  "SAW DOWN",
                                           "TRI 1", "TRIANGLE", "ATTACK 1", "SAW UP"};
 static const char *const modes[] = {"POLY", "MONO", "LEGATO"};
+static const char *const noise_rates[] = {"FAST", "MID", "SLOW", "KEY TRACK"};
 static const char *const cv_modes[] = {"OFF", "NOTE", "MOD"};
 static const char *const gates[] = {"OFF", "NOTE", "RETRIGGER", "STEP", "FX TRIGGER"};
 static const char *const scales[] = {"OFF",    "CHROMATIC", "MAJOR",     "MINOR",
@@ -164,7 +165,10 @@ static unsigned build(Ui *u, Item a[32]) {
         V(l, p, t, lo, hi, st, opt);                                                               \
         a[n - 1].structural = true;                                                                \
     } while (0)
-#define L(l, page) a[n++] = (Item){.label = l, .type = LINK, .key = page}
+#define L(l, page)                                                                                 \
+    a[n++] = (Item) {                                                                              \
+        .label = l, .type = LINK, .key = page                                                      \
+    }
 #define A(l, id)                                                                                   \
     a[n++] = (Item) {                                                                              \
         .label = l, .type = ACTION, .key = id                                                      \
@@ -191,7 +195,7 @@ static unsigned build(Ui *u, Item a[32]) {
             if (s->model == ST_SN_METAL)
                 V("TONE MIX", &s->noise_mix, U8, 0, 100, 1, NULL);
             else
-                S("NOISE RATE", &s->noise_rate, U8, 0, 3, 1, NULL);
+                S("NOISE RATE", &s->noise_rate, U8, 0, 3, 1, noise_rates);
             V("DECAY MS", &s->decay, U16, 0, 8000, 10, NULL);
         } else {
             if (s->model >= ST_SN_TWIN)
@@ -224,7 +228,7 @@ static unsigned build(Ui *u, Item a[32]) {
             if (s->model >= ST_SN_NOISE)
                 V("WHITE NOISE", &s->shape, U8, 0, 1, 1, yesno);
             if (s->model != ST_SN_METAL)
-                S("NOISE RATE", &s->noise_rate, U8, 0, 3, 1, NULL);
+                S("NOISE RATE", &s->noise_rate, U8, 0, 3, 1, noise_rates);
             if (s->model == ST_SN_METAL)
                 V("TONE MIX", &s->noise_mix, U8, 0, 100, 1, NULL);
         }
@@ -730,7 +734,7 @@ static void perform(Ui *u, unsigned action, uint32_t now) {
 }
 static void action(Ui *u, unsigned a, uint32_t now) {
     if (a == A_VERSION) {
-        toast(u, "V0.6.0 ALPHA", now);
+        toast(u, "V0.6.1 ALPHA", now);
         return;
     }
     if (u->page == UI_ROUTE && (a == UI_CV || a == UI_GATE)) {
