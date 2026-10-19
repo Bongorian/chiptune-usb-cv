@@ -1,5 +1,5 @@
 {
-  "firmware": "v0.6.1-alpha",
+  "firmware": "v0.7.0-alpha",
   "host_tests_passed": true,
   "sanitizers": [
     "ASan",
@@ -9,37 +9,42 @@
     {
       "name": "engine_tests",
       "status": "run",
-      "seconds": 11.1221
+      "seconds": 10.214
     },
     {
       "name": "roles_tests",
       "status": "run",
-      "seconds": 0.0945609
+      "seconds": 0.0996714
     },
     {
       "name": "performance_tests",
       "status": "run",
-      "seconds": 0.0565871
+      "seconds": 0.0552087
     },
     {
       "name": "studio_tests",
       "status": "run",
-      "seconds": 0.250247
+      "seconds": 0.244476
     },
     {
       "name": "instrument_tests",
       "status": "run",
-      "seconds": 0.0138445
+      "seconds": 0.0138755
+    },
+    {
+      "name": "layout_tests",
+      "status": "run",
+      "seconds": 0.0239541
     },
     {
       "name": "noise_tests",
       "status": "run",
-      "seconds": 0.0175871
+      "seconds": 0.0176566
     },
     {
       "name": "display_tests",
       "status": "run",
-      "seconds": 0.0119032
+      "seconds": 0.0120983
     }
   ],
   "ui_random_actions": 12000,
@@ -95,5 +100,26 @@
     "same-note LFSR reset and no reset on each tick",
     "SAA noise enable, amplitude, rate and envelope disable",
     "legacy default ch10 D2 white-noise clock about 2.35kHz instead of 73Hz"
+  ],
+  "layout_reset_from_versions_tested": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "layout_revision": 1,
+  "layout_regressions": [
+    "ch1/2/3/10 simultaneous register output",
+    "independent Note Off between channels",
+    "editor focus does not stop MIDI voices",
+    "fixed chip role filters sound selection and Program Change",
+    "SN noise engine changes preserve other held parts",
+    "SAA ENV clock-only channels stay muted",
+    "mono patch retains polyphonic reservation",
+    "all old musical settings reset once",
+    "CV calibration and brightness retained",
+    "new revision survives later boots",
+    "interrupted commit retries using the old valid bank"
   ]
 }

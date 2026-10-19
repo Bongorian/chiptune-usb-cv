@@ -2,6 +2,17 @@
 #include <math.h>
 #include <string.h>
 #include <limits.h>
+#include <stddef.h>
+_Static_assert(sizeof(StPart) == 120 && offsetof(StPart, role) == 119, "v5 part layout");
+const char *const st_role_names[ST_ROLES] = {"FREE", "SAA TONE", "SAA ENV", "SN TONE", "SN NOISE"};
+bool studio_role_accepts(unsigned role, unsigned model) {
+    if (role >= ST_ROLES || model >= ST_MODELS)
+        return false;
+    return role == ST_ROLE_ANY || (role == ST_ROLE_SAA_TONE && model <= ST_SAA_MIX) ||
+           (role == ST_ROLE_SAA_ENV && (model == ST_SAA_ENV || model == ST_SAA_AM)) ||
+           (role == ST_ROLE_SN_TONE && model == ST_SN_TWIN) ||
+           (role == ST_ROLE_SN_NOISE && (model == ST_SN_NOISE || model == ST_SN_METAL));
+}
 const char *const st_model_names[ST_MODELS] = {"SAA TONE", "SAA NOISE", "SAA MIX",    "SAA ENV",
                                                "SAA AM",   "SN TWIN",   "SN LEFT",    "SN RIGHT",
                                                "SN NOISE", "SN METAL",  "SN NOISE L", "SN NOISE R"};
@@ -124,6 +135,34 @@ void studio_default(StScene *s) {
         s->mod[i].amount = 100;
     s->mod[0] = (StMod){3, 0, ST_VIBRATO, 50};
     s->mod[1] = (StMod){4, 0, ST_VIBRATO, 50};
+}
+void studio_channel_layout(StScene *s) {
+    studio_default(s);
+    s->enabled = 1;
+    memcpy(s->name, "CHIP SET", 9);
+    memset(s->route, 0, sizeof(s->route));
+    memset(s->mod, 0, sizeof(s->mod));
+    for (unsigned p = 0; p < ST_PARTS; p++) {
+        s->part[p].enabled = p < 4;
+        s->part[p].arp = s->part[p].sequence = 0;
+        s->part[p].role = ST_ROLE_ANY;
+    }
+    const uint8_t sounds[] = {3, 1, 7, 12};
+    const uint8_t channels[] = {0, 1, 2, 9};
+    const uint8_t roles[] = {ST_ROLE_SAA_TONE, ST_ROLE_SAA_ENV, ST_ROLE_SN_TONE, ST_ROLE_SN_NOISE};
+    for (unsigned p = 0; p < 4; p++) {
+        StPart *a = &s->part[p];
+        studio_factory(sounds[p], &a->sound, a->name);
+        a->poly = p == 3 ? 1 : 2;
+        a->role = roles[p];
+        for (unsigned src = 0; src < 2; src++)
+            s->route[src][channels[p]] = (uint16_t)(1u << p);
+        s->mod[p * 2] = (StMod){3, (uint8_t)p, p == 3 ? ST_DECAY : ST_VIBRATO, 50};
+        s->mod[p * 2 + 1] =
+            (StMod){4, (uint8_t)p, p == 3 ? ST_LEVEL : ST_VIBRATO, p == 3 ? 25 : 50};
+    }
+    for (unsigned i = 0; i < 2; i++)
+        s->cv[i].mode = s->cv[i].gate = 0;
 }
 void studio_factory(unsigned index, StSound *s, char name[9]) {
     static const char names[ST_SOUNDS][9] = {"ENV BASS", "ENV LEAD", "STEP SAW", "CHIPLEAD",
@@ -253,6 +292,7 @@ bool studio_valid(const StScene *s) {
     for (unsigned p = 0; p < ST_PARTS; p++) {
         const StPart *a = &s->part[p];
         if (!studio_sound_valid(&a->sound) || !text_valid(a->name) || a->enabled > 1 || !a->poly ||
+            !studio_role_accepts(a->role, a->sound.model) ||
             a->poly > studio_limit(a->sound.model) || a->low > a->high || a->high > 127 ||
             !a->length || a->length > 16 || !a->division || a->division > 24 || a->direction > 2 ||
             a->arp > 5 || !a->arp_octaves || a->arp_octaves > 4 || a->lfo_shape > 3 ||
@@ -455,21 +495,54 @@ void studio_activate(Engine *e) {
     }
     studio_reset(e);
 }
+void studio_stop_part(Engine *e, unsigned part) {
+    if (part >= ST_PARTS)
+        return;
+    for (unsigned v = 0; v < 14; v++) {
+        Voice *x = &e->voice[v];
+        if (x->active && x->part == part) {
+            if (x->source == 2 || x->source == 3)
+                e->studio.gate_block[x->source - 2] = true;
+            x->active = x->held = x->sustained = false;
+            x->pair = 0;
+        }
+        if (!(e->studio.resources[part] & (1u << v)))
+            continue;
+        if (v < 6) {
+            swrite(e, v, 0);
+            if (v == 2 || v == 5)
+                swrite(e, 0x18 + (v == 5), 0);
+        } else {
+            unsigned c = chip(v) - 1, ch = v >= 12 ? 3 : (v - 6) % 3;
+            if (e->sn_atten[c][ch] != 15) {
+                nwrite(e, c, 0x90u | (ch << 5) | 15u);
+                e->sn_atten[c][ch] = 15;
+            }
+        }
+    }
+    memset(e->studio.held[part], 0, sizeof(e->studio.held[part]));
+    e->studio.due[part] = 0;
+    e->studio.pulse[part] = UINT32_MAX;
+    if (e->studio.test_on && e->studio.test_part == part)
+        e->studio.test_on = false;
+}
 static void release(Voice *v);
 bool studio_apply(Engine *e, const StScene *s) {
     if (!studio_valid(s))
         return false;
-    bool changed = false;
+    uint16_t changed = 0;
     uint16_t outputs[ST_PARTS], resources[ST_PARTS];
     if (!studio_plan(s, outputs, resources, NULL))
         return false;
     for (unsigned p = 0; p < ST_PARTS; p++)
         if (outputs[p] != e->studio.outputs[p] || resources[p] != e->studio.resources[p] ||
             s->part[p].sound.model != e->preset.studio.part[p].sound.model ||
-            s->part[p].sound.noise_rate != e->preset.studio.part[p].sound.noise_rate)
-            changed = true;
-    if (changed)
-        engine_panic(e, -1);
+            s->part[p].sound.noise_rate != e->preset.studio.part[p].sound.noise_rate ||
+            s->part[p].sound.mode != e->preset.studio.part[p].sound.mode)
+            changed |= (uint16_t)(1u << p);
+    for (unsigned p = 0; p < ST_PARTS; p++)
+        if (changed & (1u << p))
+            studio_stop_part(e, p);
     for (unsigned i = 0; i < 2; i++) {
         const StCv *old = &e->preset.studio.cv[i], *next = &s->cv[i];
         if (old->mode != next->mode || old->part != next->part || old->gate != next->gate ||
@@ -1014,10 +1087,12 @@ bool studio_sound_load(Engine *e, unsigned part, const StSound *sound, const cha
     static StScene candidate;
     candidate = e->preset.studio;
     StPart *p = &candidate.part[part];
+    if (!studio_role_accepts(p->role, sound->model))
+        return false;
     p->sound = *sound;
     memcpy(p->name, name, 9);
     unsigned maximum = studio_limit(sound->model);
-    if (sound->mode)
+    if (sound->mode && p->role == ST_ROLE_ANY)
         maximum = 1;
     if (!studio_is_single(e, part) && maximum > p->poly)
         maximum = p->poly;
@@ -1041,6 +1116,7 @@ bool studio_single(Engine *e, unsigned part, unsigned channel) {
         candidate.part[p].arp = candidate.part[p].sequence = 0;
     }
     StPart *p = &candidate.part[part];
+    p->role = ST_ROLE_ANY;
     p->poly = (uint8_t)(p->sound.mode ? 1 : studio_limit(p->sound.model));
     p->low = 0;
     p->high = 127;
@@ -1071,9 +1147,13 @@ void studio_program(Engine *e, unsigned source, unsigned channel, unsigned progr
     uint16_t route = candidate.route[source][channel];
     for (unsigned p = 0; p < ST_PARTS; p++)
         if (route & (1u << p)) {
+            if (!studio_role_accepts(candidate.part[p].role, e->library->sounds[program].model)) {
+                e->refused++;
+                return;
+            }
             candidate.part[p].sound = e->library->sounds[program];
             unsigned maximum = studio_limit(candidate.part[p].sound.model);
-            if (candidate.part[p].sound.mode)
+            if (candidate.part[p].sound.mode && candidate.part[p].role == ST_ROLE_ANY)
                 maximum = 1;
             if (studio_is_single(e, p) || candidate.part[p].poly > maximum)
                 candidate.part[p].poly = (uint8_t)maximum;

@@ -25,6 +25,13 @@ static void setup(void) {
     settings_default(&settings);
     engine_init(&engine, &settings.preset[0], (SoundSink){0});
     ui_init(&ui, &settings, &engine, save, NULL, NULL);
+    StSound sound;
+    char name[9];
+    studio_factory(0, &sound, name);
+    assert(studio_single(&engine, 0, 0));
+    assert(studio_sound_load(&engine, 0, &sound, name));
+    settings.preset[0] = engine.preset;
+    ui_init(&ui, &settings, &engine, save, NULL, NULL);
 }
 static void click(unsigned button) {
     ui_click(&ui, button, false, engine.now);

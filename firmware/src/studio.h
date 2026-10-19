@@ -3,6 +3,9 @@
 extern const char *const st_model_names[ST_MODELS];
 extern const char *const st_param_names[ST_PARAMS];
 void studio_default(StScene *scene);
+void studio_channel_layout(StScene *scene);
+bool studio_role_accepts(unsigned role, unsigned model);
+extern const char *const st_role_names[ST_ROLES];
 void studio_sound_default(StSound *sound, unsigned model);
 void studio_factory(unsigned index, StSound *sound, char name[9]);
 bool studio_sound_load(Engine *engine, unsigned part, const StSound *sound, const char name[9]);
@@ -18,6 +21,7 @@ bool studio_apply(Engine *engine, const StScene *scene);
 void studio_message(Engine *engine, unsigned source, const uint8_t *message, unsigned length);
 void studio_tick(Engine *engine, uint32_t elapsed);
 void studio_panic(Engine *engine, int source);
+void studio_stop_part(Engine *engine, unsigned part);
 void studio_cv(Engine *engine, unsigned input, float volts, bool gate, bool fresh);
 void studio_test(Engine *engine, unsigned part, unsigned note, unsigned mode);
 void studio_run(Engine *engine, bool run);

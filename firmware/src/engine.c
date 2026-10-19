@@ -327,6 +327,19 @@ static bool preset_valid(const Preset *p) {
     return p->reserve_cv <= 1 && p->arp_mode < ARP_MODES && p->arp_rate >= 1 && p->arp_rate <= 16 &&
            p->clock_source < SOURCES && sn_clock_valid(&p->sn_clock);
 }
+void settings_reset_layout(Settings *s) {
+    float zero[2], scale[2];
+    memcpy(zero, s->cv_zero, sizeof(zero));
+    memcpy(scale, s->cv_codes_per_volt, sizeof(scale));
+    uint8_t brightness = s->brightness;
+    settings_default(s);
+    memcpy(s->cv_zero, zero, sizeof(zero));
+    memcpy(s->cv_codes_per_volt, scale, sizeof(scale));
+    s->brightness = brightness;
+    for (unsigned i = 0; i < PRESETS; i++)
+        studio_channel_layout(&s->preset[i].studio);
+    s->layout_revision = LAYOUT_REVISION;
+}
 bool settings_valid(const Settings *s) {
     if (s->version != SETTINGS_VERSION || s->selected >= PRESETS)
         return false;

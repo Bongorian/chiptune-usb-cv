@@ -8,6 +8,7 @@
 #define PRESETS 8
 #define SOURCES 2
 #define SETTINGS_VERSION 5
+#define LAYOUT_REVISION 1
 #define CV_SCALES 8
 #define CV_ROLES 7
 #define ARP_MODES 8
@@ -68,7 +69,7 @@ typedef struct {
     uint32_t version;
     Preset preset[PRESETS];
     float cv_zero[2], cv_codes_per_volt[2];
-    uint8_t selected, padding[3];
+    uint8_t selected, layout_revision, padding[2];
     StSound sounds[ST_SOUNDS];
     char sound_name[ST_SOUNDS][9];
     uint16_t sound_used;
@@ -122,6 +123,7 @@ typedef struct Engine {
     const Settings *library;
 } Engine;
 void settings_default(Settings *s);
+void settings_reset_layout(Settings *s);
 bool settings_valid(const Settings *s);
 void engine_init(Engine *e, const Preset *p, SoundSink sink);
 void engine_panic(Engine *e, int source); /* -1 all; 0 USB; 1 TRS */

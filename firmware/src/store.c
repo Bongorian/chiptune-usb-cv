@@ -1,6 +1,9 @@
 #include "store.h"
 #include <string.h>
 _Static_assert(sizeof(StoreRecord) < STORE_BANK_BYTES, "Settings must fit a flash sector");
+_Static_assert(sizeof(Settings) == 17308 && sizeof(StoreRecord) == 17328, "v5 settings layout");
+_Static_assert(offsetof(Settings, layout_revision) == offsetof(Settings, selected) + 1,
+               "Layout revision uses former padding");
 uint32_t store_crc(const void *data, size_t length) {
     const uint8_t *p = data;
     uint32_t crc = 0xffffffffu;

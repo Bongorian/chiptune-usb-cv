@@ -28,15 +28,20 @@ int main(int argc, char **argv) {
                        .cv_raw = {1455, 2909},
                        .gates = {true, false},
                        .clock_hz = 2000000};
-    const uint8_t notes[][3] = {{0x90, 48, 100}};
-    for (unsigned i = 0; i < sizeof(notes) / sizeof(notes[0]); i++)
+    const uint8_t notes[][3] = {{0x90, 48, 100}, {0x91, 52, 90}, {0x92, 48, 100}, {0x99, 38, 100}};
+    const char *homes[] = {"home", "home-ch2", "home-ch3", "home-ch10"};
+    for (unsigned i = 0; i < 4; i++) {
         engine_message(&engine, 0, notes[i], 3);
-    engine_tick(&engine, 10);
-    ui_render(&ui, &status, 1000);
-    if (output(argv[1], "home"))
-        return 3;
+        engine_tick(&engine, 10);
+        ui.part = (uint8_t)i;
+        ui_render(&ui, &status, 1000);
+        if (output(argv[1], homes[i]))
+            return 3;
+    }
+    ui.part = 0;
     for (unsigned page = 0; page < UI_PAGES; page++) {
         ui.depth = 0;
+        ui.part = 0;
         ui_open(&ui, page);
         ui.field = 0;
         ui.edit = false;

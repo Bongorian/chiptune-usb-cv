@@ -494,12 +494,11 @@ static bool calibrate(void *ctx, unsigned input, bool one) {
     engine_panic(&engine, -1);
     return true;
 }
-static bool save_settings(void *ctx) {
-    (void)ctx;
-    if (!rail_on || usb_suspended || cal_zero_set[0] || cal_zero_set[1] ||
-        !settings_valid(&settings))
+/* Also used once during boot to commit an explicitly versioned layout reset.
+   The boot caller keeps all sound pins high impedance and USB uninitialized. */
+static bool commit_settings(void) {
+    if (!settings_valid(&settings))
         return false;
-    engine_panic(&engine, -1);
     static StoreRecord record;
     store_record(&record, &settings, store_sequence + 1);
     static uint8_t pages[STORE_BANK_BYTES];
@@ -521,9 +520,18 @@ static bool save_settings(void *ctx) {
         store_bank = (int)dest;
         store_sequence = record.sequence;
     }
+    return ok;
+}
+static bool save_settings(void *ctx) {
+    (void)ctx;
+    if (!rail_on || usb_suspended || cal_zero_set[0] || cal_zero_set[1] ||
+        !settings_valid(&settings))
+        return false;
+    engine_panic(&engine, -1);
+    bool ok = commit_settings();
     /* Flash erase stalls MIDI: flush partial messages and notes. No autosave during a performance.
      */
-    irq = save_and_disable_interrupts();
+    uint32_t irq = save_and_disable_interrupts();
     uart_tail = uart_head;
     gate_tail = gate_head;
     restore_interrupts(irq);
@@ -617,6 +625,10 @@ int main(void) {
     for (int s = 0; s < 2; s++)
         midi_init(&parsers[s], midi_received, &source_id[s]);
     ui_init(&ui, &settings, &engine, save_settings, calibrate, NULL);
+    if (ui.layout_reset && !commit_settings()) {
+        memcpy(ui.toast, "RESET SAVE FAILED", 18);
+        ui.toast_until = to_ms_since_boot(get_absolute_time()) + 5000;
+    }
     oled_init(&oled, ui.frame, oled_write, oled_render, NULL);
     clock_sm = pio_claim_unused_sm(clock_pio, true);
     clock_offset = pio_add_program(clock_pio, &sn_clock_program);

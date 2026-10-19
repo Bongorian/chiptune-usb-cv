@@ -139,7 +139,11 @@ static bool select_sound(Ui *u, unsigned slot, uint32_t now) {
         return false;
     }
     if (!studio_sound_load(u->engine, u->part, &sound, name)) {
-        toast(u, "NO ROOM: USE SINGLE", now);
+        toast(u,
+              studio_role_accepts(u->engine->preset.studio.part[u->part].role, sound.model)
+                  ? "NO ROOM: RESOURCES"
+                  : "WRONG CHIP FOR PART",
+              now);
         return false;
     }
     u->active_sound = (uint8_t)slot;
@@ -374,6 +378,7 @@ static unsigned build(Ui *u, Item a[32]) {
     case UI_PARTS:
         PART();
         S("ENABLED", &p->enabled, U8, 0, 1, 1, yesno);
+        S("ENGINE ROLE", &p->role, U8, 0, ST_ROLES - 1, 1, st_role_names);
         S("MODEL", &s->model, U8, 0, ST_MODELS - 1, 1, st_model_names);
         S("POLYPHONY", &p->poly, U8, 1, (int)studio_limit(s->model), 1, NULL);
         A("PART NAME", A_NAME_PART);
@@ -388,7 +393,12 @@ static unsigned build(Ui *u, Item a[32]) {
         A("NAME SOUND", A_NAME_SOUND);
         A("SAVE LIBRARY", A_SAVE_SYSTEM);
         break;
-    case UI_MENU:
+    case UI_MENU: {
+        unsigned last = u->part;
+        for (unsigned p = 0; p < ST_PARTS; p++)
+            if (scene->part[p].enabled && p > last)
+                last = p;
+        V("EDIT CHANNEL", &u->part, U8, 0, (int)last, 1, NULL);
         L("EDIT SOUND", UI_SOUND);
         L("SAVE SOUND", UI_SAVE_SOUND);
         L("MIDI INPUT", UI_MIDI);
@@ -396,6 +406,7 @@ static unsigned build(Ui *u, Item a[32]) {
         L("TOOLS / AUDITION", UI_PLAY);
         L("SYSTEM", UI_SYSTEM);
         break;
+    }
     case UI_MIDI:
         V("RECEIVE CH", &u->channel, U8, 0, 15, 1, NULL);
         L("USB ROUTING", UI_USB);
@@ -509,19 +520,14 @@ void ui_init(Ui *u, Settings *settings, Engine *e, bool (*save)(void *),
     u->slot = settings->selected;
     u->test_note = 48;
     e->library = settings;
-    bool fresh = !e->preset.studio.enabled;
+    if (settings->layout_revision != LAYOUT_REVISION) {
+        settings_reset_layout(settings);
+        engine_preset(e, &settings->preset[settings->selected]);
+        u->layout_reset = true;
+        u->slot = settings->selected;
+    }
     studio_activate(e);
     u->active_sound = UINT8_MAX;
-    if (fresh) {
-        StSound sound;
-        char name[9];
-        studio_factory(0, &sound, name);
-        e->preset.studio.part[0].sound = sound;
-        memcpy(e->preset.studio.part[0].name, name, 9);
-        (void)studio_single(e, 0, 0);
-        /* Establish a clean RAM baseline; initialization never writes flash. */
-        settings->preset[settings->selected] = e->preset;
-    }
     for (unsigned p = 0; p < ST_PARTS; p++)
         if (e->preset.studio.part[p].enabled) {
             u->part = (uint8_t)p;
@@ -563,7 +569,7 @@ static bool set_value(Ui *u, const Item *item, int value) {
     }
     if (item->ptr == &u->channel && u->page == UI_MIDI) {
         if (u->edit) {
-            engine_panic(e, -1);
+            studio_stop_part(e, u->part);
             for (unsigned src = 0; src < SOURCES; src++) {
                 for (unsigned c = 0; c < 16; c++)
                     e->preset.studio.route[src][c] &= (uint16_t) ~(1u << u->part);
@@ -572,11 +578,18 @@ static bool set_value(Ui *u, const Item *item, int value) {
         }
     }
     write_item(item, item->ptr, value);
-    if (item->ptr == &u->part && u->part != previous_part && e->studio.test_on)
-        studio_test(e, u->part, u->test_note, u->test_mode);
+    if (item->ptr == &u->part && u->part != previous_part) {
+        u->active_sound = UINT8_MAX;
+        sync_sound(u);
+        if (u->active_sound < ST_SOUNDS)
+            u->library_slot = u->active_sound;
+        if (e->studio.test_on)
+            studio_test(e, u->part, u->test_note, u->test_mode);
+    }
     if (item->ptr == &u->settings->brightness)
         u->system_dirty = true;
     if (item->ptr == &u->target_part && (u->page == UI_USB || u->page == UI_TRS)) {
+        studio_stop_part(e, u->part);
         uint16_t *route = &e->preset.studio.route[u->page == UI_TRS][u->channel];
         if (value)
             *route |= (uint16_t)(1u << u->part);
@@ -683,18 +696,15 @@ static void perform(Ui *u, unsigned action, uint32_t now) {
         char name[9];
         memcpy(name, s->sound_name[u->library_slot], 9);
         uint16_t used = s->sound_used;
-        bool single = studio_is_single(e, u->part);
         u->undo = s->preset[s->selected];
-        if (single)
-            s->preset[s->selected] = e->preset;
+        s->preset[s->selected] = e->preset;
         s->sounds[u->library_slot] = e->preset.studio.part[u->part].sound;
         memcpy(s->sound_name[u->library_slot], e->preset.studio.part[u->part].name, 9);
         s->sound_used |= (uint16_t)(1u << u->library_slot);
         if (u->save && u->save(u->ctx)) {
             u->system_dirty = false;
             u->active_sound = u->library_slot;
-            if (single)
-                u->dirty = false;
+            u->dirty = false;
             toast(u, "SOUND SAVED", now);
         } else {
             s->sounds[u->library_slot] = old;
@@ -734,7 +744,7 @@ static void perform(Ui *u, unsigned action, uint32_t now) {
 }
 static void action(Ui *u, unsigned a, uint32_t now) {
     if (a == A_VERSION) {
-        toast(u, "V0.6.1 ALPHA", now);
+        toast(u, "V0.7.0 ALPHA", now);
         return;
     }
     if (u->page == UI_ROUTE && (a == UI_CV || a == UI_GATE)) {
@@ -845,7 +855,10 @@ void ui_click(Ui *u, unsigned button, bool long_press, uint32_t now) {
             } else {
                 unsigned conflict = 0;
                 char message[22];
-                if (i->ptr == &u->engine->preset.studio.part[u->part].poly) {
+                if (!studio_role_accepts(u->candidate.part[u->part].role,
+                                         u->candidate.part[u->part].sound.model))
+                    snprintf(message, sizeof(message), "WRONG CHIP FOR PART");
+                else if (i->ptr == &u->engine->preset.studio.part[u->part].poly) {
                     unsigned max = (unsigned)u->draft;
                     while (max > 1) {
                         u->candidate.part[u->part].poly = (uint8_t)--max;
@@ -884,7 +897,9 @@ void ui_click(Ui *u, unsigned button, bool long_press, uint32_t now) {
                 u->active_sound < ST_SOUNDS ? u->active_sound : (delta > 0 ? ST_SOUNDS - 1 : 0);
             for (unsigned tries = 0; tries < ST_SOUNDS; tries++) {
                 current = (unsigned)(((int)current + delta + ST_SOUNDS) % ST_SOUNDS);
-                if (u->settings->sound_used & (1u << current)) {
+                if ((u->settings->sound_used & (1u << current)) &&
+                    studio_role_accepts(u->engine->preset.studio.part[u->part].role,
+                                        u->settings->sounds[current].model)) {
                     if (sound_matches(u, u->active_sound))
                         (void)select_sound(u, current, now);
                     else {
@@ -1091,6 +1106,14 @@ static void note_name(char out[12], int n) {
     snprintf(out, 12, "%s%d", pitch[n % 12], n / 12 - 1);
 }
 static void format(Ui *u, const Item *i, int v, char out[24]) {
+    if (i->ptr == &u->part && u->page == UI_MENU) {
+        const StPart *part = &u->engine->preset.studio.part[v];
+        if (part->enabled)
+            snprintf(out, 24, "CH%u", receive_channel(u->engine, (unsigned)v) + 1);
+        else
+            snprintf(out, 24, "%c OFF", 'A' + v);
+        return;
+    }
     Engine *e = u->engine;
     if (i->names && v >= i->min && v <= i->max) {
         snprintf(out, 24, "%s", i->names[v - i->min]);
@@ -1283,7 +1306,7 @@ void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
             snprintf(title, sizeof(title), "%02u %.8s", u->pending_sound + 1,
                      u->settings->sound_name[u->pending_sound]);
         else if (u->confirm_action == A_SAVE_SOUND)
-            snprintf(title, sizeof(title), "USER %02u OVERWRITE", u->library_slot + 1);
+            snprintf(title, sizeof(title), "USER %02u + ALL PARTS", u->library_slot + 1);
         else if (u->confirm_action == A_SINGLE)
             snprintf(title, sizeof(title), "OTHER PARTS / CV OFF");
         else
@@ -1303,6 +1326,9 @@ void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
             snprintf(title, sizeof(title), "FACTORY %02u", u->active_sound - ST_SOUNDS + 1);
         else
             snprintf(title, sizeof(title), "CUSTOM SOUND");
+        if (part->role && part->role < ST_ROLES)
+            snprintf(title, sizeof(title), "CH%u %s", receive_channel(e, u->part) + 1,
+                     st_role_names[part->role]);
         /* A star here means this sound differs from its stored sound, rather
            than that some unrelated setup parameter has changed. */
         bool setup_dirty = u->dirty;
@@ -1310,8 +1336,12 @@ void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
         header(u, title);
         u->dirty = setup_dirty;
         text(u, 2, 15, part->name, 2, true);
-        snprintf(title, sizeof(title), "%s %s", st_model_names[part->sound.model],
-                 single ? "" : "MULTI");
+        if (part->role && u->active_sound < ST_SOUNDS)
+            snprintf(title, sizeof(title), "U%02u %s", u->active_sound + 1,
+                     st_model_names[part->sound.model]);
+        else
+            snprintf(title, sizeof(title), "%s %s", st_model_names[part->sound.model],
+                     single ? "" : "MULTI");
         text(u, 2, 33, title, 1, true);
         unsigned notes = studio_note_count(e, u->part);
         unsigned capacity = part->sound.mode ? 1 : part->poly;
@@ -1387,7 +1417,10 @@ void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
         unsigned count = build(u, list);
         if (count && u->field >= count)
             u->field = 0;
-        if (studio_is_single(e, u->part))
+        if (e->preset.studio.part[u->part].role)
+            snprintf(title, sizeof(title), "CH%u / %s", receive_channel(e, u->part) + 1,
+                     page_title(u->page));
+        else if (studio_is_single(e, u->part))
             snprintf(title, sizeof(title), "%s", page_title(u->page));
         else
             snprintf(title, sizeof(title), "%c / %s", 'A' + u->part, page_title(u->page));
@@ -1427,7 +1460,10 @@ void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
             footer(u, u->edit ? "OK:SET HOLD:CANCEL" : "OK:EDIT HOLD:BACK");
         } else if (u->edit && count) {
             Item *i = &list[u->field];
-            if (studio_is_single(e, u->part))
+            if (e->preset.studio.part[u->part].role)
+                snprintf(title, sizeof(title), "CH%u:%s", receive_channel(e, u->part) + 1,
+                         i->label);
+            else if (studio_is_single(e, u->part))
                 snprintf(title, sizeof(title), "%s", i->label);
             else
                 snprintf(title, sizeof(title), "%c:%s", 'A' + u->part, i->label);

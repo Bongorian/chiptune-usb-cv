@@ -25,6 +25,7 @@ typedef struct {
     uint8_t active_sound, pending_sound, factory_slot;
     bool dirty, confirm, confirm_yes, boot_requested, chord, chord_sent;
     bool was_dirty, previewed, system_dirty, was_system_dirty;
+    bool layout_reset;
     uint32_t chord_since;
     int draft, original;
     uint8_t acceleration;

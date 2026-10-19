@@ -48,6 +48,14 @@ typedef struct {
     uint8_t macro_dest[4];
     int8_t macro[4]; /* bipolar additions; zero leaves the base sound unchanged */
 } StSound;
+typedef enum {
+    ST_ROLE_ANY,
+    ST_ROLE_SAA_TONE,
+    ST_ROLE_SAA_ENV,
+    ST_ROLE_SN_TONE,
+    ST_ROLE_SN_NOISE,
+    ST_ROLES
+} StRole;
 typedef struct {
     StSound sound;
     char name[9];
@@ -55,6 +63,7 @@ typedef struct {
     uint8_t note[ST_STEPS], gate[ST_STEPS], velocity[ST_STEPS];
     int8_t motion[ST_STEPS];
     uint8_t length, division, direction, arp, arp_octaves, lfo_shape, sequence, velocity_curve;
+    uint8_t role; /* Uses the former trailing padding byte; v5 storage size stays unchanged. */
 } StPart;
 typedef struct {
     uint8_t mode, part, base_note, scale, root, glide, range;

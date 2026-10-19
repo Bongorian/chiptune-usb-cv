@@ -24,6 +24,7 @@ static void wn(void *ctx, uint8_t c, uint8_t value) {
 }
 static void setup(void) {
     settings_default(&settings);
+    settings.layout_revision = LAYOUT_REVISION;
     memset(registers, 0, sizeof(registers));
     engine_init(&e, &settings.preset[0], (SoundSink){ws, wn, NULL});
     studio_activate(&e);
