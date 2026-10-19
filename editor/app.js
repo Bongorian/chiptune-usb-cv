@@ -448,7 +448,7 @@ function renderMeta() {
   $("structure-description").textContent = descriptions[m];
   $("wave-note").textContent = isEnv(m)
     ? m === 14
-      ? "緑がENV、橙が補助成分（指定NOTEからの経過時間に対する追加減衰）。合成前の成分を表示します。"
+      ? "青がENV、水色が補助成分（指定NOTEからの経過時間に対する追加減衰）。合成前の成分を表示します。"
       : "ENV形状はチップ内蔵の8種類から選択。8 / 16段階で描きます。純ENVは波形の周期で音程が変わり、高音域に上限があります。"
     : "トーン／ノイズ／レイヤーの模式図です。ノイズの実際の系列・位相・アナログ出力を再現した波形ではありません。";
 }
@@ -651,7 +651,7 @@ function setupCanvas(id) {
   const canvas = $(id),
     ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = "#2b3b30";
+  ctx.strokeStyle = "#263d5d";
   ctx.lineWidth = 1;
   for (let x = 0; x < canvas.width; x += canvas.width / 16) {
     ctx.beginPath();
@@ -689,7 +689,7 @@ function drawWave() {
       else ctx.moveTo(x, y);
     }
     ctx.strokeStyle =
-      mode === "layer" ? "#dda879" : mode ? "#aab9c1" : "#d0ec8c";
+      mode === "layer" ? "#a7c9ef" : mode ? "#d7e3f3" : "#69aaff";
     ctx.lineWidth = 2.5;
     ctx.stroke();
   }
@@ -717,16 +717,16 @@ function drawEnvelope() {
   ctx.beginPath();
   pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
   ctx.lineTo(pad, c.height - pad);
-  ctx.fillStyle = "#d0ec8c10";
+  ctx.fillStyle = "#69aaff18";
   ctx.fill();
-  ctx.strokeStyle = "#d0ec8c";
+  ctx.strokeStyle = "#69aaff";
   ctx.lineWidth = 2;
   ctx.stroke();
   envelopeHandles = [pts[1], pts[2], pts[4]];
   for (const [x, y] of envelopeHandles) {
     ctx.beginPath();
     ctx.arc(x, y, 6, 0, Math.PI * 2);
-    ctx.fillStyle = "#dda879";
+    ctx.fillStyle = "#a7c9ef";
     ctx.fill();
   }
 }
@@ -822,14 +822,14 @@ function drawSteps() {
   for (let i = 0; i < 16; i++) {
     const v = motion.motion[i],
       y = c.height / 2 - (v / 100) * (c.height / 2 - 15);
-    ctx.fillStyle = i < motion.length ? "#a6c66c" : "#3d4b3b";
+    ctx.fillStyle = i < motion.length ? "#69aaff" : "#314763";
     ctx.fillRect(
       i * w + 4,
       Math.min(y, c.height / 2),
       w - 8,
       Math.max(2, Math.abs(y - c.height / 2)),
     );
-    ctx.fillStyle = "#c8d6b9";
+    ctx.fillStyle = "#ccdef5";
     ctx.font = "11px monospace";
     ctx.fillText(String(v), i * w + 8, c.height - 5);
   }

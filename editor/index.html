@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#151b1b" />
+    <meta name="theme-color" content="#101a2b" />
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'"
@@ -12,17 +12,14 @@
       name="description"
       content="SAA1099とSN76489の音色を作る、Chiptune USB/CV用Web MIDIエディタ。"
     />
-    <title>Wave Lab — Chiptune USB/CV</title>
+    <title>Chiptune USB/CV 音色エディタ</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="#"
-        ><span class="brand-icon">▰</span
-        ><span>CHIPTUNE<span class="brand-sub">WAVE LAB / 08</span></span></a
-      >
+      <a class="brand" href="#">CHIPTUNE USB/CV</a>
       <div class="top-links">
-        <span class="tiny">SAA1099 + DUAL SN76489</span
+        <span class="tiny">SAA1099 / SN76489 × 2</span
         ><a
           href="https://github.com/Bongorian/chiptune-usb-cv"
           target="_blank"
@@ -33,7 +30,7 @@
     </header>
     <div class="shell">
       <aside class="sidebar">
-        <div class="eyebrow">01 / CONNECTION</div>
+        <div class="eyebrow">接続</div>
         <div id="connection-state" class="connection-state">
           <i></i><span>OFFLINE EDITOR</span>
         </div>
@@ -53,7 +50,7 @@
         </select>
         <button id="read" class="full" disabled>本体から読み出す</button>
         <div class="divider"></div>
-        <div class="eyebrow">02 / PART</div>
+        <div class="eyebrow">パート</div>
         <label class="field-label" for="part">編集するパート</label
         ><select id="part"></select>
         <div class="pair">
@@ -84,7 +81,7 @@
           >
         </div>
         <div class="divider"></div>
-        <div class="eyebrow">03 / ALLOCATION</div>
+        <div class="eyebrow">回路配置</div>
         <p class="small muted">
           プロファイルは全パートとルートを置き換えます。フラッシュ保存は別操作です。
         </p>
@@ -99,19 +96,12 @@
           <button id="confirm-profile" class="danger">置き換える</button
           ><button id="cancel-profile">キャンセル</button>
         </div>
-        <div class="sidebar-foot">
-          <span>HARDWARE FIRST.</span><span>NO EMULATED WAVETABLES.</span>
-        </div>
       </aside>
       <main>
         <div class="page-heading">
-          <div>
-            <div class="eyebrow">SOUND DESIGN WORKSPACE</div>
-            <h1>Make the chip<br /><em>do its thing.</em></h1>
-          </div>
+          <h1>音色エディタ</h1>
           <div class="heading-meta">
-            <span id="chip-label">SAA1099</span
-            ><span>HARDWARE VOICE DESIGNER</span>
+            <span id="chip-label">SAA1099</span>
           </div>
         </div>
         <div id="message" role="status" aria-live="polite">
@@ -121,7 +111,7 @@
           <div class="section-head">
             <div>
               <span class="step-tag">01</span>
-              <h2>Structure <small>音の構造</small></h2>
+              <h2>発音構造</h2>
             </div>
             <span id="part-label" class="tag">PART A / CH 1</span>
           </div>
@@ -142,7 +132,7 @@
           </div>
           <div id="models" class="model-grid"></div>
           <div class="preset-row">
-            <label for="factory">STARTING POINT</label
+            <label for="factory">工場音色</label
             ><select id="factory"></select
             ><button id="load-factory">音色を読み込む</button>
           </div>
@@ -151,9 +141,9 @@
           <div class="section-head">
             <div>
               <span class="step-tag">02</span>
-              <h2>Waveform <small>チップの発音構造</small></h2>
+              <h2>波形</h2>
             </div>
-            <span class="tag neutral">SCHEMATIC PREVIEW</span>
+            <span class="tag neutral">模式図</span>
           </div>
           <canvas
             id="wave"
@@ -176,7 +166,7 @@
             <div class="section-head">
               <div>
                 <span class="step-tag">03</span>
-                <h2>Envelope <small>音量の時間変化</small></h2>
+                <h2>音量エンベロープ</h2>
               </div>
             </div>
             <canvas
@@ -194,7 +184,7 @@
             <div class="section-head">
               <div>
                 <span class="step-tag">04</span>
-                <h2>Motion <small>音程・定位・変調</small></h2>
+                <h2>音程・変調</h2>
               </div>
             </div>
             <div id="motion-controls" class="control-grid"></div>
@@ -208,7 +198,7 @@
           <div class="section-head">
             <div>
               <span class="step-tag">05</span>
-              <h2>Step editor <small>16ステップの音色変化</small></h2>
+              <h2>16ステップ</h2>
             </div>
             <button id="read-motion" disabled>本体から取得</button>
           </div>
@@ -262,7 +252,7 @@
           <div class="section-head">
             <div>
               <span class="step-tag">06</span>
-              <h2>SN clock <small>左右全SNに共通</small></h2>
+              <h2>SN共通クロック</h2>
             </div>
             <button id="read-clock" disabled>本体から取得</button>
           </div>
@@ -276,7 +266,7 @@
           <div class="section-head">
             <div>
               <span class="step-tag">07</span>
-              <h2>CV / Gate <small>独立した2系統</small></h2>
+              <h2>CV / Gate</h2>
             </div>
             <button id="read-cv" disabled>本体から取得</button>
           </div>
@@ -284,10 +274,7 @@
           <button id="send-cv" disabled>CV / Gateを反映</button>
         </section>
         <footer>
-          <p>
-            チップにない波形メモリーやフィルターは追加しません。表示は構造の模式図です。<br />音は本体のLINE
-            OUTから確認してください。
-          </p>
+          <p>音は本体のLINE OUTから出力します。</p>
           <a
             id="firmware-link"
             href="https://github.com/Bongorian/chiptune-usb-cv/raw/refs/heads/main/firmware/dist/chiptune-v0.8.0-alpha.uf2"
@@ -298,7 +285,7 @@
     </div>
     <div class="bottom-bar">
       <div class="resource">
-        <span class="eyebrow">VOICE RESOURCES</span
+        <span class="eyebrow">回路使用量</span
         ><strong id="resource-cost">SAA 6/6回路 · 2音</strong
         ><span id="resource-detail"></span><span id="resource-actual"></span>
       </div>
