@@ -73,20 +73,20 @@ def verify(build: Path, nm: str):
     device = symbol('device')
     assert len(device) == 18 and device[0:2] == bytes([18, 1]) and device[7] == 64
     assert struct.unpack_from('<H', device, 2)[0] == 0x0200
-    assert struct.unpack_from('<H', device, 12)[0] == 0x0070, 'Expected firmware USB revision 0.7'
+    assert struct.unpack_from('<H', device, 12)[0] == 0x0080, 'Expected firmware USB revision 0.8'
     bss = symbols['__bss_end__'][0] - symbols['__bss_start__'][0]
     assert bss < 200 * 1024, 'Insufficient RP2040 RAM margin'
     stack = symbols['__StackTop'][0] - symbols['__StackBottom'][0]
     assert stack == 4096, 'Expected the dedicated 4KiB core-0 scratch stack'
     return {
-        'firmware': 'v0.7.0-alpha', 'target': 'RP2040 dedicated Chiptune USB/CV board',
+        'firmware': 'v0.8.0-alpha', 'target': 'RP2040 dedicated Chiptune USB/CV board',
         'hardware_tested': False, 'checks_passed': True,
         'application_bytes': len(binary), 'bss_bytes': bss, 'stack_bytes': stack, 'uf2_bytes': len(uf2),
         'uf2_blocks': count, 'uf2_family_id': hex(FAMILY),
         'application_end': hex(flash_end), 'settings_start': hex(STORE_START),
         'settings_reserved_bytes': 65536, 'settings_region_untouched': True,
         'settings_region_untouched_by_uf2': True,
-        'legacy_boot_behavior': {'layout_revision': 1, 'musical_settings': 'reset and commit once',
+        'legacy_boot_behavior': {'layout_revision': 2, 'musical_settings': 'reset and commit once',
                                  'cv_calibration': 'retain', 'brightness': 'retain'},
         'usb': {'vid': hex(struct.unpack_from('<H', device, 8)[0]),
                 'pid': hex(struct.unpack_from('<H', device, 10)[0]),

@@ -3,33 +3,47 @@
 #include <string.h>
 #include <limits.h>
 #include <stddef.h>
-_Static_assert(sizeof(StPart) == 120 && offsetof(StPart, role) == 119, "v5 part layout");
+_Static_assert(sizeof(StSound) == 42 && sizeof(StPart) == 128 && offsetof(StPart, role) == 127,
+               "v6 sound and part layout");
 const char *const st_role_names[ST_ROLES] = {"FREE", "SAA TONE", "SAA ENV", "SN TONE", "SN NOISE"};
 bool studio_role_accepts(unsigned role, unsigned model) {
     if (role >= ST_ROLES || model >= ST_MODELS)
         return false;
     return role == ST_ROLE_ANY || (role == ST_ROLE_SAA_TONE && model <= ST_SAA_MIX) ||
-           (role == ST_ROLE_SAA_ENV && (model == ST_SAA_ENV || model == ST_SAA_AM)) ||
-           (role == ST_ROLE_SN_TONE && model == ST_SN_TWIN) ||
+           (role == ST_ROLE_SAA_ENV && studio_is_env(model)) ||
+           (role == ST_ROLE_SN_TONE && (model == ST_SN_TWIN || model == ST_SN_STACK)) ||
            (role == ST_ROLE_SN_NOISE && (model == ST_SN_NOISE || model == ST_SN_METAL));
 }
-const char *const st_model_names[ST_MODELS] = {"SAA TONE", "SAA NOISE", "SAA MIX",    "SAA ENV",
-                                               "SAA AM",   "SN TWIN",   "SN LEFT",    "SN RIGHT",
-                                               "SN NOISE", "SN METAL",  "SN NOISE L", "SN NOISE R"};
+const char *const st_model_names[ST_MODELS] = {"SAA TONE",  "SAA NOISE", "SAA MIX",    "SAA ENV",
+                                               "SAA AM",    "SN TWIN",   "SN LEFT",    "SN RIGHT",
+                                               "SN NOISE",  "SN METAL",  "SN NOISE L", "SN NOISE R",
+                                               "ENV NOISE", "ENV MIX",   "SAA LAYER",  "SN STACK"};
 const char *const st_param_names[ST_PARAMS] = {
-    "OFF",    "WAVE",  "STEPS",   "R INVERT", "PAN",   "VIBRATO", "DETUNE",      "NOISE MIX",
-    "ATTACK", "DECAY", "RELEASE", "TREMOLO",  "LEVEL", "PITCH",   "SN BASE ALL", "SN DEPTH ALL"};
+    "OFF",          "WAVE",        "STEPS",       "R INVERT",  "PAN",
+    "VIBRATO",      "DETUNE",      "TONE MIX",    "ATTACK",    "DECAY",
+    "RELEASE",      "TREMOLO",     "LEVEL",       "PITCH",     "SN BASE ALL",
+    "SN DEPTH ALL", "LAYER LEVEL", "LAYER DECAY", "ENV RATIO", "LAYER PITCH"};
 static float bound(float x, float a, float b) {
     return x < a ? a : x > b ? b : x;
 }
+bool studio_is_saa(unsigned m) {
+    return m <= ST_SAA_AM || (m >= ST_SAA_ENV_NOISE && m <= ST_SAA_LAYER);
+}
+bool studio_is_env(unsigned m) {
+    return m == ST_SAA_ENV || m == ST_SAA_AM || (m >= ST_SAA_ENV_NOISE && m <= ST_SAA_LAYER);
+}
 static bool env_model(unsigned m) {
-    return m == ST_SAA_ENV || m == ST_SAA_AM;
+    return studio_is_env(m);
 }
 static bool noise_model(unsigned m) {
-    return m == ST_SAA_NOISE || m == ST_SAA_MIX || m >= ST_SN_NOISE;
+    return m == ST_SAA_NOISE || m == ST_SAA_MIX || (m >= ST_SN_NOISE && m <= ST_SN_NOISE_R) ||
+           m == ST_SAA_ENV_NOISE || m == ST_SAA_ENV_MIX;
+}
+bool studio_is_noise(unsigned m) {
+    return noise_model(m);
 }
 static bool twin(unsigned m) {
-    return m == ST_SN_TWIN || m == ST_SN_NOISE || m == ST_SN_METAL;
+    return m == ST_SN_TWIN || m == ST_SN_NOISE || m == ST_SN_METAL || m == ST_SN_STACK;
 }
 static int mate(int v) {
     return v >= 6 && v <= 8 ? v + 3 : v >= 9 && v <= 11 ? v - 3 : v == 12 ? 13 : 12;
@@ -38,9 +52,10 @@ static unsigned chip(unsigned v) {
     return v < 6 ? 0 : v < 9 || v == 12 ? 1 : 2;
 }
 unsigned studio_limit(unsigned m) {
-    return env_model(m)                                             ? 2
+    return m == ST_SN_STACK                                         ? 1
+           : env_model(m)                                           ? 2
            : m == ST_SN_TWIN || m == ST_SN_LEFT || m == ST_SN_RIGHT ? 3
-           : m >= ST_SN_NOISE                                       ? 1
+           : (m >= ST_SN_NOISE && m <= ST_SN_NOISE_R)               ? 1
                                                                     : 6;
 }
 void studio_sound_default(StSound *s, unsigned model) {
@@ -57,12 +72,18 @@ void studio_sound_default(StSound *s, unsigned model) {
     s->retrigger = 1;
     s->noise_rate = 1;
     s->noise_mix = 50;
+    s->layer_decay = 80;
+    s->layer_level = 35;
+    s->layer_source = 1;
+    s->layer_interval = 0;
+    s->stack_interval = 12;
+    s->stack_size = 2;
     s->lfo_rate = 3;
     s->macro_dest[0] = env_model(model) ? ST_WAVE : ST_VIBRATO;
     s->macro_dest[1] = env_model(model) ? ST_STEPSIZE : ST_TREMOLO;
-    s->macro_dest[2] = env_model(model) ? ST_INVERT : model < ST_SN_TWIN ? ST_PAN : ST_DETUNE;
+    s->macro_dest[2] = env_model(model) ? ST_INVERT : studio_is_saa(model) ? ST_PAN : ST_DETUNE;
     s->macro_dest[3] = ST_RELEASE;
-    if (model >= ST_SN_NOISE) {
+    if (model >= ST_SN_NOISE && model <= ST_SN_NOISE_R) {
         s->shape = 1;
         s->sustain = 0;
         s->decay = 100;
@@ -70,11 +91,23 @@ void studio_sound_default(StSound *s, unsigned model) {
     }
     if (model == ST_SN_LEFT || model == ST_SN_RIGHT)
         s->macro_dest[2] = ST_ATTACK;
-    if (model == ST_SAA_NOISE || model >= ST_SN_NOISE) {
+    if (noise_model(model) && !env_model(model)) {
         s->macro_dest[0] = ST_DECAY;
         s->macro_dest[1] = ST_TREMOLO;
         s->macro_dest[2] = twin(model) || model == ST_SAA_NOISE ? ST_PAN : ST_ATTACK;
         s->macro_dest[3] = ST_LEVEL;
+    }
+    if (model == ST_SAA_LAYER) {
+        s->macro_dest[0] = ST_LAYER_LEVEL;
+        s->macro_dest[1] = ST_LAYER_DECAY;
+        s->macro_dest[2] = ST_PAN;
+        s->macro_dest[3] = ST_RELEASE;
+    }
+    if (model == ST_SN_STACK) {
+        s->macro_dest[0] = ST_LAYER_INTERVAL;
+        s->macro_dest[1] = ST_DETUNE;
+        s->macro_dest[2] = ST_TREMOLO;
+        s->macro_dest[3] = ST_RELEASE;
     }
     if (model == ST_SN_METAL) {
         s->macro_dest[0] = ST_NOISE_MIX;
@@ -165,15 +198,16 @@ void studio_channel_layout(StScene *s) {
         s->cv[i].mode = s->cv[i].gate = 0;
 }
 void studio_factory(unsigned index, StSound *s, char name[9]) {
-    static const char names[ST_SOUNDS][9] = {"ENV BASS", "ENV LEAD", "STEP SAW", "CHIPLEAD",
-                                             "SAA PLUK", "AM BELL ", "SOFT PAD", "TWINLEAD",
-                                             "SN BASS ", "DETUNE  ", "DRY SN  ", "METAL   ",
-                                             "SN SNARE", "HI HAT  ", "SAA NOIS", "LASER   "};
-    static const uint8_t models[ST_SOUNDS] = {ST_SAA_ENV,  ST_SAA_ENV,  ST_SAA_ENV,   ST_SAA_TONE,
-                                              ST_SAA_TONE, ST_SAA_AM,   ST_SAA_TONE,  ST_SN_TWIN,
-                                              ST_SN_TWIN,  ST_SN_TWIN,  ST_SN_TWIN,   ST_SN_METAL,
-                                              ST_SN_NOISE, ST_SN_NOISE, ST_SAA_NOISE, ST_SN_TWIN};
-    index %= ST_SOUNDS;
+    static const char names[ST_FACTORIES][9] = {
+        "ENV BASS", "ENV LEAD", "STEP SAW", "CHIPLEAD", "SAA PLUK", "AM BELL ", "SOFT PAD",
+        "TWINLEAD", "SN BASS ", "DETUNE  ", "DRY SN  ", "METAL   ", "SN SNARE", "HI HAT  ",
+        "SAA NOIS", "LASER   ", "ENV HISS", "ENV GRIT", "ATK BASS", "SN STACK"};
+    static const uint8_t models[ST_FACTORIES] = {
+        ST_SAA_ENV, ST_SAA_ENV,       ST_SAA_ENV,     ST_SAA_TONE,  ST_SAA_TONE,
+        ST_SAA_AM,  ST_SAA_TONE,      ST_SN_TWIN,     ST_SN_TWIN,   ST_SN_TWIN,
+        ST_SN_TWIN, ST_SN_METAL,      ST_SN_NOISE,    ST_SN_NOISE,  ST_SAA_NOISE,
+        ST_SN_TWIN, ST_SAA_ENV_NOISE, ST_SAA_ENV_MIX, ST_SAA_LAYER, ST_SN_STACK};
+    index %= ST_FACTORIES;
     studio_sound_default(s, models[index]);
     memcpy(name, names[index], 9);
     switch (index) {
@@ -205,7 +239,7 @@ void studio_factory(unsigned index, StSound *s, char name[9]) {
         break;
     case 5:
         s->shape = 3;
-        s->noise_mix = 60;
+        s->env_ratio = 36;
         s->decay = 600;
         s->sustain = 0;
         break;
@@ -259,6 +293,33 @@ void studio_factory(unsigned index, StSound *s, char name[9]) {
         s->sustain = 0;
         s->release = 80;
         break;
+    case 16:
+        s->shape = 3;
+        s->env_ratio = -24;
+        s->decay = 600;
+        s->sustain = 0;
+        break;
+    case 17:
+        s->shape = 5;
+        s->env_ratio = 7;
+        s->noise_rate = 1;
+        break;
+    case 18:
+        s->shape = 5;
+        s->layer_source = 1;
+        s->layer_decay = 35;
+        s->layer_level = 60;
+        s->decay = 300;
+        s->sustain = 65;
+        s->mode = 1;
+        break;
+    case 19:
+        s->layer_interval = 7;
+        s->stack_interval = 12;
+        s->stack_size = 2;
+        s->detune = 8;
+        s->mode = 1;
+        break;
     }
 }
 bool studio_sound_valid(const StSound *s) {
@@ -267,7 +328,10 @@ bool studio_sound_valid(const StSound *s) {
         s->attack > 8000 || s->decay > 8000 || s->release > 8000 || s->sustain > 100 ||
         s->level > 100 || s->pan > 100 || s->detune > 50 || s->vibrato > 100 || s->tremolo > 100 ||
         s->lfo_rate > 7 || s->glide > 7 || s->mode > 2 || s->transpose < -48 || s->transpose > 48 ||
-        s->fine < -50 || s->fine > 50 || s->sweep < -48 || s->sweep > 48)
+        s->fine < -50 || s->fine > 50 || s->sweep < -48 || s->sweep > 48 || s->layer_decay > 8000 ||
+        s->layer_interval < -48 || s->layer_interval > 48 || s->env_ratio < -48 ||
+        s->env_ratio > 48 || s->stack_interval < -48 || s->stack_interval > 48 ||
+        s->layer_level > 100 || s->layer_source > 2 || s->stack_size < 2 || s->stack_size > 3)
         return false;
     for (unsigned i = 0; i < 4; i++)
         if (s->macro_dest[i] >= ST_PARAMS || s->macro[i] < -100 || s->macro[i] > 100)
@@ -340,9 +404,11 @@ static bool saa_search(const StScene *s, const uint8_t task[6], unsigned count, 
             if (v != 2 && v != 5)
                 continue;
             need |= (uint16_t)(1u << (v - 1));
+            if (sound->model == ST_SAA_LAYER)
+                need |= (uint16_t)(1u << (v - 2));
         }
         int a = colour0, b = colour1;
-        if (noise_model(sound->model)) {
+        if (noise_model(sound->model) || (sound->model == ST_SAA_LAYER && sound->layer_source)) {
             int colour = v < 3 ? a : b;
             if (colour >= 0 && colour != sound->noise_rate)
                 continue;
@@ -380,7 +446,7 @@ bool studio_plan(const StScene *s, uint16_t outputs[ST_PARTS], uint16_t resource
                     *conflict = p;
                 return false;
             }
-            if (a->sound.model >= ST_SN_TWIN)
+            if (!studio_is_saa(a->sound.model))
                 continue;
             unsigned priority = env_model(a->sound.model) ? 0 : noise_model(a->sound.model) ? 1 : 2;
             if (priority != pass)
@@ -407,7 +473,7 @@ bool studio_plan(const StScene *s, uint16_t outputs[ST_PARTS], uint16_t resource
             const StSound *snd = &a->sound;
             if (!a->enabled)
                 continue;
-            if (snd->model < ST_SN_TWIN)
+            if (studio_is_saa(snd->model))
                 continue;
             unsigned priority =
                 env_model(snd->model) || (noise_model(snd->model) && snd->noise_rate == 3) ? 0
@@ -422,7 +488,12 @@ bool studio_plan(const StScene *s, uint16_t outputs[ST_PARTS], uint16_t resource
                 for (unsigned v = 0; v < 14; v++) {
                     uint16_t audible = (uint16_t)(1u << v), need = audible;
                     unsigned m = snd->model;
-                    if (m == ST_SN_TWIN) {
+                    if (m == ST_SN_STACK) {
+                        if (v != 6)
+                            continue;
+                        audible = snd->stack_size == 3 ? 0x0fc0 : 0x06c0;
+                        need = audible;
+                    } else if (m == ST_SN_TWIN) {
                         if (v < 6 || v > 8)
                             continue;
                         audible |= (uint16_t)(1u << (v + 3));
@@ -538,7 +609,8 @@ bool studio_apply(Engine *e, const StScene *s) {
         if (outputs[p] != e->studio.outputs[p] || resources[p] != e->studio.resources[p] ||
             s->part[p].sound.model != e->preset.studio.part[p].sound.model ||
             s->part[p].sound.noise_rate != e->preset.studio.part[p].sound.noise_rate ||
-            s->part[p].sound.mode != e->preset.studio.part[p].sound.mode)
+            s->part[p].sound.mode != e->preset.studio.part[p].sound.mode ||
+            s->part[p].sound.layer_source != e->preset.studio.part[p].sound.layer_source)
             changed |= (uint16_t)(1u << p);
     for (unsigned p = 0; p < ST_PARTS; p++)
         if (changed & (1u << p))
@@ -572,6 +644,12 @@ unsigned studio_owner(const Engine *e, unsigned v) {
 }
 unsigned studio_note_count(const Engine *e, unsigned p) {
     unsigned count = 0;
+    if (p < ST_PARTS && e->preset.studio.part[p].sound.model == ST_SN_STACK) {
+        for (unsigned v = 6; v < 12; v++)
+            if (e->voice[v].active && e->voice[v].part == p)
+                return 1;
+        return 0;
+    }
     for (unsigned v = 0; v < 14; v++)
         if (e->voice[v].active && e->voice[v].part == p &&
             (!e->voice[v].pair || v < (unsigned)e->voice[v].pair - 1))
@@ -669,6 +747,34 @@ static void on(Engine *e, unsigned p, unsigned source, unsigned channel, unsigne
         return;
     }
     unsigned v = (unsigned)best;
+    if (s->model == ST_SN_STACK) {
+        bool keep = s->mode == 2 && e->voice[v].active && !e->voice[v].releasing &&
+                    e->voice[v].source == source;
+        for (unsigned i = 6; i < 12; i++) {
+            if (!(mask & (1u << i)))
+                continue;
+            if (keep) {
+                Voice *x = &e->voice[i];
+                x->note = (uint8_t)note;
+                x->token = token;
+                x->channel = (uint8_t)channel;
+                x->velocity = (uint8_t)velocity;
+                x->held = true;
+                x->sustained = false;
+                e->studio.pitch_target[i] = pitch;
+                if (!s->glide)
+                    x->pitch = pitch;
+            } else {
+                begin_voice(e, i, p, source, channel, note, velocity, token, pitch);
+            }
+        }
+        for (unsigned i = 6; i < 9; i++)
+            if (mask & (1u << i)) {
+                e->voice[i].pair = (uint8_t)(i + 4);
+                e->voice[i + 3].pair = (uint8_t)(i + 1);
+            }
+        goto trigger_note;
+    }
     if (e->voice[v].active && !e->voice[v].releasing && s->mode == 2 &&
         e->voice[v].source == source) {
         Voice *x = &e->voice[v];
@@ -698,15 +804,16 @@ static void on(Engine *e, unsigned p, unsigned source, unsigned channel, unsigne
         e->voice[v].pair = (uint8_t)(r + 1);
         e->voice[r].pair = (uint8_t)(v + 1);
     }
+trigger_note:;
     unsigned trigger = e->preset.sn_trigger_source;
     bool fire = trigger == 2 ? source == 2
                 : trigger == 3
                     ? source == 3
-                    : s->model >= ST_SN_TWIN && (trigger == 0 || (trigger == 1 && source < 2) ||
-                                                 (trigger == 4 && source < 2 && channel == 9) ||
-                                                 (trigger == 5 && s->model <= ST_SN_RIGHT) ||
-                                                 (trigger == 6 && s->model >= ST_SN_NOISE) ||
-                                                 (trigger == 7 && (source >= 2 || channel != 9)));
+                    : !studio_is_saa(s->model) && (trigger == 0 || (trigger == 1 && source < 2) ||
+                                                   (trigger == 4 && source < 2 && channel == 9) ||
+                                                   (trigger == 5 && !noise_model(s->model)) ||
+                                                   (trigger == 6 && noise_model(s->model)) ||
+                                                   (trigger == 7 && (source >= 2 || channel != 9)));
     if (fire)
         e->sn_note_trigger++;
 }
@@ -1012,8 +1119,20 @@ static void parameter(StSound *s, unsigned dest, float amount, float *pitch, flo
     if (amount == 0 || dest == ST_NONE)
         return;
     switch (dest) {
+    case ST_LAYER_LEVEL:
+        s->layer_level = (uint8_t)bound(roundf(s->layer_level + amount * 100), 0, 100);
+        break;
+    case ST_LAYER_DECAY:
+        s->layer_decay = (uint16_t)bound(s->layer_decay * exp2f(amount * 4), 0, 8000);
+        break;
+    case ST_ENV_RATIO:
+        s->env_ratio = (int8_t)bound(roundf(s->env_ratio + amount * 48), -48, 48);
+        break;
+    case ST_LAYER_INTERVAL:
+        s->layer_interval = (int8_t)bound(roundf(s->layer_interval + amount * 24), -48, 48);
+        break;
     case ST_WAVE:
-        if (s->model >= ST_SN_NOISE) {
+        if (!studio_is_saa(s->model) && noise_model(s->model)) {
             if (amount > .5f)
                 s->shape = 1;
             else if (amount < -.5f)
@@ -1377,8 +1496,14 @@ void studio_tick(Engine *e, uint32_t dt) {
         pitch += depth * lfo(e, p);
         if (x->pair)
             pitch += (chip(v) == 2 ? 1.0f : -1.0f) * s.detune / 200.0f;
+        if (s.model == ST_SN_STACK) {
+            unsigned n = (v - 6) % 3;
+            pitch += n == 1 ? s.layer_interval : n == 2 ? s.stack_interval : 0;
+        }
         float hz = 440 * exp2f((pitch - 69) / 12),
               gain = x->level * x->velocity / 127.0f * s.level / 100.0f;
+        if (s.model == ST_SN_STACK)
+            gain /= s.stack_size;
         gain *= e->preset.mix[0] / 100.0f * e->preset.mix[chip(v) + 1] / 100.0f;
         if (c)
             gain *= c->volume / 127.0f * c->expression / 127.0f;
@@ -1390,18 +1515,46 @@ void studio_tick(Engine *e, uint32_t dt) {
         if (v < 6) {
             if (env_model(s.model)) {
                 unsigned buddy = v - 1;
-                float clock = s.model == ST_SAA_ENV ? studio_env_clock(hz, s.shape, s.steps)
-                                                    : hz * exp2f((float)s.noise_mix / 12 - 4);
+                float clock = (s.model == ST_SAA_ENV || s.model == ST_SAA_LAYER)
+                                  ? studio_env_clock(hz, s.shape, s.steps)
+                                  : hz * exp2f((float)s.env_ratio / 12);
                 frequency(e, buddy, clock, oct, &clamped);
-                if (s.model == ST_SAA_AM) {
+                if (s.model == ST_SAA_AM || s.model == ST_SAA_ENV_MIX) {
                     bool carrier;
                     frequency(e, v, hz, oct, &carrier);
                     clamped |= carrier;
                     tone |= (uint8_t)(1u << v);
                 }
+                if (s.model == ST_SAA_ENV_NOISE || s.model == ST_SAA_ENV_MIX) {
+                    noise |= (uint8_t)(1u << v);
+                    colour |= (uint8_t)(s.noise_rate << ((v / 3) * 4));
+                    if (s.noise_rate == 3)
+                        frequency(e, (v / 3) * 3, hz, oct, &clamped);
+                }
+                if (s.model == ST_SAA_LAYER) {
+                    unsigned aux = v - 2;
+                    float layer_hz = hz * exp2f((float)s.layer_interval / 12);
+                    bool layer_clamped = false;
+                    if (s.layer_source != 1 || s.noise_rate == 3)
+                        frequency(e, aux, layer_hz, oct, &layer_clamped);
+                    if (s.layer_source != 1)
+                        tone |= (uint8_t)(1u << aux);
+                    if (s.layer_source) {
+                        noise |= (uint8_t)(1u << aux);
+                        colour |= (uint8_t)(s.noise_rate << ((v / 3) * 4));
+                    }
+                    float decay = s.layer_decay ? expf(-(float)x->elapsed / s.layer_decay) : 1;
+                    float layer_gain =
+                        (clamped || layer_clamped ? 0 : gain) * s.layer_level / 100.0f * decay;
+                    unsigned l =
+                        (unsigned)bound(roundf(15 * layer_gain * fminf(1, 2 * (1 - pan))), 0, 15);
+                    unsigned rr =
+                        (unsigned)bound(roundf(15 * layer_gain * fminf(1, 2 * pan)), 0, 15);
+                    amplitude[aux] = (uint8_t)((rr << 4) | l);
+                }
                 unsigned env = 0x80u | (s.shape << 1) | (s.steps == 8 ? 0x10u : 0u) | s.invert;
                 swrite(e, 0x18 + (v == 5), env);
-                if (s.model == ST_SAA_ENV && clamped)
+                if ((s.model == ST_SAA_ENV || s.model == ST_SAA_LAYER) && clamped)
                     gain = 0;
             } else {
                 frequency(e, v, hz, oct, &clamped);
@@ -1463,4 +1616,38 @@ void studio_tick(Engine *e, uint32_t dt) {
         for (unsigned n = 0; n < 4; n++)
             if (!sn_used[c][n])
                 attenuation(e, c, n, 0);
+}
+
+void studio_profile(StScene *s, unsigned profile) {
+    studio_channel_layout(s);
+    if (profile == 1) {
+        s->part[0].poly = 6;
+        s->part[1].enabled = 0;
+        memcpy(s->name, "SAA POLY", 9);
+    } else if (profile == 2) {
+        s->part[0].role = ST_ROLE_SAA_ENV;
+        studio_factory(18, &s->part[0].sound, s->part[0].name);
+        s->part[0].sound.mode = 0;
+        s->part[0].poly = 2;
+        s->part[1].enabled = 0;
+        memcpy(s->name, "DUAL LYR", 9);
+    } else if (profile == 3) {
+        s->part[1].poly = 1;
+        s->part[4].enabled = 1;
+        s->part[4].poly = 2;
+        s->part[4].role = ST_ROLE_SAA_TONE;
+        studio_factory(14, &s->part[4].sound, s->part[4].name);
+        s->part[4].sound.attack = 0;
+        s->part[4].sound.decay = 100;
+        s->part[4].sound.sustain = 0;
+        s->part[4].sound.release = 30;
+        for (unsigned src = 0; src < 2; src++)
+            s->route[src][10] = 1u << 4;
+        memcpy(s->name, "PERC SET", 9);
+    }
+    for (unsigned src = 0; src < 2; src++)
+        for (unsigned c = 0; c < 16; c++)
+            for (unsigned p = 0; p < ST_PARTS; p++)
+                if (!s->part[p].enabled)
+                    s->route[src][c] &= (uint16_t) ~(1u << p);
 }

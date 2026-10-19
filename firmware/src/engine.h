@@ -7,8 +7,8 @@
 #define PATCHES 16
 #define PRESETS 8
 #define SOURCES 2
-#define SETTINGS_VERSION 5
-#define LAYOUT_REVISION 1
+#define SETTINGS_VERSION 6
+#define LAYOUT_REVISION 2
 #define CV_SCALES 8
 #define CV_ROLES 7
 #define ARP_MODES 8

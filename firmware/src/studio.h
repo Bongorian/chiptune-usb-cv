@@ -32,3 +32,9 @@ float studio_env_clock(float hz, unsigned shape, unsigned steps);
 void studio_realtime(Engine *engine, uint8_t status, unsigned source);
 void studio_program(Engine *engine, unsigned source, unsigned channel, unsigned program);
 void studio_control(Engine *engine, unsigned source, unsigned channel, unsigned cc, unsigned value);
+
+/* Chip structure predicates do not depend on enum ordering. */
+bool studio_is_saa(unsigned model);
+bool studio_is_env(unsigned model);
+bool studio_is_noise(unsigned model);
+void studio_profile(StScene *s, unsigned profile); /* 0 hybrid, 1 SAA poly, 2 dual layer, 3 drums */

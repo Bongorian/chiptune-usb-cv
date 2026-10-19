@@ -288,7 +288,7 @@ static void test_ui(void) {
     ui.field = 6;
     click(1);
     assert(ui.page == UI_OSC);
-    ui.field = 1;
+    ui.field = 2;
     click(1);
     assert(ui.edit);
     click(0);

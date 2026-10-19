@@ -1,5 +1,5 @@
 {
-  "firmware": "v0.7.0-alpha",
+  "firmware": "v0.8.0-alpha",
   "host_tests_passed": true,
   "sanitizers": [
     "ASan",
@@ -8,58 +8,64 @@
   "tests": [
     {
       "name": "engine_tests",
-      "status": "run",
-      "seconds": 10.214
+      "status": "passed",
+      "seconds": 11.6964
     },
     {
       "name": "roles_tests",
-      "status": "run",
-      "seconds": 0.0996714
+      "status": "passed",
+      "seconds": 0.108384
     },
     {
       "name": "performance_tests",
-      "status": "run",
-      "seconds": 0.0552087
+      "status": "passed",
+      "seconds": 0.0612691
     },
     {
       "name": "studio_tests",
-      "status": "run",
-      "seconds": 0.244476
+      "status": "passed",
+      "seconds": 0.281877
     },
     {
       "name": "instrument_tests",
-      "status": "run",
-      "seconds": 0.0138755
+      "status": "passed",
+      "seconds": 0.0149641
     },
     {
       "name": "layout_tests",
-      "status": "run",
-      "seconds": 0.0239541
+      "status": "passed",
+      "seconds": 0.0411617
     },
     {
       "name": "noise_tests",
-      "status": "run",
-      "seconds": 0.0176566
+      "status": "passed",
+      "seconds": 0.0183801
     },
     {
       "name": "display_tests",
-      "status": "run",
-      "seconds": 0.0120983
+      "status": "passed",
+      "seconds": 0.0125297
+    },
+    {
+      "name": "editor_tests",
+      "status": "passed",
+      "seconds": 0.0262644
     }
   ],
   "ui_random_actions": 12000,
   "ui_rendered_pages": 33,
-  "models_tested": 12,
-  "settings_version": 5,
-  "settings_bytes": 17308,
-  "store_record_bytes": 17328,
-  "engine_bytes_host": 23512,
-  "ui_bytes_host": 5144,
+  "models_tested": 16,
+  "settings_version": 6,
+  "settings_bytes": 18332,
+  "store_record_bytes": 18352,
+  "engine_bytes_host": 23736,
+  "ui_bytes_host": 5368,
   "settings_migration_tested": [
     1,
     2,
     3,
-    4
+    4,
+    5
   ],
   "regressions": [
     "CV reroute while gate high",
@@ -82,13 +88,13 @@
     "timer rollover"
   ],
   "instrument_regressions": [
-    "fresh single instrument on USB/TRS MIDI ch1",
+    "explicit FREE single-instrument regression fixture on USB/TRS MIDI ch1",
     "all 16 sounds play within hardware reservations",
     "sound selection, short OK edit and long OK menu",
     "edit discard protection",
     "save rollback and reboot with the same sound",
     "receive channel commit/cancel",
-    "v5 multi setup preservation",
+    "current-format multi setup preservation",
     "fixed factory sounds without changing user library",
     "Program Change across all user sounds"
   ],
@@ -108,7 +114,7 @@
     4,
     5
   ],
-  "layout_revision": 1,
+  "layout_revision": 2,
   "layout_regressions": [
     "ch1/2/3/10 simultaneous register output",
     "independent Note Off between channels",
@@ -121,5 +127,43 @@
     "CV calibration and brightness retained",
     "new revision survives later boots",
     "interrupted commit retries using the old valid bank"
-  ]
+  ],
+  "editor_regressions": [
+    "all 16 structures and 20 factory sounds validate",
+    "four allocation profiles",
+    "SAA ENV noise/mix register enables",
+    "SAA layer reserves three circuits per note and its transient decays",
+    "layer macros alter auxiliary amplitude without altering saved base sound",
+    "SN stack intervals, stereo voices, logical note ownership and Note Off",
+    "incompatible tone3 clock reservations rejected",
+    "SysEx request/reply packet framing and signed 14-bit endpoints",
+    "Web MIDI wire format sent through actual portable C firmware",
+    "invalid checksum, oversize, timeout, busy and invalid data rejected",
+    "atomic CV pair swap",
+    "save success snapshot and failure rollback",
+    "v5 CRC-protected binary fixture and calibration/brightness migration"
+  ],
+  "web_editor": {
+    "javascript_tests_passed": 9,
+    "browser_tests_passed": true,
+    "browser_test_uses": "headless Chrome with the portable C firmware as mocked Web MIDI ports",
+    "desktop_viewport": [
+      1440,
+      1080
+    ],
+    "mobile_viewport": [
+      390,
+      844
+    ],
+    "real_usb_or_audio_tested": false,
+    "checks": [
+      "connection and read/write roundtrip",
+      "ENV shape and SN stack selection",
+      "motion painting and JSON export",
+      "clock read/write",
+      "CV atomic update",
+      "save failure feedback",
+      "no horizontal mobile overflow or JavaScript console errors"
+    ]
+  }
 }

@@ -1,0 +1,298 @@
+[
+  {
+    "name": "attack",
+    "type": "u16",
+    "min": 0,
+    "max": 8000,
+    "label": "Attack \u00b7 ms",
+    "group": "envelope"
+  },
+  {
+    "name": "decay",
+    "type": "u16",
+    "min": 0,
+    "max": 8000,
+    "label": "Decay \u00b7 ms",
+    "group": "envelope"
+  },
+  {
+    "name": "release",
+    "type": "u16",
+    "min": 0,
+    "max": 8000,
+    "label": "Release \u00b7 ms",
+    "group": "envelope"
+  },
+  {
+    "name": "model",
+    "type": "u8",
+    "min": 0,
+    "max": 15,
+    "label": "Structure",
+    "group": "structure"
+  },
+  {
+    "name": "shape",
+    "type": "u8",
+    "min": 0,
+    "max": 7,
+    "label": "Hardware ENV shape",
+    "group": "character"
+  },
+  {
+    "name": "steps",
+    "type": "u8",
+    "min": 8,
+    "max": 16,
+    "label": "ENV levels",
+    "group": "character"
+  },
+  {
+    "name": "invert",
+    "type": "u8",
+    "min": 0,
+    "max": 1,
+    "label": "Right ENV inverse",
+    "group": "character"
+  },
+  {
+    "name": "retrigger",
+    "type": "u8",
+    "min": 0,
+    "max": 1,
+    "label": "Key reset",
+    "group": "character"
+  },
+  {
+    "name": "noise_rate",
+    "type": "u8",
+    "min": 0,
+    "max": 3,
+    "label": "Noise rate",
+    "group": "character"
+  },
+  {
+    "name": "noise_mix",
+    "type": "u8",
+    "min": 0,
+    "max": 100,
+    "label": "Tone mix \u00b7 %",
+    "group": "character"
+  },
+  {
+    "name": "sustain",
+    "type": "u8",
+    "min": 0,
+    "max": 100,
+    "label": "Sustain \u00b7 %",
+    "group": "envelope"
+  },
+  {
+    "name": "level",
+    "type": "u8",
+    "min": 0,
+    "max": 100,
+    "label": "Level \u00b7 %",
+    "group": "envelope"
+  },
+  {
+    "name": "pan",
+    "type": "u8",
+    "min": 0,
+    "max": 100,
+    "label": "Pan \u00b7 L \u2192 R",
+    "group": "envelope"
+  },
+  {
+    "name": "detune",
+    "type": "u8",
+    "min": 0,
+    "max": 50,
+    "label": "Stereo detune \u00b7 cents",
+    "group": "character"
+  },
+  {
+    "name": "vibrato",
+    "type": "u8",
+    "min": 0,
+    "max": 100,
+    "label": "Vibrato \u00b7 cents",
+    "group": "character"
+  },
+  {
+    "name": "tremolo",
+    "type": "u8",
+    "min": 0,
+    "max": 100,
+    "label": "Tremolo \u00b7 %",
+    "group": "character"
+  },
+  {
+    "name": "lfo_rate",
+    "type": "u8",
+    "min": 0,
+    "max": 7,
+    "label": "LFO rate",
+    "group": "character"
+  },
+  {
+    "name": "glide",
+    "type": "u8",
+    "min": 0,
+    "max": 7,
+    "label": "Glide",
+    "group": "character"
+  },
+  {
+    "name": "mode",
+    "type": "u8",
+    "min": 0,
+    "max": 2,
+    "label": "Voice mode",
+    "group": "character"
+  },
+  {
+    "name": "transpose",
+    "type": "i8",
+    "min": -48,
+    "max": 48,
+    "label": "Transpose \u00b7 st",
+    "group": "motion"
+  },
+  {
+    "name": "fine",
+    "type": "i8",
+    "min": -50,
+    "max": 50,
+    "label": "Fine \u00b7 cents",
+    "group": "motion"
+  },
+  {
+    "name": "sweep",
+    "type": "i8",
+    "min": -48,
+    "max": 48,
+    "label": "Attack pitch sweep \u00b7 st",
+    "group": "motion"
+  },
+  {
+    "name": "macro_dest[0]",
+    "type": "u8",
+    "min": 0,
+    "max": 19,
+    "label": "Macro 1 destination",
+    "group": "macro"
+  },
+  {
+    "name": "macro_dest[1]",
+    "type": "u8",
+    "min": 0,
+    "max": 19,
+    "label": "Macro 2 destination",
+    "group": "macro"
+  },
+  {
+    "name": "macro_dest[2]",
+    "type": "u8",
+    "min": 0,
+    "max": 19,
+    "label": "Macro 3 destination",
+    "group": "macro"
+  },
+  {
+    "name": "macro_dest[3]",
+    "type": "u8",
+    "min": 0,
+    "max": 19,
+    "label": "Macro 4 destination",
+    "group": "macro"
+  },
+  {
+    "name": "macro[0]",
+    "type": "i8",
+    "min": -100,
+    "max": 100,
+    "label": "Macro 1 amount",
+    "group": "macro"
+  },
+  {
+    "name": "macro[1]",
+    "type": "i8",
+    "min": -100,
+    "max": 100,
+    "label": "Macro 2 amount",
+    "group": "macro"
+  },
+  {
+    "name": "macro[2]",
+    "type": "i8",
+    "min": -100,
+    "max": 100,
+    "label": "Macro 3 amount",
+    "group": "macro"
+  },
+  {
+    "name": "macro[3]",
+    "type": "i8",
+    "min": -100,
+    "max": 100,
+    "label": "Macro 4 amount",
+    "group": "macro"
+  },
+  {
+    "name": "layer_decay",
+    "type": "u16",
+    "min": 0,
+    "max": 8000,
+    "label": "Layer extra decay \u00b7 ms",
+    "group": "layer"
+  },
+  {
+    "name": "layer_interval",
+    "type": "i8",
+    "min": -48,
+    "max": 48,
+    "label": "Second / layer interval \u00b7 st",
+    "group": "layer"
+  },
+  {
+    "name": "env_ratio",
+    "type": "i8",
+    "min": -48,
+    "max": 48,
+    "label": "ENV clock offset \u00b7 st",
+    "group": "layer"
+  },
+  {
+    "name": "stack_interval",
+    "type": "i8",
+    "min": -48,
+    "max": 48,
+    "label": "Third interval \u00b7 st",
+    "group": "layer"
+  },
+  {
+    "name": "layer_level",
+    "type": "u8",
+    "min": 0,
+    "max": 100,
+    "label": "Layer level \u00b7 %",
+    "group": "layer"
+  },
+  {
+    "name": "layer_source",
+    "type": "u8",
+    "min": 0,
+    "max": 2,
+    "label": "Layer source",
+    "group": "layer"
+  },
+  {
+    "name": "stack_size",
+    "type": "u8",
+    "min": 2,
+    "max": 3,
+    "label": "Stack tone pairs",
+    "group": "layer"
+  }
+]

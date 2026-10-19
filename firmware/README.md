@@ -1,8 +1,12 @@
-# Chiptune USB/CV firmware v0.7.0-alpha
+# Chiptune USB/CV firmware v0.8.0-alpha
 
 SAA1099とSN76489AN×2をMIDIで演奏する、専用RP2040基板用のファームウェアです。音色を選んで弾き、3つのボタンで音を調整して保存できます。
 
 **この版は破壊的更新です。初回起動時に、保存済み音色・8セットアップ・MIDI/CV/Gateルート・パターンを新しい割り当てへ自動初期化して保存します。CV校正値と表示の明るさは保持します。次回以降の起動では初期化しません。**
+
+[**Wave Lab — Web MIDIエディタ**](https://bongorian.github.io/chiptune-usb-cv/) ／ [音色の構造・回路プロファイル](SOUND_DESIGN.md) ／ [SysEx仕様](protocol/README.md)
+
+v0.8ではENV NOISE、ENV MIX、SAA LAYER、SN STACK、4つの回路配置プロファイルを追加しました。工場音色は20、USER音色は16枠です。初回はv0.7の保存音色も初期化します。エディタの読み出し・反映にはv0.8以降が必要です。
 
 ## MIDIチャンネルと音源の基本配置
 
@@ -21,8 +25,8 @@ MIDIチャンネルは演奏パートです。チップ内部の発音回路を�
 SN2個の外部クロックは共通です。ch3でSNクロックFXを変えるとch10のノイズの性格にも作用します。これはMIDIルートとは別の、ハードウェア上の共有です。
 
 
-- [UF2をダウンロード](dist/chiptune-v0.7.0-alpha.uf2)
-- [OLED画面例](assets/ui-v07.png)
+- [UF2をダウンロード](dist/chiptune-v0.8.0-alpha.uf2)
+- [OLED画面例](assets/ui-v08.png)
 - [Androidからの更新](ANDROID_UPDATE.md)
 - [ビルド検証](dist/Verification.json)／[テスト記録](dist/Test_Verification.json)
 - [実機確認項目](BRINGUP.md)
@@ -38,7 +42,7 @@ SN2個の外部クロックは共通です。ch3でSNクロックFXを変える�
 
 初回は旧保存内容を引き継がず、上の表へ統一します。更新後は古いMULTIとSINGLEで初期状態が変わることはありません。BOOTSELへ入る−/＋同時押しの復旧方法は維持しています。
 
-![128×64 OLEDの実際の描画](assets/ui-v07.png)
+![128×64 OLEDの実際の描画](assets/ui-v08.png)
 
 ## 3ボタン操作
 
@@ -65,14 +69,14 @@ SN2個の外部クロックは共通です。ch3でSNクロックFXを変える�
 
 短いOKで開くSOUNDには、音源方式に合った主な値を先頭に並べます。
 
-- SAA ENV／AM：実際の波形とステップ数。
+- SAA ENV／AM／ENV NOISE／ENV MIX／LAYER：実際の波形とステップ数。
 - 通常のSAAトーン：スイープとビブラート。
 - SN TWIN／片側SNトーン：デチューンとビブラート。
 - ノイズ／メタル：ノイズレートまたはトーン混合率とディケイ。
 
-ATTACK、RELEASE、LEVELも直接操作できます。`AMP ENVELOPE`にADSR・PAN、`WAVE DETAILS`に波形の詳細と音源方式の変更、`VOICE / PITCH`にPOLY/MONO/LEGATO、声数、グライド、音域があります。`MACROS / LFO`で4つのマクロの割り当てとLFOを編集できます。
+ATTACK、RELEASE、LEVELも直接操作できます。`AMP ENVELOPE`にADSR・PAN、`STRUCTURE`に波形の詳細と音源方式の変更、`VOICE / PITCH`にPOLY/MONO/LEGATO、声数、グライド、音域があります。`MACROS / LFO`で4つのマクロの割り当てとLFOを編集できます。
 
-ホームの音色選択は、現在のMIDIパートの役割に合う音色だけを巡回します。ch1では通常SAA・SAAノイズ/ミックス、ch2ではENV/AM、ch3ではSN TWIN、ch10ではSNノイズ/METALです。音色を切り替えても別のチップへ勝手に移りません。通常の音色切替は該当パートだけを停止し、影響のないパートは演奏を続けます。資源配置の変更で他パートの回路も移動する場合は、そのパートも停止します。全体PANIC、セットアップ読込、フラッシュ保存は全体を停止します。
+ホームの音色選択は、現在のMIDIパートの役割に合う音色だけを巡回します。ch1では通常SAA・SAAノイズ/ミックス、ch2ではENV/AM/ENV NOISE/ENV MIX/LAYER、ch3ではSN TWIN/STACK、ch10ではSNノイズ/METALです。音色を切り替えても別のチップへ勝手に移りません。通常の音色切替は該当パートだけを停止し、影響のないパートは演奏を続けます。資源配置の変更で他パートの回路も移動する場合は、そのパートも停止します。全体PANIC、セットアップ読込、フラッシュ保存は全体を停止します。
 
 保存はOK長押し → `SAVE SOUND`。USER SLOTとSOUND NAMEを決め、SAVE SOUNDの確認でYESを選びます。16枠を上書きでき、失敗時は元の内容へ戻します。
 
@@ -98,8 +102,12 @@ FACTORY SOUNDSから固定の工場音色を読み込めます。読み込むだ
 | HI HAT | SN NOISE | 短いノイズ |
 | SAA NOIS | SAA NOISE | アタックのあるノイズ |
 | LASER | SN TWIN | 大きなピッチスイープ |
+| ENV HISS（F17） | ENV NOISE | ノイズのハードウェア振幅変調 |
+| ENV GRIT（F18） | ENV MIX | トーン＋ノイズのハードウェア振幅変調 |
+| ATK BASS（F19） | SAA LAYER | ENV楽音＋短い補助トーン／ノイズ |
+| SN STACK（F20） | SN STACK | 2／3組のステレオトーンを重ねる |
 
-工場音色名は用途の目安です。実際の聴感は未評価です。v0.7初回起動ではUSER枠もこの工場音色へ置き換えます。
+工場音色名は用途の目安です。実際の聴感は未評価です。v0.8初回起動ではUSER枠もこの工場音色へ置き換えます。
 
 ## MIDI入力と複数音色
 
@@ -131,7 +139,7 @@ v0.6.1では、KEY TRACKのホワイトノイズでMIDI音程を更新速度へ�
 
 CV NOTEの音程が新鮮ならGateの音程に使い、それ以外はFIXED NOTEを使います。古いADC値や入力異常ではCV由来のノートをリリースします。0Vは正常値なのでケーブル抜けとは判定しません。校正はSYSTEM > CV CALIBRATIONです。
 
-SAA ENVはFE/NEをOFFにし、ハードウェアENVの出力を楽音として使います。ENV用の周波数クロックにトーン1/4を予約し、出力は2/5です。ENVとソフトADSRは独立です。16ステップ三角波の最高音は約488Hz、下降/上昇波は約977Hz、8ステップならそれぞれ倍です。範囲外の純ENV発振は無音にします。波形表示は設定から描く模式図です。
+SAA ENVはFE/NEをOFFにし、ハードウェアENVの出力を楽音として使います。ENV用の周波数クロックにトーン2/5を予約し、出力は3/6（ともに1始まり）です。ENVとソフトADSRは独立です。16ステップ三角波の最高音は約488Hz、下降/上昇波は約977Hz、8ステップならそれぞれ倍です。範囲外の純ENV発振は無音にします。波形表示は設定から描く模式図です。
 
 ## ビルドと検証
 
@@ -145,4 +153,4 @@ cmake --build build/firmware -j4
 python3 firmware/tools/verify_build.py build/firmware --output build/firmware/Verification.json
 ```
 
-Pico SDK 2.3.1を使います。記録のサイズとCRC形式はv5を維持し、旧予約バイトに構成リビジョンを記録します。v1〜v5からはCV校正値を取り出し、音色・演奏設定は初回に置き換えます。初期化結果はUSBと音源電源を起動する前に、別のフラッシュバンクへコミットします。新しい構成リビジョンを読めた以後の起動では、ユーザー設定を保持します。末尾64KiBの設定領域は配布UF2に含めません。実機の音声・表示・USB電流・CV精度はPCテストとは別に確認します。
+Pico SDK 2.3.1を使います。保存形式はv6です。v1〜v5（v0.7を含む）からCV校正値を取り出し、音色・演奏設定は初回に置き換えます。v5からは明るさも保持します。初期化結果はUSBと音源電源を起動する前に、別のフラッシュバンクへコミットします。新しい構成リビジョンを読めた以後の起動では、ユーザー設定を保持します。末尾64KiBの設定領域は配布UF2に含めません。実機の音声・表示・USB電流・CV精度はPCテストとは別に確認します。

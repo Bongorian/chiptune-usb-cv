@@ -1,7 +1,7 @@
 #include "store.h"
 #include <string.h>
 _Static_assert(sizeof(StoreRecord) < STORE_BANK_BYTES, "Settings must fit a flash sector");
-_Static_assert(sizeof(Settings) == 17308 && sizeof(StoreRecord) == 17328, "v5 settings layout");
+_Static_assert(sizeof(Settings) == 18332 && sizeof(StoreRecord) == 18352, "v6 settings layout");
 _Static_assert(offsetof(Settings, layout_revision) == offsetof(Settings, selected) + 1,
                "Layout revision uses former padding");
 uint32_t store_crc(const void *data, size_t length) {
@@ -117,6 +117,32 @@ bool store_load(const void *raw, Settings *settings, uint32_t *sequence) {
     }
     uint32_t header[5];
     memcpy(header, raw, sizeof(header));
+    if (header[0] == STORE_COMMIT && header[1] == 5 && header[3] == 17308) {
+        /* v5: the musical format changed. Preserve calibrated hardware values only.
+           Validate the original 17,328-byte record without casting it to the new struct. */
+        const uint8_t *b = raw;
+        uint32_t crc = 0xffffffffu, version;
+        for (unsigned i = 4; i < 17328; i++) {
+            crc ^= i >= 16 && i < 20 ? 0 : b[i];
+            for (unsigned bit = 0; bit < 8; bit++)
+                crc = (crc >> 1) ^ ((0u - (crc & 1)) & 0xedb88320u);
+        }
+        memcpy(&version, b + 20, 4);
+        if (~crc != header[4] || version != 5)
+            return false;
+        static Settings migrated5;
+        settings_default(&migrated5);
+        memcpy(migrated5.cv_zero, b + 20 + 16596, 8);
+        memcpy(migrated5.cv_codes_per_volt, b + 20 + 16604, 8);
+        migrated5.brightness = b[20 + 17306];
+        if (!settings_valid(&migrated5))
+            return false;
+        if (settings)
+            *settings = migrated5;
+        *sequence = header[2];
+        return true;
+    }
+
     if (header[0] != STORE_COMMIT || header[1] < 1 || header[1] > 4)
         return false;
     unsigned version = header[1];

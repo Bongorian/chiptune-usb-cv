@@ -55,8 +55,11 @@ enum {
     A_VERSION,
     A_SELECT_SOUND,
     A_SINGLE,
-    A_FACTORY
+    A_FACTORY,
+    A_PROFILE
 };
+static const char *const profile_names[] = {"HYBRID", "SAA POLY", "DUAL LAYER", "PERCUSSION"};
+static const char *const layer_sources[] = {"TONE", "NOISE", "TONE+NOISE"};
 static const char *const yesno[] = {"OFF", "ON"};
 static const char *const shape_names[] = {"ZERO",  "MAX",      "DECAY 1",  "SAW DOWN",
                                           "TRI 1", "TRIANGLE", "ATTACK 1", "SAW UP"};
@@ -102,7 +105,7 @@ static bool sound_at(Ui *u, unsigned slot, StSound *sound, char name[9]) {
             return false;
         *sound = u->settings->sounds[slot];
         memcpy(name, u->settings->sound_name[slot], 9);
-    } else if (slot < ST_SOUNDS * 2)
+    } else if (slot < ST_SOUNDS + ST_FACTORIES)
         studio_factory(slot - ST_SOUNDS, sound, name);
     else
         return false;
@@ -118,7 +121,7 @@ static bool sound_matches(Ui *u, unsigned slot) {
 static void sync_sound(Ui *u) {
     if (sound_matches(u, u->active_sound))
         return;
-    for (unsigned slot = 0; slot < ST_SOUNDS * 2; slot++)
+    for (unsigned slot = 0; slot < ST_SOUNDS + ST_FACTORIES; slot++)
         if (sound_matches(u, slot)) {
             u->active_sound = (uint8_t)slot;
             return;
@@ -192,17 +195,17 @@ static unsigned build(Ui *u, Item a[32]) {
         A("ALL NOTES OFF", A_PANIC);
         break;
     case UI_SOUND:
-        if (s->model == ST_SAA_ENV || s->model == ST_SAA_AM) {
+        if (studio_is_env(s->model)) {
             V("WAVE", &s->shape, U8, 0, 7, 1, shape_names);
             V("STEPS", &s->steps, U8, 8, 16, 8, NULL);
-        } else if (s->model >= ST_SN_NOISE || s->model == ST_SAA_NOISE || s->model == ST_SAA_MIX) {
+        } else if (studio_is_noise(s->model)) {
             if (s->model == ST_SN_METAL)
                 V("TONE MIX", &s->noise_mix, U8, 0, 100, 1, NULL);
             else
                 S("NOISE RATE", &s->noise_rate, U8, 0, 3, 1, noise_rates);
             V("DECAY MS", &s->decay, U16, 0, 8000, 10, NULL);
         } else {
-            if (s->model >= ST_SN_TWIN)
+            if (!studio_is_saa(s->model))
                 V("DETUNE CENT", &s->detune, U8, 0, 50, 1, NULL);
             else
                 V("SWEEP ST", &s->sweep, I8, -48, 48, 1, NULL);
@@ -212,24 +215,27 @@ static unsigned build(Ui *u, Item a[32]) {
         V("RELEASE MS", &s->release, U16, 0, 8000, 10, NULL);
         V("LEVEL", &s->level, U8, 0, 100, 1, NULL);
         L("AMP ENVELOPE", UI_AMP);
-        L("WAVE DETAILS", UI_OSC);
+        L("STRUCTURE", UI_OSC);
         L("VOICE / PITCH", UI_VOICE);
-        if (s->model >= ST_SN_TWIN)
+        if (!studio_is_saa(s->model))
             L("SN CLOCK: BOTH", UI_SN_CLOCK);
         L("SAVE SOUND", UI_SAVE_SOUND);
         L("AUDITION", UI_PLAY);
         L("MACROS / LFO", UI_MACROS);
         break;
     case UI_OSC:
-        if (s->model == ST_SAA_ENV || s->model == ST_SAA_AM) {
+        S("STRUCTURE", &s->model, U8, 0, ST_MODELS - 1, 1, st_model_names);
+        if (studio_is_env(s->model)) {
             V("WAVE", &s->shape, U8, 0, 7, 1, shape_names);
             V("STEPS", &s->steps, U8, 8, 16, 8, NULL);
             V("R INVERT", &s->invert, U8, 0, 1, 1, yesno);
             V("KEY RESET", &s->retrigger, U8, 0, 1, 1, yesno);
-            if (s->model == ST_SAA_AM)
-                V("ENV CLK ST", &s->noise_mix, U8, 0, 100, 1, NULL);
-        } else if (s->model == ST_SAA_NOISE || s->model == ST_SAA_MIX || s->model >= ST_SN_NOISE) {
-            if (s->model >= ST_SN_NOISE)
+            if (s->model != ST_SAA_ENV && s->model != ST_SAA_LAYER)
+                V("ENV RATIO ST", &s->env_ratio, I8, -48, 48, 1, NULL);
+            if (s->model == ST_SAA_ENV_NOISE || s->model == ST_SAA_ENV_MIX)
+                S("NOISE RATE", &s->noise_rate, U8, 0, 3, 1, noise_rates);
+        } else if (studio_is_noise(s->model)) {
+            if (!studio_is_saa(s->model) && studio_is_noise(s->model))
                 V("WHITE NOISE", &s->shape, U8, 0, 1, 1, yesno);
             if (s->model != ST_SN_METAL)
                 S("NOISE RATE", &s->noise_rate, U8, 0, 3, 1, noise_rates);
@@ -237,7 +243,21 @@ static unsigned build(Ui *u, Item a[32]) {
                 V("TONE MIX", &s->noise_mix, U8, 0, 100, 1, NULL);
         }
         V("SWEEP ST", &s->sweep, I8, -48, 48, 1, NULL);
-        S("ENGINE", &s->model, U8, 0, ST_MODELS - 1, 1, st_model_names);
+        if (s->model == ST_SAA_LAYER) {
+            S("LAYER SOURCE", &s->layer_source, U8, 0, 2, 1, layer_sources);
+            if (s->layer_source)
+                S("NOISE RATE", &s->noise_rate, U8, 0, 3, 1, noise_rates);
+            V("LAYER LEVEL", &s->layer_level, U8, 0, 100, 1, NULL);
+            V("LAYER DECAY MS", &s->layer_decay, U16, 0, 8000, 5, NULL);
+            if (s->layer_source != 1 || s->noise_rate == 3)
+                V("LAYER OFFSET ST", &s->layer_interval, I8, -48, 48, 1, NULL);
+        }
+        if (s->model == ST_SN_STACK) {
+            S("STACK SIZE", &s->stack_size, U8, 2, 3, 1, NULL);
+            V("SECOND ST", &s->layer_interval, I8, -48, 48, 1, NULL);
+            if (s->stack_size == 3)
+                V("THIRD ST", &s->stack_interval, I8, -48, 48, 1, NULL);
+        }
         L("RESOURCE MAP", UI_RESOURCES);
         break;
     case UI_AMP:
@@ -422,6 +442,8 @@ static unsigned build(Ui *u, Item a[32]) {
         L("SAVE / LOAD SETUP", UI_SCENE);
         L("CHIP MIX", UI_MIX);
         L("MOTION / SEQUENCE", UI_MOTION);
+        V("PROFILE", &u->profile, U8, 0, 3, 1, profile_names);
+        A("APPLY PROFILE", A_PROFILE);
         break;
     case UI_SAVE_SOUND:
         V("USER SLOT", &u->library_slot, U8, 0, ST_SOUNDS - 1, 1, NULL);
@@ -430,7 +452,7 @@ static unsigned build(Ui *u, Item a[32]) {
         L("FACTORY SOUNDS", UI_FACTORY);
         break;
     case UI_FACTORY:
-        V("FACTORY", &u->factory_slot, U8, 0, ST_SOUNDS - 1, 1, NULL);
+        V("FACTORY", &u->factory_slot, U8, 0, ST_FACTORIES - 1, 1, NULL);
         A("LOAD FACTORY", A_FACTORY);
         break;
     case UI_SYSTEM:
@@ -554,12 +576,13 @@ static bool set_value(Ui *u, const Item *item, int value) {
             studio_sound_default(&defaults, (unsigned)value);
             memcpy(p->sound.macro_dest, defaults.macro_dest, 4);
             memset(p->sound.macro, 0, 4);
+            p->sound.env_ratio = defaults.env_ratio;
             p->poly =
                 (uint8_t)(p->poly > studio_limit((unsigned)value) ? studio_limit((unsigned)value)
                                                                   : p->poly);
-            if (value == ST_SAA_ENV || value == ST_SAA_AM)
+            if (studio_is_env((unsigned)value))
                 p->sound.shape = 5;
-            else if (value >= ST_SN_NOISE) {
+            else if (studio_is_noise((unsigned)value)) {
                 p->sound.shape = value == ST_SN_METAL ? 0 : 1;
                 if (value == ST_SN_METAL)
                     p->sound.noise_rate = 3;
@@ -635,6 +658,18 @@ static void perform(Ui *u, unsigned action, uint32_t now) {
     switch (action) {
     case A_SELECT_SOUND:
         (void)select_sound(u, u->pending_sound, now);
+        break;
+    case A_PROFILE:
+        studio_profile(&u->candidate, u->profile);
+        engine_panic(e, -1);
+        if (studio_apply(e, &u->candidate)) {
+            u->part = 0;
+            u->active_sound = UINT8_MAX;
+            u->test_mode = 0;
+            u->dirty = true;
+            sync_sound(u);
+            toast(u, "PROFILE READY", now);
+        }
         break;
     case A_FACTORY:
         (void)select_sound(u, ST_SOUNDS + u->factory_slot, now);
@@ -744,7 +779,7 @@ static void perform(Ui *u, unsigned action, uint32_t now) {
 }
 static void action(Ui *u, unsigned a, uint32_t now) {
     if (a == A_VERSION) {
-        toast(u, "V0.7.0 ALPHA", now);
+        toast(u, "V0.8.0 ALPHA", now);
         return;
     }
     if (u->page == UI_ROUTE && (a == UI_CV || a == UI_GATE)) {
@@ -1214,7 +1249,7 @@ static void waveform(Ui *u, int y, int height) {
     int previous = 0;
     for (int x = 0; x < 122; x++) {
         float phase = (float)(x % 61) / 61, value;
-        if (s.model == ST_SAA_ENV || s.model == ST_SAA_AM) {
+        if (studio_is_env(s.model)) {
             switch (s.shape) {
             case 0:
                 value = 0;
@@ -1235,7 +1270,7 @@ static void waveform(Ui *u, int y, int height) {
                 break;
             }
             value = roundf(value * (s.steps - 1)) / (s.steps - 1);
-        } else if (s.model == ST_SAA_NOISE || s.model >= ST_SN_NOISE)
+        } else if (studio_is_noise(s.model))
             value = (float)((x * x * 19 + x * 73) % 101) / 100;
         else
             value = phase < .5f ? 1 : 0;
@@ -1252,7 +1287,7 @@ static const char *page_title(unsigned page) {
                                          "MOTION",
                                          "SETUP",
                                          "SYSTEM",
-                                         "OSC",
+                                         "STRUCTURE",
                                          "AMP",
                                          "VOICE",
                                          "MACROS",
@@ -1296,6 +1331,7 @@ void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
                            : u->confirm_action == A_BOOT         ? "ENTER USB UPDATE?"
                            : u->confirm_action == A_LOAD_SOUND   ? "LOAD SOUND?"
                            : u->confirm_action == A_SELECT_SOUND ? "DISCARD SOUND EDITS?"
+                           : u->confirm_action == A_PROFILE      ? "REPLACE ALL PARTS?"
                            : u->confirm_action == A_SINGLE       ? "USE SINGLE PLAY?"
                            : u->confirm_action == A_FACTORY      ? "LOAD FACTORY SOUND?"
                            : u->confirm_action == A_SAVE_SOUND   ? "SAVE SOUND?"
@@ -1322,7 +1358,7 @@ void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
         bool single = studio_is_single(e, u->part);
         if (u->active_sound < ST_SOUNDS)
             snprintf(title, sizeof(title), "SOUND %02u / 16", u->active_sound + 1);
-        else if (u->active_sound < ST_SOUNDS * 2)
+        else if (u->active_sound < ST_SOUNDS + ST_FACTORIES)
             snprintf(title, sizeof(title), "FACTORY %02u", u->active_sound - ST_SOUNDS + 1);
         else
             snprintf(title, sizeof(title), "CUSTOM SOUND");
@@ -1551,4 +1587,18 @@ void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
         line(u, 1, 37, 126, 37);
         text(u, (128 - (int)strlen(u->toast) * 6) / 2, 27, u->toast, 1, true);
     }
+}
+
+void ui_external_change(Ui *u) {
+    if (!u->engine->preset.studio.part[u->part].enabled)
+        for (unsigned p = 0; p < ST_PARTS; p++)
+            if (u->engine->preset.studio.part[p].enabled) {
+                u->part = (uint8_t)p;
+                break;
+            }
+    u->active_sound = UINT8_MAX;
+    sync_sound(u);
+    if (u->active_sound < ST_SOUNDS)
+        u->library_slot = u->active_sound;
+    u->dirty = true;
 }

@@ -4,11 +4,15 @@ SAA1099 × 1、SN76489AN × 2、RP2040を搭載した小型チップチューン
 USB MIDI、TRS MIDI、2系統のCV／ゲート入力と、OLED・3ボタンによる操作を想定しています。
 回路図、配線済みPCB、JLCPCB向け製造データ、設計資料を収録しています。
 
-**v0.7は破壊的更新です。初回起動で旧音色・セットアップ・ルート・パターンを新しいMIDI配置へ自動初期化して保存します。CV校正と明るさは保持します。初期配置はch1=SAA通常、ch2=SAA ENV、ch3=SNステレオ、ch10=SNノイズです。**
+**v0.8は破壊的更新です。初回起動で旧音色・セットアップ・ルート・パターンを新しいMIDI配置へ自動初期化して保存します。CV校正と明るさは保持します。初期配置はch1=SAA通常、ch2=SAA ENV、ch3=SNステレオ、ch10=SNノイズです。**
 
-**開発状況:** PCBの配線と設計ルール検査は完了しています。ファームウェアv0.7.0-alphaはUF2のビルドとPCテストを通過しています。v0.7の実機評価は未完了です。
+**開発状況:** PCBの配線と設計ルール検査は完了しています。ファームウェアv0.8.0-alphaはUF2のビルドとPCテストを通過しています。v0.8の実機評価は未完了です。
 
 ![PCB配線図](outputs/review/routing-traces-all.png)
+
+[**Wave Lab — 音色・波形エディタを開く**](https://bongorian.github.io/chiptune-usb-cv/)
+
+v0.8ではSAAのENV×ノイズ／複合音色、SNのステレオSTACK、回路配置プロファイルとUSB MIDIによる双方向編集に対応しています。[音色の作り方](firmware/SOUND_DESIGN.md)を参照してください。
 
 ## 仕様
 
@@ -30,6 +34,7 @@ USB MIDI、TRS MIDI、2系統のCV／ゲート入力と、OLED・3ボタンに�
 |---|---|
 | `routed/` | 配線済みKiCadプロジェクト、シンボル、フットプリント |
 | `hardware/` | 回路・配置生成用の未配線プロジェクト |
+| `editor/` | GitHub Pages向けWeb MIDI音色エディタ、波形・ADSR・16ステップ・クロック・CV設定 |
 | `firmware/` | RP2040音源エンジン、USB／TRS MIDI、CV／ゲート、OLED UI、プリセット、UF2 |
 | `mechanical/` | 3Dプリント用ケース、STL・STEP、寸法図・組み立て手順 |
 | `docs/` | 回路仕様、操作設計、配線ルール |
@@ -75,7 +80,7 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 
 ## ファームウェア
 
-[ファームウェアの操作資料](firmware/README.md)と[配布UF2](firmware/dist/chiptune-v0.7.0-alpha.uf2)を収録しています。
+[ファームウェアの操作資料](firmware/README.md)と[配布UF2](firmware/dist/chiptune-v0.8.0-alpha.uf2)を収録しています。
 本体の3ボタンで、SAAのENV発振・独立ADSR、SNのステレオ音色・実クロック変調、MIDI/CV/Gateの割り当て、パターン編集と保存を操作できます。
 [Androidからの更新手順](firmware/ANDROID_UPDATE.md)、[実機確認項目](firmware/BRINGUP.md)、[検証記録](firmware/dist/Verification.json)も参照してください。
 −と＋を押しながらUSBを接続するか、SYSTEM > USB UPDATEからROMブートローダーへ入れます。
@@ -84,7 +89,7 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 
 - 基板検査: DRC 0、未接続0、回路図との一致問題0、ERC 0。
 - 設計照合: 152フットプリントの配置・端子接続と、音源バスの768ケースを検査済み。
-- ファームウェア: v0.7.0-alpha。音色を選んでMIDIで弾く3ボタンUI、ENV発振と独立ADSR、音源資源の予約、A〜Nのパート、MIDI/CV/Gateルート、4マクロと8変調枠、16ステップ、アルペジオ、8シーン・16音色保存、USB更新モードを実装。ARMビルドとASan／UBSan付きPCテストを通過。実機評価は未完了。
+- ファームウェア: v0.8.0-alpha。音色を選んでMIDIで弾く3ボタンUI、ENV発振と独立ADSR、音源資源の予約、A〜Nのパート、MIDI/CV/Gateルート、4マクロと8変調枠、16ステップ、アルペジオ、8シーン・16音色保存、USB更新モードを実装。ARMビルドとASan／UBSan付きPCテストを通過。実機評価は未完了。
 - 実機検証: 電源電流・突入電流、音声出力、CV校正、取り付け公差の評価は未完了。
 
 [OLEDの描画例](firmware/assets/ui-v05.png)は、実装したCの描画処理から生成しています。

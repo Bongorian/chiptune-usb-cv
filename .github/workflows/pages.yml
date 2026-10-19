@@ -1,0 +1,55 @@
+name: Wave Lab Pages
+on:
+  push:
+    branches: [main]
+    paths: ['editor/**', 'firmware/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    permissions:
+      contents: read
+      pages: read
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - run: cmake -S firmware -B build/tests -G Ninja -DCHIPTUNE_HOST_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
+      - run: cmake --build build/tests -j4
+      - run: ctest --test-dir build/tests --output-on-failure
+      - name: Check generated schema and factory library
+        run: |
+          python3 firmware/tools/generate_editor.py
+          build/tests/editor_export > editor/factory.json
+          git diff --exit-code -- firmware/src/sound_fields.inc editor/schema.js editor/factory.json
+      - name: Test editor and firmware protocol contract
+        run: |
+          node --check editor/app.js
+          EDITOR_BRIDGE="$PWD/build/tests/editor_bridge" node --test editor/tests/*.test.js
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - name: Prepare static application
+        run: |
+          mkdir _site
+          cp editor/index.html editor/style.css editor/app.js editor/core.js editor/schema.js editor/factory.json _site/
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "studio.h"
 #include <stdio.h>
 static Engine engine;
 static Settings settings;
@@ -66,6 +67,21 @@ int main(int argc, char **argv) {
         ui_render(&ui, &status, 1000);
         char name[32];
         snprintf(name, sizeof(name), "screen-%u", page);
+        if (output(argv[1], name))
+            return 3;
+    }
+    for (unsigned f = 16; f < 20; f++) {
+        engine_panic(&engine, -1);
+        studio_factory(f, &engine.preset.studio.part[0].sound, engine.preset.studio.part[0].name);
+        (void)studio_single(&engine, 0, 0);
+        ui.part = 0;
+        ui.depth = 0;
+        ui.edit = false;
+        ui_external_change(&ui);
+        engine_tick(&engine, 1);
+        ui_render(&ui, &status, 1000);
+        char name[32];
+        snprintf(name, sizeof(name), "structure-%u", f);
         if (output(argv[1], name))
             return 3;
     }

@@ -26,6 +26,7 @@ typedef struct {
     bool dirty, confirm, confirm_yes, boot_requested, chord, chord_sent;
     bool was_dirty, previewed, system_dirty, was_system_dirty;
     bool layout_reset;
+    uint8_t profile;
     uint32_t chord_since;
     int draft, original;
     uint8_t acceleration;
@@ -76,3 +77,5 @@ void ui_init(Ui *u, Settings *s, Engine *e, bool (*save)(void *),
              bool (*calibrate)(void *, unsigned, bool), void *ctx);
 void ui_buttons(Ui *u, const bool down[3], uint32_t now);
 void ui_render(Ui *u, const UiStatus *status, uint32_t now);
+
+void ui_external_change(Ui *u);

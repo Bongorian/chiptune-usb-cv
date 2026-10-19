@@ -5,6 +5,7 @@
 #define ST_STEPS 16
 #define ST_MODS 8
 #define ST_SOUNDS 16
+#define ST_FACTORIES 20
 #define ST_HELD 16
 typedef enum {
     ST_SAA_TONE,
@@ -19,6 +20,10 @@ typedef enum {
     ST_SN_METAL,
     ST_SN_NOISE_L,
     ST_SN_NOISE_R,
+    ST_SAA_ENV_NOISE,
+    ST_SAA_ENV_MIX,
+    ST_SAA_LAYER,
+    ST_SN_STACK,
     ST_MODELS
 } StModel;
 typedef enum {
@@ -38,6 +43,10 @@ typedef enum {
     ST_PITCH,
     ST_CLOCK_BASE,
     ST_CLOCK_DEPTH,
+    ST_LAYER_LEVEL,
+    ST_LAYER_DECAY,
+    ST_ENV_RATIO,
+    ST_LAYER_INTERVAL,
     ST_PARAMS
 } StParam;
 typedef struct {
@@ -46,7 +55,10 @@ typedef struct {
     uint8_t sustain, level, pan, detune, vibrato, tremolo, lfo_rate, glide, mode;
     int8_t transpose, fine, sweep;
     uint8_t macro_dest[4];
-    int8_t macro[4]; /* bipolar additions; zero leaves the base sound unchanged */
+    int8_t macro[4];      /* bipolar additions; zero leaves the base sound unchanged */
+    uint16_t layer_decay; /* Additional exponential decay of the layer, ms; 0 = sustained. */
+    int8_t layer_interval, env_ratio, stack_interval; /* semitones */
+    uint8_t layer_level, layer_source, stack_size;    /* source: tone/noise/mix; stack: 2 or 3 */
 } StSound;
 typedef enum {
     ST_ROLE_ANY,

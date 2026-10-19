@@ -1,4 +1,5 @@
 #include "engine.h"
+#include "editor.h"
 #include "midi.h"
 #include "store.h"
 #include "ui.h"
@@ -45,6 +46,7 @@ static uint8_t usb_tx[USB_RING][4];
 static unsigned usb_head, usb_tail;
 static bool forward_panic;
 static MidiParser parsers[2];
+static Editor editor;
 static uint32_t source_id[2] = {0, 1};
 static int store_bank = -1;
 static uint32_t store_sequence;
@@ -266,6 +268,9 @@ static void gate_irq_handler(unsigned pin, uint32_t events) {
 }
 static void midi_received(void *ctx, const uint8_t *data, uint8_t len, uint8_t cin) {
     unsigned source = *(uint32_t *)ctx;
+    if (source == 0)
+        for (unsigned i = 0; i < len; i++)
+            editor_byte(&editor, data[i], to_ms_since_boot(get_absolute_time()));
     if (rail_on)
         engine_message(&engine, (uint8_t)source, data, len);
     if (source == 1 && engine.preset.route[1].forward && tud_mounted() && !usb_suspended) {
@@ -684,6 +689,22 @@ int main(void) {
             power_due = now + 10;
         }
         midi_tasks(now);
+        if (!tud_mounted())
+            editor_init(&editor);
+        editor_task(&editor, &engine, &settings,
+                    !rail_on || usb_suspended || ui.edit || ui.confirm || ui.page == UI_NAME,
+                    save_settings, NULL, now);
+        if (editor.changed) {
+            ui_external_change(&ui);
+            editor.changed = false;
+        }
+        unsigned free_packets = (usb_tail + USB_RING - usb_head - 1) % USB_RING;
+        /* Do not nest an editor response inside a forwarded TRS SysEx message. */
+        if (editor.length && (!engine.preset.route[1].forward || !parsers[1].sysex) &&
+            free_packets >= (editor.length + 2) / 3) {
+            while (editor_packet(&editor, usb_tx[usb_head]))
+                usb_head = (usb_head + 1) % USB_RING;
+        }
         gate_tasks(now);
         if (rail_on)
             sn_clock_control();
