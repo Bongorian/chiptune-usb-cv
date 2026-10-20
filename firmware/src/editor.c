@@ -204,7 +204,7 @@ void editor_task(Editor *ed, Engine *e, Settings *s, bool blocked, bool (*save)(
         }
         put(ed, 0);
         put(ed, 8);
-        put(ed, 0);
+        put(ed, 1);
         put(ed, SETTINGS_VERSION);
         put(ed, ST_PARTS);
         put(ed, ST_SOUNDS);

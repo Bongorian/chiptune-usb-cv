@@ -40,9 +40,9 @@ static uint32_t record_crc(const StoreRecord *r) {
 }
 bool store_valid(const StoreRecord *r) {
     if (r->commit != STORE_COMMIT || r->version != SETTINGS_VERSION ||
-        r->length != sizeof(Settings) || !settings_valid(&r->settings))
+        r->length != sizeof(Settings))
         return false;
-    return r->crc == record_crc(r);
+    return r->crc == record_crc(r) && settings_valid(&r->settings);
 }
 /* v0.1 records have 24-byte presets without the SN clock controls. */
 typedef struct {
@@ -215,4 +215,28 @@ int store_select(const StoreRecord *a, const StoreRecord *b) {
     if (!bv)
         return 0;
     return (int32_t)(bs - as) > 0 ? 1 : 0;
+}
+int store_restore(const uint8_t *area, bool defaults, Settings *settings, uint32_t *sequence) {
+    *sequence = 0;
+    if (!defaults) {
+        const StoreRecord *a = (const StoreRecord *)area;
+        const StoreRecord *b = (const StoreRecord *)(area + STORE_BANK_BYTES);
+        int bank = store_select(a, b);
+        if (bank >= 0 && store_load(bank ? b : a, settings, sequence))
+            return bank;
+        /* v1-v4 used the last two 4KiB sectors, inside today's bank 1. */
+        a = (const StoreRecord *)(area + STORE_LEGACY_OFFSET - STORE_FLASH_OFFSET);
+        b = (const StoreRecord *)((const uint8_t *)a + 4096);
+        /* Only the small historical formats fit here. A damaged header claiming
+           v5/v6 must not cause an 18KiB read beyond the end of physical flash. */
+        uint32_t as = 0, bs = 0;
+        bool av = a->version >= 1 && a->version <= 4 && store_load(a, NULL, &as);
+        bool bv = b->version >= 1 && b->version <= 4 && store_load(b, NULL, &bs);
+        bank = !av ? (bv ? 1 : -1) : !bv ? 0 : (int32_t)(bs - as) > 0 ? 1 : 0;
+        if (bank >= 0 && store_load(bank ? b : a, settings, sequence))
+            return -1;
+    }
+    settings_default(settings);
+    *sequence = 0;
+    return -1;
 }

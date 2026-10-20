@@ -1,5 +1,5 @@
 {
-  "firmware": "v0.8.0-alpha",
+  "firmware": "v0.8.1-alpha",
   "host_tests_passed": true,
   "sanitizers": [
     "ASan",
@@ -9,47 +9,52 @@
     {
       "name": "engine_tests",
       "status": "passed",
-      "seconds": 11.6964
+      "seconds": 11.567
     },
     {
       "name": "roles_tests",
       "status": "passed",
-      "seconds": 0.108384
+      "seconds": 0.0951013
     },
     {
       "name": "performance_tests",
       "status": "passed",
-      "seconds": 0.0612691
+      "seconds": 0.0571596
     },
     {
       "name": "studio_tests",
       "status": "passed",
-      "seconds": 0.281877
+      "seconds": 0.280267
     },
     {
       "name": "instrument_tests",
       "status": "passed",
-      "seconds": 0.0149641
+      "seconds": 0.0143302
     },
     {
       "name": "layout_tests",
       "status": "passed",
-      "seconds": 0.0411617
+      "seconds": 0.0247215
     },
     {
       "name": "noise_tests",
       "status": "passed",
-      "seconds": 0.0183801
+      "seconds": 0.0174915
     },
     {
       "name": "display_tests",
       "status": "passed",
-      "seconds": 0.0125297
+      "seconds": 0.0120181
     },
     {
       "name": "editor_tests",
       "status": "passed",
-      "seconds": 0.0262644
+      "seconds": 0.0164737
+    },
+    {
+      "name": "boot_tests",
+      "status": "passed",
+      "seconds": 0.0234105
     }
   ],
   "ui_random_actions": 12000,
@@ -123,7 +128,7 @@
     "SN noise engine changes preserve other held parts",
     "SAA ENV clock-only channels stay muted",
     "mono patch retains polyphonic reservation",
-    "all old musical settings reset once",
+    "old musical settings migrate in RAM until explicit save",
     "CV calibration and brightness retained",
     "new revision survives later boots",
     "interrupted commit retries using the old valid bank"
@@ -164,6 +169,19 @@
       "CV atomic update",
       "save failure feedback",
       "no horizontal mobile overflow or JavaScript console errors"
-    ]
-  }
+    ],
+    "browser_tests_run_for_this_version": false,
+    "browser_tests_last_run_firmware": "v0.8.0-alpha"
+  },
+  "boot_regressions": [
+    "erased and corrupt banks fall back without assertion",
+    "valid saved settings restore unchanged",
+    "read-only v1-v5 migration with calibration retained",
+    "both historical 4KiB slots and false v6 header bounds",
+    "OK-held factory boot does not erase settings",
+    "physical SDK flash capacity independent from linker application limit",
+    "ARM boot USB service precedes settings, no flash writes",
+    "ARM SDK erase/program guards accept both banks and reject out-of-capacity writes",
+    "v0.8.0 negative control matches published ARM flash functions and rejects both banks"
+  ]
 }

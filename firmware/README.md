@@ -1,12 +1,14 @@
-# Chiptune USB/CV firmware v0.8.0-alpha
+# Chiptune USB/CV firmware v0.8.1-alpha
 
 SAA1099とSN76489AN×2をMIDIで演奏する、専用RP2040基板用のファームウェアです。音色を選んで弾き、3つのボタンで音を調整して保存できます。
 
-**この版は破壊的更新です。初回起動時に、保存済み音色・8セットアップ・MIDI/CV/Gateルート・パターンを新しい割り当てへ自動初期化して保存します。CV校正値と表示の明るさは保持します。次回以降の起動では初期化しません。**
+**v0.8.1は、v0.8.0で初回起動が停止してOLEDとUSB MIDIを使えなくなる不具合を修正しています。** フラッシュの物理容量とアプリ用の範囲を分離し、起動時のフラッシュ書き込みを廃止しました。[復旧手順と検証内容](BOOT_RECOVERY.md)を参照してください。
+
+v0.7以前の保存音色・8セットアップ・MIDI/CV/Gateルート・パターンは新しい割り当てへRAM内で初期化します。CV校正値と表示の明るさは保持します。**保存を実行するまでは、旧設定領域を書き換えません。** 有効なv0.8設定はそのまま読み込みます。
 
 [**Wave Lab — Web MIDIエディタ**](https://bongorian.github.io/chiptune-usb-cv/) ／ [音色の構造・回路プロファイル](SOUND_DESIGN.md) ／ [SysEx仕様](protocol/README.md)
 
-v0.8ではENV NOISE、ENV MIX、SAA LAYER、SN STACK、4つの回路配置プロファイルを追加しました。工場音色は20、USER音色は16枠です。初回はv0.7の保存音色も初期化します。エディタの読み出し・反映にはv0.8以降が必要です。
+v0.8ではENV NOISE、ENV MIX、SAA LAYER、SN STACK、4つの回路配置プロファイルを追加しました。工場音色は20、USER音色は16枠です。v0.7の保存音色はRAM内で初期化し、明示的な保存で確定します。エディタの読み出し・反映にはv0.8以降が必要です。
 
 ## MIDIチャンネルと音源の基本配置
 
@@ -25,7 +27,7 @@ MIDIチャンネルは演奏パートです。チップ内部の発音回路を�
 SN2個の外部クロックは共通です。ch3でSNクロックFXを変えるとch10のノイズの性格にも作用します。これはMIDIルートとは別の、ハードウェア上の共有です。
 
 
-- [UF2をダウンロード](dist/chiptune-v0.8.0-alpha.uf2)
+- [UF2をダウンロード](dist/chiptune-v0.8.1-alpha.uf2)
 - [OLED画面例](assets/ui-v08.png)
 - [Androidからの更新](ANDROID_UPDATE.md)
 - [ビルド検証](dist/Verification.json)／[テスト記録](dist/Test_Verification.json)
@@ -80,7 +82,7 @@ ATTACK、RELEASE、LEVELも直接操作できます。`AMP ENVELOPE`にADSR・PA
 
 保存はOK長押し → `SAVE SOUND`。USER SLOTとSOUND NAMEを決め、SAVE SOUNDの確認でYESを選びます。16枠を上書きでき、失敗時は元の内容へ戻します。
 
-SAVE SOUNDでは音色枠と現在の全パートのセットアップを同時に保存します。確認画面にUSER番号とALL PARTSを表示します。次の起動で同じ音色配置・受信設定を復元します。別のセットアップ枠へ保存する場合は`PARTS / SETUP > SAVE / LOAD SETUP > SAVE SETUP`を使います。初回の構成初期化以外に自動保存はしません。
+SAVE SOUNDでは音色枠と現在の全パートのセットアップを同時に保存します。確認画面にUSER番号とALL PARTSを表示します。次の起動で同じ音色配置・受信設定を復元します。別のセットアップ枠へ保存する場合は`PARTS / SETUP > SAVE / LOAD SETUP > SAVE SETUP`を使います。起動時を含め、自動保存はしません。
 
 FACTORY SOUNDSから固定の工場音色を読み込めます。読み込むだけではUSER枠は変わらず、SAVE SOUNDで保存先を選べます。
 
@@ -107,7 +109,7 @@ FACTORY SOUNDSから固定の工場音色を読み込めます。読み込むだ
 | ATK BASS（F19） | SAA LAYER | ENV楽音＋短い補助トーン／ノイズ |
 | SN STACK（F20） | SN STACK | 2／3組のステレオトーンを重ねる |
 
-工場音色名は用途の目安です。実際の聴感は未評価です。v0.8初回起動ではUSER枠もこの工場音色へ置き換えます。
+工場音色名は用途の目安です。実際の聴感は未評価です。旧設定からの移行時は、USER枠もRAM内でこの工場音色へ置き換えます。
 
 ## MIDI入力と複数音色
 
@@ -151,6 +153,8 @@ bash firmware/tools/bootstrap_sdk.sh .deps/pico-sdk
 cmake -S firmware -B build/firmware -G Ninja -DPICO_SDK_PATH="$PWD/.deps/pico-sdk" -DCMAKE_BUILD_TYPE=Release
 cmake --build build/firmware -j4
 python3 firmware/tools/verify_build.py build/firmware --output build/firmware/Verification.json
+python3 -m pip install -r firmware/tests/requirements-arm.txt
+python3 firmware/tests/check_arm_boot.py build/firmware/chiptune.elf --output build/firmware/Boot_Verification.json
 ```
 
-Pico SDK 2.3.1を使います。保存形式はv6です。v1〜v5（v0.7を含む）からCV校正値を取り出し、音色・演奏設定は初回に置き換えます。v5からは明るさも保持します。初期化結果はUSBと音源電源を起動する前に、別のフラッシュバンクへコミットします。新しい構成リビジョンを読めた以後の起動では、ユーザー設定を保持します。末尾64KiBの設定領域は配布UF2に含めません。実機の音声・表示・USB電流・CV精度はPCテストとは別に確認します。
+Pico SDK 2.3.1を使います。保存形式はv6です。v1〜v5（v0.7を含む）からCV校正値を取り出し、音色・演奏設定は初回に置き換えます。v5からは明るさも保持します。USBは設定読み込み前に初期化します。設定移行はRAM内で行い、起動時には保存しません。SAVEの実行時に別のフラッシュバンクへコミットします。新しい構成リビジョンを読めた以後の起動では、ユーザー設定を保持します。末尾64KiBの設定領域は配布UF2に含めません。実機の音声・表示・USB電流・CV精度はPCテストとは別に確認します。

@@ -29,6 +29,8 @@
 #define GATE_RING 32u
 #define USB_RING 128u
 #define I2C_TIMEOUT_US 900
+_Static_assert(PICO_FLASH_SIZE_BYTES == STORE_PHYSICAL_BYTES,
+               "Keep SDK physical flash capacity separate from the application linker limit");
 static Engine engine;
 static Settings settings;
 static Ui ui;
@@ -499,8 +501,7 @@ static bool calibrate(void *ctx, unsigned input, bool one) {
     engine_panic(&engine, -1);
     return true;
 }
-/* Also used once during boot to commit an explicitly versioned layout reset.
-   The boot caller keeps all sound pins high impedance and USB uninitialized. */
+/* Explicit user save only. Boot and settings migration never erase/program flash. */
 static bool commit_settings(void) {
     if (!settings_valid(&settings))
         return false;
@@ -513,6 +514,8 @@ static bool commit_settings(void) {
     memset(pages, 0xff, 4);
     unsigned dest = store_bank == 0 ? 1 : 0;
     uint32_t offset = STORE_FLASH_OFFSET + dest * STORE_BANK_BYTES;
+    if (offset < STORE_FLASH_OFFSET || offset + sizeof(pages) > STORE_PHYSICAL_BYTES)
+        return false;
     uint32_t irq = save_and_disable_interrupts();
     flash_range_erase(offset, STORE_BANK_BYTES);
     flash_range_program(offset, pages, STORE_BANK_BYTES);
@@ -586,6 +589,11 @@ int main(void) {
         if (!gpio_get(PIN_UI_MINUS) && !gpio_get(PIN_UI_PLUS))
             reset_usb_boot(0, 0);
     }
+    bool boot_defaults = !gpio_get(PIN_UI_OK);
+    /* Bring up the USB stack before storage/peripheral/engine setup. No flash
+       write, migration failure or missing I2C device may gate USB initialization. */
+    tusb_init();
+    tud_task();
     gpio_init(PIN_GATE1_N);
     gpio_pull_up(PIN_GATE1_N);
     gpio_init(PIN_GATE2_N);
@@ -608,36 +616,22 @@ int main(void) {
     irq_set_exclusive_handler(UART0_IRQ, uart_irq_handler);
     irq_set_enabled(UART0_IRQ, true);
     uart_set_irq_enables(uart0, true, false);
-    const StoreRecord *banks = (const StoreRecord *)(XIP_BASE + STORE_FLASH_OFFSET);
-    store_bank =
-        store_select(&banks[0], (const StoreRecord *)((const uint8_t *)banks + STORE_BANK_BYTES));
-    if (store_bank >= 0) {
-        const StoreRecord *record =
-            (const StoreRecord *)((const uint8_t *)banks + store_bank * STORE_BANK_BYTES);
-        hard_assert(store_load(record, &settings, &store_sequence));
-    } else {
-        /* v1-v4 used the last two 4KiB sectors. Never erase them before a v5 commit. */
-        const StoreRecord *old_a = (const StoreRecord *)(XIP_BASE + STORE_LEGACY_OFFSET);
-        const StoreRecord *old_b = (const StoreRecord *)(XIP_BASE + STORE_LEGACY_OFFSET + 4096);
-        int legacy = store_select(old_a, old_b);
-        if (legacy >= 0)
-            hard_assert(store_load(legacy ? old_b : old_a, &settings, &store_sequence));
-        else
-            settings_default(&settings);
-    }
+    store_bank = store_restore((const uint8_t *)(XIP_BASE + STORE_FLASH_OFFSET), boot_defaults,
+                               &settings, &store_sequence);
+    tud_task();
     engine_init(&engine, &settings.preset[settings.selected],
                 (SoundSink){saa_write, sn_write, NULL});
     for (int s = 0; s < 2; s++)
         midi_init(&parsers[s], midi_received, &source_id[s]);
     ui_init(&ui, &settings, &engine, save_settings, calibrate, NULL);
-    if (ui.layout_reset && !commit_settings()) {
-        memcpy(ui.toast, "RESET SAVE FAILED", 18);
+    if (boot_defaults) {
+        memcpy(ui.toast, "DEFAULTS (RAM)", 15);
         ui.toast_until = to_ms_since_boot(get_absolute_time()) + 5000;
     }
     oled_init(&oled, ui.frame, oled_write, oled_render, NULL);
     clock_sm = pio_claim_unused_sm(clock_pio, true);
     clock_offset = pio_add_program(clock_pio, &sn_clock_program);
-    tusb_init();
+    tud_task();
     uint32_t tick = time_us_32(), power_due = 0;
     bool suspend_handled = false;
     uint32_t oled_serviced = tick, adc_serviced = tick;
