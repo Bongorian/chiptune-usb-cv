@@ -17,6 +17,12 @@ import {
   resourceInfo,
   supported,
   supportedMod,
+  Wave,
+  waveform,
+  waveNames,
+  availableWaves,
+  selectWave,
+  musicalParameters,
   frame,
   parseFrame,
   verifyHello,
@@ -299,6 +305,20 @@ async function sendSelected() {
     if (entry().dirty && (selected !== id || e.rev !== rev)) scheduleLive();
   }
 }
+async function readProjectTracks() {
+  for (let id = 0; id < 14; id++) {
+    const e = cache.get(id),
+      rev = e.rev;
+    if (e.dirty) continue;
+    const got = decodeTrack(await request(1, [id]));
+    if (e.rev === rev && !e.dirty) {
+      e.track = got;
+      e.rev++;
+    }
+  }
+  renderTracks();
+  renderMeta();
+}
 async function readSelected() {
   const id = selected,
     e = cache.get(id);
@@ -401,6 +421,16 @@ const optionsFor = {
   noise_type: ["Periodic", "White"],
   noise_rate: ["Fast", "Mid", "Slow", "Key Track"],
   lfo_shape: ["Sine", "Triangle", "Square", "Random"],
+  lfo_rate: [
+    "0.5 Hz",
+    "1 Hz",
+    "2 Hz",
+    "4 Hz",
+    "8 Hz",
+    "16 Hz",
+    "32 Hz",
+    "64 Hz",
+  ],
   layer_source: sources,
   env_invert: ["Same", "Inverse"],
   retrigger: ["Off", "On"],
@@ -443,6 +473,10 @@ function setPatch(name, value) {
     "layers",
     "layer_source",
     "noise_rate",
+    "noise_type",
+    "shape",
+    "env_steps",
+    "env_invert",
     "output",
   ];
   if (structural.includes(name)) {
@@ -464,13 +498,29 @@ function patchControl(parent, name, advanced = false) {
   if (!supported(p, name)) return;
   const el = control(
     parent,
-    advanced ? f.label : labels[name] || f.label,
+    waveform(p) === Wave.PULSE && ["noise_pitch", "noise_sweep"].includes(name)
+      ? name === "noise_pitch"
+        ? "PULSE移調 · 半音"
+        : "PULSEスイープ · 半音"
+      : advanced
+        ? f.label
+        : labels[name] || f.label,
     p[name],
     {
       min: f.min,
       max: f.max,
       step: name === "env_steps" ? 8 : f.type === "u16" ? 5 : 1,
-      options: optionsFor[name] || null,
+      options:
+        name === "source" && p.chip === 1
+          ? ["Tone", "Noise", "Tone 3 + Noise · Metal"]
+          : name === "noise_rate" && p.chip === 1
+            ? [
+                "Fast · CLK/512",
+                "Mid · CLK/1024",
+                "Slow · CLK/2048",
+                "Tone 3 · Key Track",
+              ]
+            : optionsFor[name] || null,
       id: advanced ? `adv-${name}` : `patch-${name}`,
     },
     (v) => guard(() => setPatch(name, v)),
@@ -526,27 +576,43 @@ function renderPerformance() {
 function renderPatch() {
   const normal = $("musical-controls");
   normal.replaceChildren();
-  for (const name of [
-    "chip",
-    "source",
-    "env",
-    "shape",
-    "noise_type",
-    "noise_rate",
-    "noise_mix",
-    "attack",
-    "decay",
-    "sustain",
-    "release",
-    "level",
-    "pitch_amount",
-    "pitch_decay",
-    "glide",
-    "vibrato",
-    "tremolo",
-    "detune",
-  ])
-    patchControl(normal, name);
+  const p = entry().track.patch;
+  patchControl(normal, "chip");
+  const waves = availableWaves(p.chip);
+  control(
+    normal,
+    "発音 / WAVE",
+    waves.indexOf(waveform(p)),
+    { options: waves.map((w) => waveNames[w]), id: "patch-wave" },
+    (v) =>
+      guard(() => {
+        selectWave(entry().track.patch, waves[v]);
+        entry().track.morph_target = entry().track.morph = 0;
+        mark();
+        render();
+      }),
+  );
+  if (waveform(p) === Wave.AM) patchControl(normal, "source");
+  for (const name of musicalParameters(p)) patchControl(normal, name);
+  const tips = [
+    "通常トーンは各発振器のデューティ比50%固定です。",
+    "SN Periodic NoiseをTone 3で駆動します。パルス幅は周期の約1/15（6.7%）固定。Noise回路とTone 3を予約し、高音域は分周の量子化誤差が大きくなります。",
+    "SAAのハードウェアENVを波形として出力します。出力3/6とクロック2/5を使用します。Zero / Maximumは周期波形ではありません。",
+    "SAAのToneとNoiseを同じ出力へ混合します。Noise速度は3声単位で共有し、両成分の連続ミックス比はありません。",
+    p.chip === 0
+      ? "SAA Noiseの速度は3声単位で共有します。音程操作はKey Trackで有効です。"
+      : "SNのWhite / Periodic Noiseです。固定レートでは音程・グライド・デチューンを使用しません。Key TrackではTone 3を予約します。",
+    "SNのTone 3と連動Noiseを出力します。両成分は同じTone 3周波数に従い、Noise Mixで音量比を調整します。",
+    "SAAのTone / NoiseをハードウェアENVで振幅変調します。ENV RATIOはENVクロックとノートの半音差です。",
+  ];
+  let hint = $("wave-hint");
+  if (!hint) {
+    hint = document.createElement("p");
+    hint.id = "wave-hint";
+    hint.className = "hint";
+    normal.after(hint);
+  }
+  hint.textContent = tips[waveform(p)];
   const advanced = $("advanced-controls");
   advanced.replaceChildren();
   for (const f of fields) patchControl(advanced, f.name, true);
@@ -1126,15 +1192,14 @@ function replace(
 $("poly-focus").onclick = () =>
   replace(async () => {
     await request(24, [selected]);
-    for (const e of cache.values()) {
-      e.dirty = false;
-      e.sequenceDirty = false;
-    }
+    entry().dirty = false;
+    entry().sequenceDirty = false;
+    await readProjectTracks();
     await readSelected();
     message(
       "選択TrackをPOLY化しました。同じチップの他TrackはOFF、別チップの演奏は保持します。",
     );
-  }, "同じチップのほかのTrackをOFFにして、選択Trackへ声数を集めます。別チップの演奏は保持します。");
+  }, "同じチップのほかのTrackをOFFにして、選択Trackへ声数を集めます。別チップの演奏と他Trackの未反映編集は保持します。選択Trackの未反映編集は破棄します。");
 $("apply-template").onclick = () =>
   replace(async () => {
     await request(22, [Number($("template").value)]);
@@ -1142,6 +1207,7 @@ $("apply-template").onclick = () =>
       e.dirty = false;
       e.sequenceDirty = false;
     }
+    await readProjectTracks();
     await readSelected();
     message("配置をRAMへ置き換えました。保存は別操作です。");
   });
@@ -1152,6 +1218,7 @@ $("load-project").onclick = () =>
       e.dirty = false;
       e.sequenceDirty = false;
     }
+    await readProjectTracks();
     await readSelected();
     message("Projectを読み込みました。");
   });

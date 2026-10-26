@@ -30,7 +30,7 @@ typedef struct {
     void *ctx;
     uint8_t frame[1024];
     uint8_t page, track, field, previous_page, slot, save_kind, factory, step, mod, input, macro,
-        name_cursor;
+        name_cursor, wave;
     uint8_t path[4], cursor[4], depth;
     bool edit, confirm, confirm_yes, boot_requested, dirty;
     int value;

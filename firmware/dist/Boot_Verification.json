@@ -1,6 +1,6 @@
 {
   "firmware": "v0.10.0-alpha",
-  "elf_sha256": "5f9906314a38ebd80840de456dc510d8b5dfdb8af2667a983e8a0cadadc0ab01",
+  "elf_sha256": "9962e1ab8647397f372c19e86d58b612895a0ad6d69cdd13af91c9dd55c4c01b",
   "hardware_emulated": false,
   "arm_code_executed": true,
   "flash_guard_cases": [

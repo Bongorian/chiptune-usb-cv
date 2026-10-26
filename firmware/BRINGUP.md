@@ -25,6 +25,7 @@
 - note45=110 Hz、69=440 Hzほか全域、範囲外クランプ、音量補正・PAN・左右差・同時発音時の飽和とヘッドルームを測定。
 - SAA ENVの8形状・8/16段・単発／反復・R反転・Retrigger、AM比、補助Layerとその減衰。クロック用2/5が無音であること。
 - SAA固定／Key Track Noise、3声群での共有速度、Mixのキャリアがノイズピッチで意図せず変わらないこと。ENV補助Mixは自身のクロックと結び付く。
+- PULSE 約6.7%の周期、パルス幅と極性を測定し、Tone 3が無音のクロックとして働くこと、SQUARE 50%と区別されることを確認。実チップの周期段数と高音域の量子化誤差を照合。
 - SN White/Periodic、固定3レート、Tone3連動、Metal、Layers1–3、左右単独／並列／detuneを測定。周期ノイズのAN型15段比と実個体を照合。
 - ロジックアナライザーでSN /WE LOW 16–136 µs、setup/hold、divider2 bytes、クロック変化中の書込、SAA /WRと/CSを確認。
 - 14独立声＋ADSR/Pitch/LFO/Morph/8変調、MIDI両入力の高負荷、CV/Gate、OLED編集、低クロックを重ねる。診断`tick_max_us`と`tick_overruns`、実ノート遅延、最悪のバス待ちを記録。**1 msの実時間保証はこの測定後に判断する。**

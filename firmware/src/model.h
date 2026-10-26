@@ -21,6 +21,33 @@ typedef enum { CHIP_SAA, CHIP_SN } Chip;
 typedef enum { SOURCE_TONE, SOURCE_NOISE, SOURCE_MIX } Source;
 typedef enum { ENV_OFF, ENV_OSC, ENV_AM } HardwareEnvelope;
 typedef enum { OUTPUT_STEREO, OUTPUT_LEFT, OUTPUT_RIGHT } Output;
+/* Musical selectors derive from Patch; no duplicate waveform field is stored. */
+typedef enum {
+    WAVE_SQUARE,
+    WAVE_PULSE,
+    WAVE_ENV,
+    WAVE_TONE_NOISE,
+    WAVE_NOISE,
+    WAVE_METAL,
+    WAVE_AM,
+    WAVE_COUNT
+} PatchWave;
+typedef enum {
+    PATCH_F_PITCH = 1u << 0,
+    PATCH_F_PAN = 1u << 1,
+    PATCH_F_ENV = 1u << 2,
+    PATCH_F_ENV_RATIO = 1u << 3,
+    PATCH_F_NOISE = 1u << 4,
+    PATCH_F_NOISE_TYPE = 1u << 5,
+    PATCH_F_NOISE_TRACK = 1u << 6,
+    PATCH_F_NOISE_MIX = 1u << 7,
+    PATCH_F_LAYERS = 1u << 8,
+    PATCH_F_LAYER_PITCH = 1u << 9,
+    PATCH_F_STACK = 1u << 10,
+    PATCH_F_SAA_LAYER = 1u << 11,
+    PATCH_F_DETUNE = 1u << 12,
+    PATCH_F_PULSE = 1u << 13
+} PatchFeature;
 typedef enum { PLAY_DIRECT, PLAY_POLY, PLAY_LEGATO } PlayMode;
 typedef enum {
     MOD_NONE,
@@ -97,6 +124,10 @@ typedef struct {
 void patch_default(Patch *p, unsigned chip);
 void patch_factory(unsigned index, Patch *p, char name[9]);
 bool patch_valid(const Patch *p);
+PatchWave patch_wave(const Patch *p);
+bool patch_wave_available(unsigned chip, unsigned wave);
+bool patch_set_wave(Patch *p, unsigned wave);
+uint32_t patch_features(const Patch *p);
 bool patch_same_structure(const Patch *a, const Patch *b);
 void patch_morph(Patch *out, const Patch *a, const Patch *b, unsigned amount);
 void project_default(Project *p);

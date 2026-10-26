@@ -26,8 +26,15 @@ import {
   supported,
   normalizePatch,
   supportedMod,
+  Wave,
+  waveform,
+  availableWaves,
+  selectWave,
+  featureMask,
+  musicalParameters,
+  Feature,
 } from "../core.js";
-const { factories } = JSON.parse(
+const { factories, waveforms } = JSON.parse(
   fs.readFileSync(new URL("../factory.json", import.meta.url)),
 );
 function bridge(messages) {
@@ -194,4 +201,74 @@ test("structure editing normalizes incompatible layers and unused noise controls
   assert(!supportedMod(t, 6));
   t.patch.output = 1;
   assert(!supportedMod(t, 2));
+});
+
+test("C and Web agree on wave classification and capability masks for every factory", () => {
+  for (const f of factories) {
+    assert.equal(waveform(f.patch), f.wave, f.name);
+    assert.equal(featureMask(f.patch), f.features, f.name);
+  }
+});
+test("C and Web construct the same chip-specific waveforms without new stored fields", () => {
+  assert.equal(waveforms.length, 9);
+  for (const spec of waveforms) {
+    const p = structuredClone(
+      waveforms.find((w) => w.chip === spec.chip && w.wave === Wave.SQUARE)
+        .patch,
+    );
+    selectWave(p, spec.wave);
+    assert.deepEqual(p, spec.patch);
+    assert.equal(featureMask(p), spec.features);
+  }
+  const sn = structuredClone(factories[21].patch),
+    before = structuredClone(sn);
+  assert.throws(() => selectWave(sn, Wave.ENV));
+  assert.deepEqual(sn, before);
+  assert.deepEqual(availableWaves(0), [
+    Wave.SQUARE,
+    Wave.ENV,
+    Wave.TONE_NOISE,
+    Wave.NOISE,
+    Wave.AM,
+  ]);
+  assert.deepEqual(availableWaves(1), [
+    Wave.SQUARE,
+    Wave.PULSE,
+    Wave.NOISE,
+    Wave.METAL,
+  ]);
+});
+test("musical controls exclude unsupported or ineffective chip parameters", () => {
+  const sn = structuredClone(factories[22].patch);
+  let names = musicalParameters(sn);
+  for (const n of [
+    "shape",
+    "env_ratio",
+    "detune",
+    "glide",
+    "pitch_amount",
+    "vibrato",
+    "noise_pitch",
+  ])
+    assert(!names.includes(n), n);
+  assert(!supportedMod({ patch: sn }, 3));
+  assert(!supportedMod({ patch: sn }, 4));
+  selectWave(sn, Wave.PULSE);
+  names = musicalParameters(sn);
+  for (const n of ["noise_type", "noise_rate", "shape", "noise_mix"])
+    assert(!names.includes(n), n);
+  for (const n of ["noise_pitch", "noise_sweep", "glide", "detune"])
+    assert(names.includes(n), n);
+  const saa = structuredClone(factories[20].patch);
+  selectWave(saa, Wave.TONE_NOISE);
+  names = musicalParameters(saa);
+  assert(names.includes("noise_rate"));
+  assert(!names.includes("noise_mix"));
+  assert(!names.includes("noise_type"));
+  assert(!names.includes("detune"));
+  selectWave(saa, Wave.ENV);
+  assert(musicalParameters(saa).includes("shape"));
+  saa.env = 2;
+  saa.shape = 0;
+  assert(!(featureMask(saa) & Feature.ENV_RATIO));
 });

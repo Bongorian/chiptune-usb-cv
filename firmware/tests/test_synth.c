@@ -194,6 +194,69 @@ static void pressure(void) {
     message(1, 0xd0, 127, 0);
     assert(engine.effective[0].vibrato == 100);
 }
+static void waveforms(void) {
+    for (unsigned chip = 0; chip < 2; chip++)
+        for (unsigned wave = 0; wave < WAVE_COUNT; wave++) {
+            Patch p;
+            patch_default(&p, chip);
+            Patch before = p;
+            if (!patch_wave_available(chip, wave)) {
+                assert(!patch_set_wave(&p, wave));
+                assert(!memcmp(&p, &before, sizeof(p)));
+            } else {
+                assert(patch_set_wave(&p, wave));
+                assert(patch_valid(&p) && patch_wave(&p) == wave);
+                assert(p.attack == before.attack && p.release == before.release);
+            }
+        }
+    setup();
+    isolated(22, PLAY_DIRECT, 1);
+    assert(!(patch_features(&engine.project.track[0].patch) &
+             (PATCH_F_PITCH | PATCH_F_DETUNE | PATCH_F_ENV)));
+    Project p = engine.project;
+    assert(patch_set_wave(&p.track[0].patch, WAVE_PULSE));
+    assert(engine_apply(&engine, &p));
+    assert(engine.plan.resources[0][0] == 0x3900 && engine.plan.outputs[0][0] == 0x3000);
+    message(0, 0x90, 45, 127);
+    for (unsigned side = 0; side < 2; side++) {
+        assert(engine.bus.noise[side] == 3); /* Periodic + Tone3, not white. */
+        assert(engine.bus.tone[side][2] == 38);
+        assert(engine.bus.volume[side][2] == 15); /* Clock is inaudible. */
+        assert(engine.bus.volume[side][3] < 15);
+        float hz = 2000000.0f / (32 * engine.bus.tone[side][2] * 15);
+        assert(fabsf(hz - 110) < .4f);
+    }
+    setup();
+    message(0, 0x96, 45, 127);
+    p = engine.project;
+    assert(patch_set_wave(&p.track[6].patch, WAVE_PULSE));
+    ResourcePlan plan = engine.plan;
+    assert(!engine_apply(&engine, &p));
+    assert(engine_track_notes(&engine, 6) == 1 && !memcmp(&plan, &engine.plan, sizeof(plan)));
+    assert(patch_wave(&engine.project.track[6].patch) == WAVE_SQUARE);
+    setup();
+    isolated(20, PLAY_DIRECT, 1);
+    p = engine.project;
+    assert(patch_set_wave(&p.track[0].patch, WAVE_ENV));
+    p.track[0].patch.shape = 1; /* Constant maximum does not depend on clock pitch. */
+    assert(engine_apply(&engine, &p));
+    message(0, 0x90, 127, 127);
+    for (unsigned n = 0; n < 6; n++)
+        if (engine.plan.outputs[0][0] & (1u << n))
+            assert(engine.bus.saa[n]);
+    assert(!(patch_features(&p.track[0].patch) & PATCH_F_PITCH));
+    p.track[0].patch.shape = 5; /* Periodic ENV still mutes outside its clock range. */
+    assert(engine_apply(&engine, &p));
+    message(0, 0x90, 127, 127);
+    for (unsigned n = 0; n < 6; n++)
+        if (engine.plan.outputs[0][0] & (1u << n))
+            assert(!engine.bus.saa[n]);
+    Patch env;
+    patch_default(&env, CHIP_SAA);
+    assert(patch_set_wave(&env, WAVE_AM));
+    env.shape = 0;
+    assert(!(patch_features(&env) & PATCH_F_ENV_RATIO));
+}
 static void pitch(void) {
     assert(fabsf(midi_note_hz(45) - 110) < .001f && fabsf(midi_note_hz(69) - 440) < .001f);
     for (unsigned n = 0; n < 128; n++) {
@@ -221,6 +284,7 @@ int main(void) {
     constraints();
     sound_features();
     pressure();
+    waveforms();
     pitch();
     puts("PASS synth: DIRECT/POLY, ownership/sustain/steal, atomic reservations, "
          "ENV/AM/layer/metal/noise sweep/morph, pitch");

@@ -6,15 +6,15 @@
     {
       "logical_voices": 10,
       "frames": 10000,
-      "mean_us": 1.984,
-      "max_observed_us": 56.0,
+      "mean_us": 2.027,
+      "max_observed_us": 65.0,
       "coalesced_without_bus_service": 11296
     },
     {
       "logical_voices": 14,
       "frames": 10000,
-      "mean_us": 1.718,
-      "max_observed_us": 5.0,
+      "mean_us": 1.725,
+      "max_observed_us": 27.0,
       "coalesced_without_bus_service": 10392
     }
   ],

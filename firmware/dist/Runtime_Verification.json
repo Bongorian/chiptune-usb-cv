@@ -1,6 +1,6 @@
 {
   "firmware": "v0.10.0-alpha",
-  "elf_sha256": "5f9906314a38ebd80840de456dc510d8b5dfdb8af2667a983e8a0cadadc0ab01",
+  "elf_sha256": "9962e1ab8647397f372c19e86d58b612895a0ad6d69cdd13af91c9dd55c4c01b",
   "arm_release_code_executed": true,
   "logical_voices": 14,
   "physical_circuits": 14,
@@ -175,12 +175,12 @@
     },
     {
       "function": "ui_buttons",
-      "instructions": 167,
-      "stack_bytes_observed": 72
+      "instructions": 162,
+      "stack_bytes_observed": 64
     },
     {
       "function": "ui_render",
-      "instructions": 31117,
+      "instructions": 31388,
       "stack_bytes_observed": 552
     }
   ],

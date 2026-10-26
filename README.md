@@ -12,7 +12,7 @@ USB MIDI、TRS MIDI、2系統のCV／ゲート入力と、OLED・3ボタンに�
 
 ![PCB配線図](outputs/review/routing-traces-all.png)
 
-[**Wave Lab — 音色・波形エディタを開く**](https://bongorian.github.io/chiptune-usb-cv/)
+[**Wave Lab — Web MIDI音色エディタ**](https://bongorian.github.io/chiptune-usb-cv/)
 
 Wave Labのソースは`editor/`にあります。公開版のほか、ローカルHTTPサーバーでも実行できます。[音作り](firmware/SOUND_DESIGN.md)と[エディタの使い方](editor/README.md)を参照してください。
 
@@ -83,6 +83,8 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 ## ファームウェア
 
 [ファームウェアの操作資料](firmware/README.md)と[配布UF2](firmware/dist/chiptune-v0.10.0-alpha.uf2)を収録しています。
+発音表示はSQUARE 50%（SAA/SN）、PULSE 約6.7%（SN Periodic Noise＋Tone 3）、ENV WAVE（SAA）、TONE + NOISE（SAA）を区別します。選択した発音で使える設定を表示します。
+
 本体の3ボタンで、SAAのENV発振・ソフトADSR、SNのステレオ音色・実クロック変調、MIDI/CV/Gateの割り当て、パターン編集と保存を操作できます。
 [Androidからの更新手順](firmware/ANDROID_UPDATE.md)、[実機確認項目](firmware/BRINGUP.md)、[検証記録](firmware/dist/Verification.json)も参照してください。
 −と＋を押しながらUSBを接続するか、SYSTEM > USB UPDATEからROMブートローダーへ入れます。

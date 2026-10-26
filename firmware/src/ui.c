@@ -66,6 +66,12 @@ static void text(Ui *u, int x, int y, const char *s, int scale, bool white) {
             g[1] = 8;
             g[2] = 62;
             g[3] = 8;
+        } else if (c == '%') {
+            g[0] = 0x63;
+            g[1] = 0x13;
+            g[2] = 8;
+            g[3] = 0x64;
+            g[4] = 0x63;
         } else if (c == ':')
             g[2] = 20;
         else if (c == '.')
@@ -136,7 +142,15 @@ enum {
 static const char *const mode_names[] = {"DIRECT", "POLY", "LEGATO"};
 static const char *const chips[] = {"SAA1099", "SN76489"};
 static const char *const sources[] = {"TONE", "NOISE", "TONE+NOISE"};
+static const char *const sn_sources[] = {"TONE", "NOISE", "TONE3+NOISE"};
+static const char *const noise_types[] = {"PERIODIC", "WHITE"};
 static const char *const envelopes[] = {"OFF", "OSCILLATOR", "AM"};
+static const uint8_t wave_choice[2][5] = {
+    {WAVE_SQUARE, WAVE_ENV, WAVE_TONE_NOISE, WAVE_NOISE, WAVE_AM},
+    {WAVE_SQUARE, WAVE_PULSE, WAVE_NOISE, WAVE_METAL}};
+static const char *const saa_waves[] = {"SQUARE 50%", "ENV WAVE", "TONE + NOISE", "NOISE",
+                                        "SAA AM"};
+static const char *const sn_waves[] = {"SQUARE 50%", "PULSE 6.7%", "NOISE", "SN METAL"};
 static const char *const outputs[] = {"L/R + PAN", "LEFT", "RIGHT"};
 static const char *const yesno[] = {"OFF", "ON"};
 static const char *const rates[] = {"FAST", "MID", "SLOW", "KEY TRACK"};
@@ -188,6 +202,13 @@ static unsigned build(Ui *u, Item a[48]) {
     Track *t = &project->track[u->track];
     Patch *p = &t->patch;
     unsigned n = 0;
+    uint32_t features = patch_features(p);
+    if (!u->edit) {
+        u->wave = 0;
+        for (unsigned i = 0; i < (p->chip == CHIP_SAA ? 5u : 4u); i++)
+            if (wave_choice[p->chip][i] == patch_wave(p))
+                u->wave = (uint8_t)i;
+    }
 #define V(label, ptr, type, lo, hi, step, choices)                                                 \
     a[n++] = (Item){label, ptr, lo, hi, step, type, 0, choices}
 #define U(label, ptr, lo, hi) V(label, ptr, ITEM_U8, lo, hi, 1, NULL)
@@ -224,17 +245,51 @@ static unsigned build(Ui *u, Item a[48]) {
         A("POLY FOCUS", ACT_POLY_FOCUS);
         C("PLAY MODE", &t->mode, 0, 2, mode_names);
         U("POLY VOICES", &t->voices, 1, 6);
+        C("CHIP", &p->chip, 0, 1, chips);
+        C("WAVE", &u->wave, 0, p->chip == CHIP_SAA ? 4 : 3,
+          p->chip == CHIP_SAA ? saa_waves : sn_waves);
         W("ATTACK MS", &p->attack, 0, 8000, 5);
         W("DECAY MS", &p->decay, 0, 8000, 10);
         U("SUSTAIN", &p->sustain, 0, 100);
         W("RELEASE MS", &p->release, 0, 8000, 10);
-        if (p->env) {
+        U("PATCH LEVEL", &p->level, 0, 100);
+        if (features & PATCH_F_ENV) {
             C("ENV SHAPE", &p->shape, 0, 7, shapes);
-        } else if (p->source != SOURCE_TONE) {
-            C("NOISE RATE", &p->noise_rate, 0, 3, rates);
-        } else {
-            U("VIBRATO CENT", &p->vibrato, 0, 100);
+            V("ENV STEPS", &p->env_steps, ITEM_U8, 8, 16, 8, NULL);
+            C("R INVERT", &p->env_invert, 0, 1, yesno);
+            C("RETRIGGER", &p->retrigger, 0, 1, yesno);
         }
+        if (features & PATCH_F_ENV_RATIO)
+            I("ENV RATIO ST", &p->env_ratio, -48, 48);
+        if ((features & PATCH_F_NOISE) && !(features & PATCH_F_PULSE)) {
+            C("NOISE RATE", &p->noise_rate, 0, 3, rates);
+            if (features & PATCH_F_NOISE_TYPE)
+                C("NOISE TYPE", &p->noise_type, 0, 1, noise_types);
+        }
+        if (features & PATCH_F_NOISE_TRACK) {
+            I(features & PATCH_F_PULSE ? "PULSE TUNE" : "NOISE PITCH", &p->noise_pitch, -48, 48);
+            I(features & PATCH_F_PULSE ? "PULSE SWEEP" : "NOISE SWEEP", &p->noise_sweep, -48, 48);
+        }
+        if (features & PATCH_F_NOISE_MIX)
+            U("NOISE MIX", &p->noise_mix, 0, 100);
+        if (features & PATCH_F_LAYERS)
+            U("LAYERS", &p->layers, 1, p->chip == CHIP_SAA ? 2 : 3);
+        if (features & PATCH_F_LAYER_PITCH)
+            I("LAYER ST", &p->layer_interval, -48, 48);
+        if (features & PATCH_F_STACK)
+            I("THIRD ST", &p->stack_interval, -48, 48);
+        if (features & PATCH_F_SAA_LAYER) {
+            C("LAYER SOURCE", &p->layer_source, 0, 2, sources);
+            U("LAYER LEVEL", &p->layer_level, 0, 100);
+            W("LAYER DECAY", &p->layer_decay, 0, 8000, 10);
+        }
+        if (features & PATCH_F_PITCH) {
+            U("VIBRATO CENT", &p->vibrato, 0, 100);
+            W("GLIDE MS", &p->glide, 0, 8000, 10);
+        }
+        U("TREMOLO", &p->tremolo, 0, 100);
+        if (features & PATCH_F_DETUNE)
+            U("DETUNE CENT", &p->detune, 0, 50);
         U("RECEIVE CH", &u->receive, 0, 16);
         A("AUDITION A2", ACT_AUDITION);
         L("SAVE / LOAD", UI_SAVE);
@@ -242,7 +297,7 @@ static unsigned build(Ui *u, Item a[48]) {
         break;
     case UI_ADVANCED:
         C("CHIP", &p->chip, 0, 1, chips);
-        C("SOURCE", &p->source, 0, 2, sources);
+        C("SOURCE", &p->source, 0, 2, p->chip == CHIP_SAA ? sources : sn_sources);
         C("OUTPUT", &p->output, 0, 2, outputs);
         if (p->chip == CHIP_SAA) {
             C("HARDWARE ENV", &p->env, 0, 2, envelopes);
@@ -251,7 +306,7 @@ static unsigned build(Ui *u, Item a[48]) {
                 V("ENV STEPS", &p->env_steps, ITEM_U8, 8, 16, 8, NULL);
                 C("R INVERT", &p->env_invert, 0, 1, yesno);
                 C("RETRIGGER", &p->retrigger, 0, 1, yesno);
-                if (p->env == ENV_AM)
+                if (features & PATCH_F_ENV_RATIO)
                     I("ENV RATIO ST", &p->env_ratio, -48, 48);
             }
         }
@@ -259,7 +314,7 @@ static unsigned build(Ui *u, Item a[48]) {
             (p->chip == CHIP_SAA && p->layers > 1 && p->layer_source != SOURCE_TONE)) {
             C("NOISE RATE", &p->noise_rate, 0, 3, rates);
             if (p->chip == CHIP_SN)
-                U("WHITE NOISE", &p->noise_type, 0, 1);
+                C("NOISE TYPE", &p->noise_type, 0, 1, noise_types);
             if (p->noise_rate == 3) {
                 I("NOISE PITCH", &p->noise_pitch, -48, 48);
                 I("NOISE SWEEP", &p->noise_sweep, -48, 48);
@@ -267,10 +322,11 @@ static unsigned build(Ui *u, Item a[48]) {
         }
         if (p->chip == CHIP_SN && p->source == SOURCE_MIX)
             U("NOISE MIX", &p->noise_mix, 0, 100);
-        if (p->source == SOURCE_TONE) {
+        if (features & PATCH_F_LAYERS) {
             U("LAYERS", &p->layers, 1, p->chip == CHIP_SAA ? 2 : 3);
             if (p->layers > 1) {
-                I("LAYER ST", &p->layer_interval, -48, 48);
+                if (features & PATCH_F_LAYER_PITCH)
+                    I("LAYER ST", &p->layer_interval, -48, 48);
                 if (p->chip == CHIP_SN && p->layers == 3)
                     I("THIRD ST", &p->stack_interval, -48, 48);
                 if (p->chip == CHIP_SAA) {
@@ -280,16 +336,18 @@ static unsigned build(Ui *u, Item a[48]) {
                 }
             }
         }
-        I("TRANSPOSE ST", &p->transpose, -48, 48);
-        I("FINE CENT", &p->fine, -50, 50);
-        I("PITCH ENV ST", &p->pitch_amount, -48, 48);
-        W("PITCH DECAY", &p->pitch_decay, 0, 8000, 10);
-        W("GLIDE MS", &p->glide, 0, 8000, 10);
-        U("VIBRATO CENT", &p->vibrato, 0, 100);
+        if (features & PATCH_F_PITCH) {
+            I("TRANSPOSE ST", &p->transpose, -48, 48);
+            I("FINE CENT", &p->fine, -50, 50);
+            I("PITCH ENV ST", &p->pitch_amount, -48, 48);
+            W("PITCH DECAY", &p->pitch_decay, 0, 8000, 10);
+            W("GLIDE MS", &p->glide, 0, 8000, 10);
+            U("VIBRATO CENT", &p->vibrato, 0, 100);
+        }
         U("TREMOLO", &p->tremolo, 0, 100);
         U("LFO RATE", &p->lfo_rate, 0, 7);
         C("LFO SHAPE", &p->lfo_shape, 0, 3, lfos);
-        if (p->chip == CHIP_SN && p->output == OUTPUT_STEREO)
+        if (features & PATCH_F_DETUNE)
             U("DETUNE CENT", &p->detune, 0, 50);
         U("MORPH USER", &t->morph_target, 0, USER_PATCHES);
         U("MORPH A-B", &t->morph, 0, 100);
@@ -555,6 +613,8 @@ void ui_click(Ui *u, unsigned button, bool long_press, uint32_t now) {
         Patch *p = &u->draft.track[u->track].patch;
         if (item->value == &p->chip)
             patch_default(p, (unsigned)u->value);
+        if (item->value == &u->wave)
+            (void)patch_set_wave(p, wave_choice[p->chip][u->wave]);
         if (item->value == &p->source && p->source != SOURCE_TONE) {
             p->layers = 1;
             if (p->env == ENV_OSC)

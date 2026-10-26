@@ -74,6 +74,22 @@ const { spawnSync } = require("node:child_process");
   const exported = JSON.parse(fs.readFileSync(await download.path()));
   assert.equal(exported.schema, 10);
   assert.equal(exported.track.level, 75);
+  assert.equal(await page.locator("#patch-wave option").count(), 5);
+  assert(
+    !(await page
+      .locator("#patch-wave")
+      .textContent()
+      .then((t) => t.includes("PULSE"))),
+  );
+  await page.locator("#patch-wave").selectOption({ label: "ENV WAVE" });
+  assert.equal(await page.locator("#patch-shape").count(), 1);
+  assert.equal(await page.locator("#patch-env_steps").count(), 1);
+  assert.equal(await page.locator("#patch-detune").count(), 0);
+  await page.locator("#patch-wave").selectOption({ label: "TONE + NOISE" });
+  assert.equal(await page.locator("#patch-noise_rate").count(), 1);
+  assert.equal(await page.locator("#patch-noise_mix").count(), 0);
+  assert.equal(await page.locator("#patch-noise_type").count(), 0);
+  await page.locator("#patch-wave").selectOption({ label: "SQUARE 50%" });
   await page.screenshot({
     path: "/tmp/chiptune-v10-offline.png",
     fullPage: true,
@@ -113,6 +129,28 @@ const { spawnSync } = require("node:child_process");
     () => document.querySelector("#name").value === "SN MONO",
   );
   assert.equal(await page.locator("#patch-detune").inputValue(), "0");
+  assert.equal(await page.locator("#patch-wave option").count(), 4);
+  assert(
+    !(await page
+      .locator("#patch-wave")
+      .textContent()
+      .then((t) => t.includes("ENV WAVE"))),
+  );
+  await page.locator("#factory").selectOption("22");
+  await page.locator("#load-factory").click();
+  for (const id of [
+    "patch-detune",
+    "patch-glide",
+    "patch-vibrato",
+    "patch-pitch_amount",
+    "patch-shape",
+  ])
+    assert.equal(await page.locator("#" + id).count(), 0, id);
+  await page.locator("#read").click();
+  await page.waitForFunction(
+    () => document.querySelector("#name").value === "SN MONO",
+  );
+
   await page.locator("#track-pan").evaluate((el) => {
     el.value = 0;
     el.dispatchEvent(new Event("input", { bubbles: true }));
@@ -122,6 +160,15 @@ const { spawnSync } = require("node:child_process");
     .getByRole("status")
     .filter({ hasText: "本体RAMへ反映しました" })
     .waitFor();
+  await page.locator('[data-track="0"]').click();
+  await page.locator("#track-level").evaluate((el) => {
+    el.value = 77;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await page.locator('[data-track="6"]').click();
+  await page.waitForFunction(
+    () => document.querySelector("#name").value === "SN MONO",
+  );
   await page.locator("#poly-focus").click();
   await page.locator("#replace-confirm").click();
   await page
@@ -130,6 +177,42 @@ const { spawnSync } = require("node:child_process");
     .waitFor();
   assert.equal(await page.locator("#track-mode").inputValue(), "1");
   assert.equal(await page.locator("#track-voices").inputValue(), "3");
+  assert(
+    await page
+      .locator('[data-track="7"]')
+      .evaluate((el) => el.classList.contains("muted")),
+  );
+  await page.locator("#track-mode").selectOption("0");
+  await page.locator("#track-voices").evaluate((el) => {
+    el.value = 1;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await page.locator("#patch-wave").selectOption({ label: "PULSE ~6.7%" });
+  assert.equal(await page.locator("#patch-noise_rate").count(), 0);
+  assert.equal(await page.locator("#patch-noise_type").count(), 0);
+  assert.equal(await page.locator("#patch-noise_pitch").count(), 1);
+  assert.match(await page.locator("#wave-hint").textContent(), /1\/15/);
+  await page.locator("#send").click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "本体RAMへ反映しました" })
+    .waitFor();
+  assert.match(await page.locator("#resource-cost").textContent(), /4回路/);
+  assert.match(
+    await page.locator("#resource-actual").textContent(),
+    /SN L noise/,
+  );
+  assert.match(await page.locator("#resource-actual").textContent(), /SN L3/);
+  await page.screenshot({
+    path: "/tmp/chiptune-v10-pulse.png",
+    fullPage: true,
+  });
+  await page.locator('[data-track="0"]').click();
+  assert.equal(await page.locator("#track-level").inputValue(), "77");
+  await page.locator('[data-track="6"]').click();
+  await page.waitForFunction(
+    () => document.querySelector("#name").value === "SN MONO",
+  );
   await page.locator("aside details>summary").click();
   await page.locator("#template").selectOption("1");
   await page.locator("#apply-template").click();
@@ -263,14 +346,32 @@ const { spawnSync } = require("node:child_process");
       }),
     });
   });
+  let legacyShellServed = false;
+  // A cached v0.10 HTML shell may not contain the new optional hint element.
+  await oldPage.route(
+    new URL(process.env.EDITOR_URL || "http://127.0.0.1:8766").href,
+    async (route) => {
+      legacyShellServed = true;
+      const response = await route.fetch();
+      await route.fulfill({
+        response,
+        body: (await response.text()).replace(
+          /<p id="wave-hint" class="hint"><\/p>/,
+          "",
+        ),
+      });
+    },
+  );
   await oldPage.goto(process.env.EDITOR_URL || "http://127.0.0.1:8766");
+  assert(legacyShellServed);
+  await oldPage.locator("#wave-hint").waitFor();
   await oldPage.locator("#connect").click();
   await oldPage.locator("#message.error").waitFor();
   assert(await oldPage.locator("#send").isDisabled());
   assert.equal(oldWrites, 0);
   await browser.close();
   console.log(
-    "PASS browser: offline editing/export, protocol-2 real-C sync, resource rejection, DIRECT/POLY, PAN, morph, sequence/clock/CV, independent patch save, LIVE coalescing, old-version write lock, mobile layout",
+    "PASS browser: offline editing/export, protocol-2 real-C sync, resource rejection, DIRECT/POLY, PAN, morph, sequence/clock/CV, independent patch save, LIVE coalescing, old-version write lock, chip-specific wave controls and Pulse/Tone3 reservations, mobile layout",
   );
 })().catch((e) => {
   console.error(e);
