@@ -3,7 +3,7 @@
   "date": "2026-10-27",
   "hardware_tested": false,
   "elf_sha256": "05e61facf475864f5e0b4d087975bf22bc19dbc9ba1dfa8897a79548d22a8a22",
-  "source_manifest_sha256": "94fab8169b9f9e6ef32a57d197201903ba96e81c9936c409ef850e73a9a6f142",
+  "source_manifest_sha256": "05441186185e4f88d383ae697bd22ddb9addf7c8088151b188e86e7d515e6980",
   "host_sanitized": {
     "suites": 8,
     "passed": 8,

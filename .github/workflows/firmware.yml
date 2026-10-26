@@ -7,9 +7,13 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: firmware-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   host-tests:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - run: cmake -S firmware -B build/tests -G Ninja -DCHIPTUNE_HOST_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
@@ -33,9 +37,10 @@ jobs:
           CHROME_BIN=$(node -e 'process.stdout.write(require("/tmp/chiptune-browser/node_modules/playwright").chromium.executablePath())') PLAYWRIGHT_MODULE=/tmp/chiptune-browser/node_modules/playwright EDITOR_BRIDGE="$PWD/build/tests/editor_bridge" node editor/tests/browser.cjs
   rp2040:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-dev
+      - run: sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update && sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-dev
       - run: bash firmware/tools/bootstrap_sdk.sh .deps/pico-sdk
       - run: cmake -S firmware -B build/firmware -G Ninja -DPICO_SDK_PATH="$PWD/.deps/pico-sdk" -DCMAKE_BUILD_TYPE=Release
       - run: cmake --build build/firmware -j4
