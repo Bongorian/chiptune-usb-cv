@@ -1,7 +1,7 @@
 import { fields } from "./schema.js";
 export { fields };
-export const SCHEMA = 10,
-  PROTOCOL = 2;
+export const SCHEMA = 11,
+  PROTOCOL = 3;
 export const chips = ["SAA1099", "SN76489"];
 export const sources = ["Tone", "Noise", "Tone + Noise"];
 export const envelopes = ["Off", "ENV oscillator", "Amplitude modulation"];
@@ -361,13 +361,14 @@ export function verifyHello(h) {
   if (
     h.length !== 11 ||
     h[0] !== 0 ||
-    h[1] !== 10 ||
+    h[1] !== 11 ||
+    h[2] !== 0 ||
     h[3] !== PROTOCOL ||
     h[4] !== SCHEMA ||
     h[10] !== fields.length
   )
     throw Error(
-      "v0.10 / protocol 2 / schema 10 専用です。書き込みを無効化しました。",
+      "v0.11 / protocol 3 / schema 11 専用です。書き込みを無効化しました。",
     );
   return h;
 }
@@ -645,7 +646,7 @@ export function exportTrack(t, q) {
 }
 export function importTrack(data, index) {
   if (data.schema !== SCHEMA || data.kind !== "chiptune-track")
-    throw Error("v0.10 Track JSON専用です");
+    throw Error("v0.11 Track JSON専用です");
   const t = structuredClone(data.track),
     q = structuredClone(data.sequence);
   t.track = q.track = index;
@@ -675,17 +676,15 @@ export function outputNames(mask) {
 export function encodeGlobal(v) {
   if (
     !Array.isArray(v) ||
-    v.length !== 25 ||
-    v.some(
-      (n, i) => !Number.isInteger(n) || n < 0 || n > (i === 10 ? 210 : 127),
-    )
+    v.length !== 18 ||
+    v.some((n, i) => !Number.isInteger(n) || n < 0 || n > (i === 3 ? 210 : 127))
   )
     throw Error("Global settings");
-  return [...v.slice(0, 10), ...signed(v[10] - 8192), ...v.slice(11)];
+  return [...v.slice(0, 3), ...signed(v[3] - 8192), ...v.slice(4)];
 }
 export function decodeGlobal(d) {
-  if (d.length !== 26) throw Error("Global schema mismatch");
-  const v = [...d.slice(0, 10), readWord(d, 10), ...d.slice(12)];
+  if (d.length !== 19) throw Error("Global schema mismatch");
+  const v = [...d.slice(0, 3), readWord(d, 3), ...d.slice(5)];
   encodeGlobal(v);
   return v;
 }

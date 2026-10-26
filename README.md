@@ -4,9 +4,11 @@ SAA1099 × 1、SN76489AN × 2、RP2040を搭載したPSG音源のハードウェ
 USB MIDI、TRS MIDI、2系統のCV／ゲート入力と、OLED・3ボタンによる操作を想定しています。
 回路図、配線済みPCB、JLCPCB向け製造データ、設計資料を収録しています。
 
-ファームウェアはv0.10.0-alphaです。初期配置はMIDI 10（ch1–6: SAA、ch7–9: 左右SNトーン、ch10: 左右SNノイズ）。DIRECT/POLY演奏、PAN/CC10、音色編集、Patch/Track/Project/System保存に対応します。[操作資料](firmware/README.md)と[音源構成](firmware/SOUND_DESIGN.md)を参照してください。
+ファームウェアはv0.11.0-alphaです。初期配置はMIDI 10（ch1–6: SAA、ch7–9: 左右SNトーン、ch10: 左右SNノイズ）。DIRECT/POLY演奏、PAN/CC10、音色編集、Patch/Track/Project/System保存に対応します。[操作資料](firmware/README.md)と[音源構成](firmware/SOUND_DESIGN.md)を参照してください。
 
-保存形式はversion 10、Web MIDI通信はprotocol 2/schema 10です。旧形式の音色・CV校正・明るさは移行しません。起動時のフラッシュ消去・書き込みは行いません。
+SN共通クロックはHz／PIO値で設定でき、RAW／BASE／FULL、2スロットFX、計算周波数と転送待ちの診断に対応します。[クロック仕様と実機未確認事項](firmware/SN_CLOCK.md)を参照してください。
+
+保存形式はversion 11、Web MIDI通信はprotocol 3/schema 11です。旧形式の音色・CV校正・明るさは移行しません。起動時のフラッシュ消去・書き込みは行いません。
 
 自動テスト・ARMビルド・UF2検証の結果は[検証記録](firmware/dist/Test_Verification.json)に記録しています。実機の音声出力、電気特性、1 ms更新の最悪実行時間は未検証です。[検証範囲](firmware/ARCHITECTURE.md)と[実機確認項目](firmware/BRINGUP.md)を参照してください。
 
@@ -82,7 +84,7 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 
 ## ファームウェア
 
-[ファームウェアの操作資料](firmware/README.md)と[配布UF2](firmware/dist/chiptune-v0.10.0-alpha.uf2)を収録しています。
+[ファームウェアの操作資料](firmware/README.md)と[配布UF2](firmware/dist/chiptune-v0.11.0-alpha.uf2)を収録しています。
 発音表示はSQUARE 50%（SAA/SN）、PULSE 約6.7%（SN Periodic Noise＋Tone 3）、ENV WAVE（SAA）、TONE + NOISE（SAA）を区別します。選択した発音で使える設定を表示します。
 
 本体の3ボタンで、SAAのENV発振・ソフトADSR、SNのステレオ音色・実クロック変調、MIDI/CV/Gateの割り当て、パターン編集と保存を操作できます。
@@ -93,7 +95,7 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 
 - 基板検査: DRC 0、未接続0、回路図との一致問題0、ERC 0。
 - 設計照合: 152フットプリントの配置・端子接続と、音源バスの768ケースを検査済み。
-- ファームウェア: v0.10.0-alpha。Track/Patch/Voice/物理回路を分離した単一エンジン。DIRECT/POLY、SAA ENV/AMとSNレイヤー、独立Patch/Track/Project/System保存、Wave Lab protocol 2。ホスト・ARM・Web試験とUF2検証は[検証記録](firmware/dist/Test_Verification.json)を参照。実機評価は未完了。
+- ファームウェア: v0.11.0-alpha。Track/Patch/Voice/物理回路を分離した単一エンジン。DIRECT/POLY、SAA ENV/AMとSNレイヤー、独立Patch/Track/Project/System保存、Wave Lab protocol 3。ホスト・ARM・Web試験とUF2検証は[検証記録](firmware/dist/Test_Verification.json)を参照。実機評価は未完了。
 - 実機検証: 電源電流・突入電流、音声出力、CV校正、取り付け公差の評価は未完了。
 
 [OLEDの描画例](firmware/assets/ui-v10.png)は、実装したCの描画処理から生成しています。

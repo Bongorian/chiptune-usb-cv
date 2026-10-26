@@ -1,13 +1,13 @@
-# Wave Lab v0.10
+# Wave Lab v0.11
 
-v0.10の構成可能なPatch/Trackを編集するWeb MIDIエディタです。`editor/`はビルド不要の静的ファイルです。[公開版](https://bongorian.github.io/chiptune-usb-cv/)またはローカルHTTPサーバーで実行できます。
+v0.11の構成可能なPatch/Trackを編集するWeb MIDIエディタです。`editor/`はビルド不要の静的ファイルです。[公開版](https://bongorian.github.io/chiptune-usb-cv/)またはローカルHTTPサーバーで実行できます。
 
 ```sh
 python3 -m http.server 8766 --directory editor
 # Chrome等で http://localhost:8766
 ```
 
-未接続でも14 Trackの音作りとv0.10 Track JSONの保存・読み込みができます。接続にはWeb MIDI対応ブラウザーとSysEx許可が必要です。MIDIの入力・出力を選択し、firmware 0.10.0 / protocol 2 / schema 10が一致した場合だけ本体書込を有効にします。旧ファームウェアには設定を送りません。
+未接続でも14 Trackの音作りとv0.11 Track JSONの保存・読み込みができます。接続にはWeb MIDI対応ブラウザーとSysEx許可が必要です。MIDIの入力・出力を選択し、firmware 0.11.0 / protocol 3 / schema 11が一致した場合だけ本体書込を有効にします。旧ファームウェアには設定を送りません。
 
 通常画面では演奏モード、音量、PAN、Chipと発音/WAVE、ADSRなどを操作します。WAVEはSQUARE 50%（SAA/SN）、PULSE 約6.7%（SN）、ENV WAVE（SAA）、TONE + NOISE（SAA）を区別します。NOISE、SAA AM、SN METALも選択できます。AdvancedではENVの形状、回路構造、層、音域、個別USB/TRSチャンネル、マクロ、Morphを編集します。固有設定は選択中の音色に従います。SNの固定ノイズではPitch/Glide/Vibrato/Detuneを隠し、PULSEでは固定のPeriodic/Tone3選択を通常画面から省きます。SAAにSN用White切替・Detune・Noise Mixは表示しません。機能の表示は音源能力に従い、使用回路の最大数と本体が割り当てた出力／専用クロックを表示します。ADSR図は模式図です。
 
@@ -30,4 +30,6 @@ EDITOR_BRIDGE="$PWD/build/tests/editor_bridge" EDITOR_URL=http://127.0.0.1:8766 
 
 ブラウザーテストのMIDIはCファームウェアに接続したモックです。実機への送信や書込は行いません。
 
-発音名と機能マスクはPatchから導出し、独立した波形番号として保存しません。`factory.json`のfactoryとwaveformsはCモデルから生成され、NodeテストでWebの判定・変換と照合します。保存形式10、protocol 2/schema 10は変更しません。
+発音名と機能マスクはPatchから導出し、独立した波形番号として保存しません。`factory.json`のfactoryとwaveformsはCモデルから生成され、NodeテストでWebの判定・変換と照合します。保存形式11、protocol 3/schema 11は変更しません。
+
+SN共通クロックにはBASE CLOCK、RAW／BASE／FULL、MOD A/BとDOMAIN、計算上の周波数グラフがあります。AdvancedでPIO周期／分周、desired/sent音程レジスタ、待ち時間・clip・セント誤差を確認します。グラフと周波数は実測ではありません。未接続で編集でき、本体反映は明示操作です。実行中の診断を500 ms間隔で読み出します。

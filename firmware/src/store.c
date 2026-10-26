@@ -1,6 +1,9 @@
 #include "store.h"
 #include <string.h>
-_Static_assert(sizeof(StoreRecord) < STORE_BANK_BYTES, "Snapshot must fit either settings bank");
+_Static_assert(offsetof(StoreRecord, settings) == 24 && sizeof(StoreRecord) == 10728,
+               "v11 flash layout");
+_Static_assert(sizeof(StoreRecord) < STORE_BANK_BYTES,
+               "Snapshot must fit either settings bank");
 uint32_t store_crc(const void *data, size_t length) {
     const uint8_t *p = data;
     uint32_t crc = 0xffffffffu;
@@ -32,7 +35,8 @@ void store_record(StoreRecord *r, const Settings *s, uint32_t sequence) {
 }
 bool store_valid(const StoreRecord *r) {
     return r->commit == STORE_COMMIT && r->version == SETTINGS_VERSION &&
-           r->length == sizeof(Settings) && r->crc == record_crc(r) && settings_valid(&r->settings);
+           r->length == sizeof(Settings) && r->crc == record_crc(r) &&
+           settings_valid(&r->settings);
 }
 bool store_load(const void *raw, Settings *s, uint32_t *sequence) {
     const StoreRecord *r = raw;

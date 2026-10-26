@@ -1,4 +1,4 @@
-# v0.10 実機確認項目
+# v0.11 実機確認項目
 
 ここにある項目は**未確認**です。ホスト試験、ARM命令実行、UF2構造検証とは別に測定結果を残してください。[復旧](BOOT_RECOVERY.md)と[音量測定](LEVELS_AND_PITCH.md)も参照してください。
 
@@ -21,13 +21,13 @@
 
 ## 音源とタイミング
 
-- SAA=8 MHz、SN REFERENCE=4/2/1 MHz、FX範囲250 kHz～4 MHzとデューティを測定。両SNは共通クロック。
+- SAA=8 MHz不変、SN初期2 MHz、任意Hz／Direct PIO、4 MHz超の実験領域、極低速、再設定過渡のパルス幅とデューティを測定。両SNは共通クロック。
 - note45=110 Hz、69=440 Hzほか全域、範囲外クランプ、音量補正・PAN・左右差・同時発音時の飽和とヘッドルームを測定。
 - SAA ENVの8形状・8/16段・単発／反復・R反転・Retrigger、AM比、補助Layerとその減衰。クロック用2/5が無音であること。
 - SAA固定／Key Track Noise、3声群での共有速度、Mixのキャリアがノイズピッチで意図せず変わらないこと。ENV補助Mixは自身のクロックと結び付く。
 - PULSE 約6.7%の周期、パルス幅と極性を測定し、Tone 3が無音のクロックとして働くこと、SQUARE 50%と区別されることを確認。実チップの周期段数と高音域の量子化誤差を照合。
 - SN White/Periodic、固定3レート、Tone3連動、Metal、Layers1–3、左右単独／並列／detuneを測定。周期ノイズのAN型15段比と実個体を照合。
-- ロジックアナライザーでSN /WE LOW 16–136 µs、setup/hold、divider2 bytes、クロック変化中の書込、SAA /WRと/CSを確認。
+- ロジックアナライザーでSN /WE LOWが約32クロック以上であること（ソフト予算40クロック、固定µs制限なし）、setup/hold、divider2 bytes、クロック変化中の書込、SAA /WRと/CSを確認。
 - 14独立声＋ADSR/Pitch/LFO/Morph/8変調、MIDI両入力の高負荷、CV/Gate、OLED編集、低クロックを重ねる。診断`tick_max_us`と`tick_overruns`、実ノート遅延、最悪のバス待ちを記録。**1 msの実時間保証はこの測定後に判断する。**
 
 ## CV・Gate・Sequence
@@ -37,3 +37,11 @@
 - MIDI Start/Continue/Stop、Auto/External/Internal/Gate Clock、30–240 BPM、16ステップとArpeggio、Sustain解除を確認。
 
 [Verification.json](dist/Verification.json)、[Boot_Verification.json](dist/Boot_Verification.json)、[Runtime_Verification.json](dist/Runtime_Verification.json)、[Test_Verification.json](dist/Test_Verification.json)は自動検証の記録です。未測定項目をそこから実機確認済みとは解釈しないでください。
+
+## v0.11クロック実験
+
+- RAW／BASE／FULLで両側全Tone、レイヤー、PULSEのTone3を測定。目標Hz、sentレジスタ、セント誤差、clipを照合。固定Noiseは補正しない。
+- MOD A/Bを全波形・全DOMAINで操作し、USB/TRS Clockの補間、RETRIGGER、CV/Gate/手動を確認。Audio-rateの折り返し・グリッチを記録。
+- 転送途中のクロック上下、Stop待ち、停止中の新規ノート、復帰、PANICの/WE・CS・データを観測。共有バス保持中のSAA更新待ちを確認。
+- `clock_max_us`、`clock_late`、`tick_max_us`、`tick_overruns`をMIDI負荷・CV・OLED編集と併せて測定。ソフト計算Hzと実測Hzを別列に記録。
+- 現行READYは未配線。40クロックの完了予算と再設定時の位相破棄をロジックアナライザーで検証。電源遮断時の保存バンク整合性も実機確認する。

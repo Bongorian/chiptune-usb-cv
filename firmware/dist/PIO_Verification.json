@@ -1,11 +1,17 @@
 {
+  "fractional_divider_cases": 36,
   "assembled_pio_verified": true,
-  "static_periods": 241,
-  "transition_phases": 756,
+  "static_periods": 1023,
+  "transition_phases": 734,
   "duty_percent": 50,
   "clock_hz_range": [
-    250000,
-    4000000
+    2.2737367523147382e-07,
+    12800000
   ],
+  "divider256_range": [
+    256,
+    16777216
+  ],
+  "extreme_counter_tested": true,
   "physical_tested": false
 }

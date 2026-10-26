@@ -4,7 +4,7 @@ These do not model ROM latency and must never be used to certify device WCET.
 import math
 import struct
 from collections import Counter
-from unicorn.arm_const import UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_R2,UC_ARM_REG_LR,UC_ARM_REG_PC
+from unicorn.arm_const import UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_R2,UC_ARM_REG_R3,UC_ARM_REG_LR,UC_ARM_REG_PC
 
 def runtime_hooks(image,uc,counts=None):
  counts=counts if counts is not None else Counter()
@@ -46,4 +46,28 @@ def runtime_hooks(image,uc,counts=None):
  hook('__wrap___aeabi_ui2f',lambda m:ret(m,bits(float(m.reg_read(UC_ARM_REG_R0)))))
  hook('__wrap___aeabi_f2iz',lambda m:ret(m,int(f(m,UC_ARM_REG_R0))))
  hook('__wrap___aeabi_f2uiz',lambda m:ret(m,int(f(m,UC_ARM_REG_R0))))
+ def d(m,first):
+  regs=(UC_ARM_REG_R0,UC_ARM_REG_R1,UC_ARM_REG_R2,UC_ARM_REG_R3)
+  return struct.unpack('<d',struct.pack('<II',m.reg_read(regs[first]),m.reg_read(regs[first+1])))[0]
+ def dbits(v):return struct.unpack('<Q',struct.pack('<d',v))[0]
+ def retd(m,v):
+  n=dbits(v);ret(m,n&0xffffffff,n>>32)
+ for suffix,op in [('eq',lambda a,b:a==b),('lt',lambda a,b:a<b),('le',lambda a,b:a<=b),('gt',lambda a,b:a>b),('ge',lambda a,b:a>=b),('un',lambda a,b:math.isnan(a)or math.isnan(b))]:
+  hook('__wrap___aeabi_dcmp'+suffix,lambda m,op=op:ret(m,int(op(d(m,0),d(m,2)))))
+ for suffix,op in [('add',lambda a,b:a+b),('sub',lambda a,b:a-b),('mul',lambda a,b:a*b),('div',lambda a,b:a/b if b else math.copysign(math.inf,a))]:
+  hook('__wrap___aeabi_d'+suffix,lambda m,op=op:retd(m,op(d(m,0),d(m,2))))
+ hook('__wrap___aeabi_i2d',lambda m:retd(m,float(signed(m.reg_read(UC_ARM_REG_R0)))))
+ hook('__wrap___aeabi_ui2d',lambda m:retd(m,float(m.reg_read(UC_ARM_REG_R0))))
+ hook('__wrap___aeabi_f2d',lambda m:retd(m,f(m,UC_ARM_REG_R0)))
+ hook('__wrap___aeabi_d2f',lambda m:ret(m,bits(d(m,0))))
+ hook('__wrap___aeabi_d2iz',lambda m:ret(m,int(d(m,0))))
+ hook('__wrap___aeabi_d2uiz',lambda m:ret(m,int(d(m,0))))
+ hook('__wrap___ctzsi2',lambda m:ret(m,(m.reg_read(UC_ARM_REG_R0)&-m.reg_read(UC_ARM_REG_R0)).bit_length()-1 if m.reg_read(UC_ARM_REG_R0) else 32))
+ hook('__wrap___clzsi2',lambda m:ret(m,32-m.reg_read(UC_ARM_REG_R0).bit_length()))
+ def retlong(m,n):ret(m,n&0xffffffff,(n>>32)&0xffffffff)
+ def longvalue(m):return m.reg_read(UC_ARM_REG_R0)|(m.reg_read(UC_ARM_REG_R1)<<32)
+ hook('__wrap___aeabi_d2ulz',lambda m:retlong(m,int(d(m,0))))
+ hook('__wrap___aeabi_d2lz',lambda m:retlong(m,int(d(m,0))))
+ hook('__wrap___aeabi_ul2d',lambda m:retd(m,float(longvalue(m))))
+ hook('__wrap___aeabi_l2d',lambda m:retd(m,float(longvalue(m) if longvalue(m)<2**63 else longvalue(m)-2**64)))
  return counts

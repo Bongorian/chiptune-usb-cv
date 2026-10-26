@@ -1,11 +1,11 @@
 #include "engine.h"
 #include <math.h>
-static float limit(float v, float a, float b) {
-    return v < a ? a : v > b ? b : v;
-}
-uint16_t sn_divider_clock(float hz, uint32_t clock, bool *clamped) {
-    if (clock < 250000 || clock > 4000000)
-        clock = 4000000;
+static float limit(float v, float a, float b) { return v < a ? a : v > b ? b : v; }
+uint16_t sn_divider_clock(float hz, float clock, bool *clamped) {
+    if (!isfinite(clock) || clock <= 0 || !isfinite(hz) || hz <= 0) {
+        *clamped = true;
+        return 1;
+    }
     float min = (float)clock / (32 * 1023), max = (float)clock / 32;
     *clamped = !isfinite(hz) || hz < min || hz > max;
     hz = isfinite(hz) ? limit(hz, min, max) : min;
@@ -32,7 +32,8 @@ void saa_note_register(float note, uint8_t *oct, uint8_t *reg, bool *clamped) {
     }
     note = fmaxf(-128, fminf(255, note));
     float scaled = (note - 60) * 256;
-    int q = (int)(scaled >= 0 ? scaled + .5f : scaled - .5f), shift = q / 3072, index = q % 3072;
+    int q = (int)(scaled >= 0 ? scaled + .5f : scaled - .5f), shift = q / 3072,
+        index = q % 3072;
     if (index < 0) {
         index += 3072;
         shift--;

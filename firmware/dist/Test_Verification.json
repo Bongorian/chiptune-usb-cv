@@ -1,81 +1,49 @@
 {
-  "firmware": "v0.10.0-alpha",
-  "date": "2026-10-27",
+  "firmware": "v0.11.0-alpha",
   "hardware_tested": false,
-  "elf_sha256": "9962e1ab8647397f372c19e86d58b612895a0ad6d69cdd13af91c9dd55c4c01b",
-  "source_manifest_sha256": "c545110fbad7408f681261d623858f14398054d20a7f6e518ee03b13c27aa188",
+  "elf_sha256": "c19d6eda3f9fa649ff6cee00ece98023c6ed269e69149564c0260b1c16a0bf10",
+  "source_manifest_sha256": "f24871dff8d7ba5da72df060862363a28b960416e83b178bbfe63ba737f888c2",
   "host_sanitized": {
-    "suites": 8,
-    "passed": 8,
+    "suites": 9,
+    "passed": 9,
     "sanitizers": [
       "ASan",
       "UBSan"
     ]
   },
   "host_release": {
-    "suites": 8,
-    "passed": 8
+    "suites": 9,
+    "passed": 9
   },
   "node_protocol_tests": {
-    "tests": 15,
-    "passed": 15,
+    "tests": 19,
+    "passed": 19,
     "backend": "actual portable C firmware"
   },
   "browser_integration": {
     "passed": true,
-    "browser": "headless Chrome, Playwright 1.62.1",
     "midi": "mock ports backed by C; no physical devices",
-    "covers": [
-      "offline edit and JSON",
-      "offline changes preserved on connect",
-      "exact schema handshake",
-      "resource rejection with alternatives",
-      "DIRECT/POLY focus and template",
-      "SN stereo PAN",
-      "morph",
-      "sequence/global/CV",
-      "independent patch save",
-      "asynchronous LIVE slider preservation",
-      "old protocol write lock",
-      "390px mobile overflow",
-      "SAA/SN-specific native control visibility",
-      "SQUARE/PULSE/ENV/Tone+Noise definitions",
-      "Pulse Tone3/noise reservations",
-      "other-track unsent edits survive POLY focus",
-      "cached HTML without optional hint element"
-    ]
+    "clock_graph_two_slot_full_read_write": true
   },
   "arm_build": {
     "passed": true,
     "sdk": "2.3.1",
-    "compiler": "arm-none-eabi-gcc 14.3.0",
     "configuration": "Release"
   },
   "arm_execution": {
     "boot_passed": true,
     "runtime_passed": true,
+    "clock_bus_passed": true,
     "platform_rom_sio_stubbed": true
   },
   "uf2_validation": true,
   "pio_instruction_timing": true,
-  "generated_schema_lut_catalog_reproducible": true,
-  "oled_visual_review": "C-rendered PBM contact sheet; no physical panel",
   "rp2040_wcet_certified": false,
   "unverified": [
-    "audio pitch/level/IC variant on actual board",
-    "physical USB and OLED startup/resume",
-    "GPIO bus setup/hold and low-clock throughput",
-    "CV calibration accuracy and gate latency",
-    "brownout/flash retention",
-    "device worst-case 1ms timing and interrupt stack headroom"
-  ],
-  "wave_contract": {
-    "c_and_web_factories": 23,
-    "c_and_web_wave_conversions": 9,
-    "periodic_pulse_duty_model": "1/15 fixed; actual hardware waveform unverified",
-    "pulse_note_45_expected_Hz": 110,
-    "pulse_note_45_rendered_divider": 38,
-    "pulse_note_45_model_Hz": 109.64912280701755,
-    "constant_envelope_not_muted_by_note_range": true
-  }
+    "physical clocks, waveforms, PSG variant and GPIO setup/hold",
+    "experimental clock range and modulation transitions",
+    "physical USB/CV/Gate/OLED under simultaneous load",
+    "1ms synthesis / 250us modulation WCET and jitter",
+    "flash brownout/retention and multi-day low-clock transfers"
+  ]
 }

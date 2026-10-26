@@ -62,7 +62,7 @@ static void scenario(unsigned count) {
     assert(engine_active(&engine) == count);
 }
 int main(int argc, char **argv) {
-    printf("{\"firmware\":\"v0.10.0-alpha\",\"host_only\":true,\"rp2040_wcet_certified\":false,"
+    printf("{\"firmware\":\"v0.11.0-alpha\",\"host_only\":true,\"rp2040_wcet_certified\":false,"
            "\"scenarios\":[");
     for (unsigned run = 0; run < 2; run++) {
         unsigned count = run ? 14 : 10;
@@ -89,12 +89,14 @@ int main(int argc, char **argv) {
                 max = elapsed;
         }
         unsigned coalesced = engine.bus.coalesced;
-        printf("%s{\"logical_voices\":%u,\"frames\":10000,\"mean_us\":%.3f,\"max_observed_us\":%."
-               "3f,\"coalesced_without_bus_service\":%u}",
-               run ? "," : "", count, sum / 10000 / 1000, max / 1000, coalesced);
+        printf(
+            "%s{\"logical_voices\":%u,\"frames\":10000,\"mean_us\":%.3f,\"max_observed_us\":%."
+            "3f,\"coalesced_without_bus_service\":%u}",
+            run ? "," : "", count, sum / 10000 / 1000, max / 1000, coalesced);
     }
-    printf("],\"sizes\":{\"patch\":%zu,\"track\":%zu,\"project\":%zu,\"settings\":%zu,\"engine\":%"
-           "zu},\"limitations\":\"Host scheduling and compiler differ from RP2040; device "
-           "tick_max_us and overruns must be measured on hardware. Bus wait is asynchronous.\"}\n",
-           sizeof(Patch), sizeof(Track), sizeof(Project), sizeof(Settings), sizeof(Engine));
+    printf(
+        "],\"sizes\":{\"patch\":%zu,\"track\":%zu,\"project\":%zu,\"settings\":%zu,\"engine\":%"
+        "zu},\"limitations\":\"Host scheduling and compiler differ from RP2040; device "
+        "tick_max_us and overruns must be measured on hardware. Bus wait is asynchronous.\"}\n",
+        sizeof(Patch), sizeof(Track), sizeof(Project), sizeof(Settings), sizeof(Engine));
 }

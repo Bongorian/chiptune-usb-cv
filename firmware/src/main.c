@@ -1,27 +1,27 @@
-#include "engine.h"
-#include "editor.h"
-#include "midi.h"
-#include "store.h"
-#include "ui.h"
-#include "oled.h"
-#include "service.h"
-#include "power.h"
 #include "cv.h"
-#include "pinmap.h"
-#include "sound_bus.h"
-#include "pico/stdlib.h"
-#include "pico/bootrom.h"
-#include "hardware/clocks.h"
-#include "hardware/pwm.h"
-#include "hardware/pio.h"
-#include "sn_clock.pio.h"
+#include "editor.h"
+#include "engine.h"
 #include "hardware/adc.h"
-#include "hardware/i2c.h"
-#include "hardware/uart.h"
-#include "hardware/irq.h"
+#include "hardware/clocks.h"
 #include "hardware/flash.h"
+#include "hardware/i2c.h"
+#include "hardware/irq.h"
+#include "hardware/pio.h"
+#include "hardware/pwm.h"
 #include "hardware/sync.h"
+#include "hardware/uart.h"
+#include "midi.h"
+#include "oled.h"
+#include "pico/bootrom.h"
+#include "pico/stdlib.h"
+#include "pinmap.h"
+#include "power.h"
+#include "service.h"
+#include "sn_clock.pio.h"
+#include "sound_bus.h"
+#include "store.h"
 #include "tusb.h"
+#include "ui.h"
 #include <math.h>
 #include <string.h>
 #define UART_RING 512u
@@ -59,87 +59,133 @@ static int adc_input = -1;
 static uint32_t adc_started, adc_poll_due;
 static Oled oled;
 static SnClock clock_fx;
-static struct repeating_timer clock_timer;
-static bool clock_timer_active;
 static int clock_sm = -1;
 static unsigned clock_offset;
 static uint32_t seen_note_trigger, seen_manual_trigger, seen_midi_clocks;
-static volatile unsigned sn_wait_us = 136;
-static unsigned next_sn_wait_us = 16;
-static volatile uint16_t last_clock_half;
-static uint32_t clock_last_irq_us;
+static uint32_t clock_last_us;
+static SnClockCounter clock_counter;
+static SnClockPlan clock_requested;
 static uint8_t seen_clock_sequence[8];
 static PIO const clock_pio = pio0;
+static void sn_hardware_clock(SnClockPlan p, bool stop, uint64_t now) {
+    unsigned sm = (unsigned)clock_sm;
+    now = time_us_64();
+    bool divider_only =
+        !stop && !clock_counter.stopped && clock_counter.plan.period == p.period;
+    sn_counter_change(&clock_counter, p, now, stop);
+    if (divider_only) {
+        pio_sm_set_clkdiv_int_frac(clock_pio, sm, (uint16_t)(p.div256 >> 8), (uint8_t)p.div256);
+        pio_sm_clkdiv_restart(clock_pio, sm);
+    } else {
+        pio_sm_set_enabled(clock_pio, sm, false);
+        if (!stop) {
+            pio_sm_config cfg = sn_clock_program_get_default_config(clock_offset);
+            sm_config_set_set_pins(&cfg, PIN_SN_CLK_RAW, 1);
+            sm_config_set_clkdiv_int_frac(&cfg, (uint16_t)(p.div256 >> 8), (uint8_t)p.div256);
+            pio_sm_init(clock_pio, sm, clock_offset, &cfg);
+            pio_sm_set_pins_with_mask(clock_pio, sm, 0, 1u << PIN_SN_CLK_RAW);
+            pio_sm_put(clock_pio, sm, p.period);
+            pio_sm_clkdiv_restart(clock_pio, sm);
+            pio_sm_set_enabled(clock_pio, sm, true);
+        } else
+            pio_sm_set_pins_with_mask(clock_pio, sm, 0, 1u << PIN_SN_CLK_RAW);
+    }
+    clock_counter.epoch_us = time_us_64(); /* exclude disabled/configuration time */
+    engine.sn_clock_period = p.period;
+    engine.sn_clock_div256 = p.div256;
+    engine.sn_clock_hz = stop ? 0 : p.hz;
+    engine.sn_experimental = !stop && p.experimental;
+    engine.clock_restarts = clock_counter.restarts;
+}
+/* Runs in the cooperative loop: no floating-point work in interrupt context.
+   Every hardware restart invalidates partial period credit. This deliberately
+   under-counts transfers during rapid/very slow modulation, never releases early. */
 static void sn_clock_control(void) {
+    uint64_t now = time_us_64();
     SnClockConfig config = engine_effective_clock(&engine);
-    uint32_t clocks = engine_transport_clocks(&engine);
-    unsigned wait = sn_clock_write_us(&config);
-    bool note = engine.sn_note_trigger != seen_note_trigger;
-    bool manual = engine.sn_manual_trigger != seen_manual_trigger;
-    uint32_t irq = save_and_disable_interrupts();
-    if (memcmp(&clock_fx.config, &config, sizeof(config))) {
-        if (wait > sn_wait_us)
-            sn_wait_us = wait;
-        next_sn_wait_us = wait;
+    bool changed = memcmp(&clock_fx.config, &config, sizeof(config)) != 0;
+    if (changed)
         sn_clock_configure(&clock_fx, &config);
-    }
-    if (memcmp(seen_clock_sequence, engine.project.clock_sequence, sizeof(seen_clock_sequence))) {
+    if (memcmp(seen_clock_sequence, engine.project.clock_sequence, 8)) {
         sn_clock_sequence(&clock_fx, engine.project.clock_sequence);
-        memcpy(seen_clock_sequence, engine.project.clock_sequence, sizeof(seen_clock_sequence));
+        memcpy(seen_clock_sequence, engine.project.clock_sequence, 8);
     }
+    uint32_t clocks = engine_transport_clocks(&engine);
     if (clocks != seen_midi_clocks)
-        sn_clock_midi(&clock_fx, clocks);
-    if (manual || (note && config.retrigger))
-        sn_clock_trigger(&clock_fx);
-    restore_interrupts(irq);
+        sn_clock_midi(&clock_fx, clocks, (uint32_t)now);
+    bool manual = engine.sn_manual_trigger != seen_manual_trigger;
+    bool note = engine.sn_note_trigger != seen_note_trigger;
+    if (manual || note)
+        sn_clock_trigger(&clock_fx, manual, (uint32_t)now);
+    seen_midi_clocks = clocks;
     seen_note_trigger = engine.sn_note_trigger;
     seen_manual_trigger = engine.sn_manual_trigger;
-    seen_midi_clocks = clocks;
-}
-static bool sn_clock_irq(struct repeating_timer *timer) {
-    (void)timer;
-    if (!rail_on || clock_sm < 0)
-        return true;
-    uint32_t now = time_us_32(), elapsed = now - clock_last_irq_us;
-    /* A flash erase or delayed IRQ must not cause a burst of catch-up FIFO writes. */
-    timer->delay_us =
-        elapsed < 125 || elapsed > 375 ? (int64_t)SN_CLOCK_TICK_US : -(int64_t)SN_CLOCK_TICK_US;
-    if (elapsed < 125)
-        return true;
-    clock_last_irq_us = now;
-    uint16_t half = sn_clock_tick(&clock_fx);
-    if (half != last_clock_half) {
-        if (pio_sm_is_tx_fifo_full(clock_pio, (unsigned)clock_sm))
-            return true;
-        pio_sm_put(clock_pio, (unsigned)clock_sm, half - 5u);
-        last_clock_half = half;
+    uint32_t elapsed = (uint32_t)now - clock_last_us;
+    if (elapsed >= SN_CLOCK_TICK_US || changed || manual || note) {
+        uint32_t started = time_us_32();
+        engine.sn_fx_flags = elapsed > SN_CLOCK_TICK_US * 2 ? 1 : 0;
+        if (engine.sn_fx_flags)
+            engine.clock_late++;
+        clock_requested = sn_clock_tick(&clock_fx, elapsed, (uint32_t)now);
+        clock_last_us = (uint32_t)now;
+        engine.clock_updates++;
+        uint32_t duration = time_us_32() - started;
+        if (duration > engine.clock_max_us)
+            engine.clock_max_us = duration;
     }
-    /* The 8us margin also covers an old period still finishing at the PIO boundary. */
-    sn_wait_us = next_sn_wait_us;
-    return true;
+    bool stopping = config.stopped || !clock_requested.available;
+    engine.sn_stop_pending = stopping && engine.bus.busy;
+    /* Finish an in-flight divider's two-byte snapshot before stopping. No new
+       SN transaction starts while stop is pending; SAA traffic can continue. */
+    sn_counter_advance(&clock_counter, now);
+    bus_service(&engine.bus, now, clock_counter.cycles, !stopping && !clock_counter.stopped);
+    if (!engine.sn_stop_pending) {
+        if (stopping) {
+            if (!clock_counter.stopped)
+                sn_hardware_clock(clock_counter.plan, true, now);
+        } else if (clock_counter.stopped ||
+                   clock_requested.period != clock_counter.plan.period ||
+                   clock_requested.div256 != clock_counter.plan.div256)
+            sn_hardware_clock(clock_requested, false, now);
+    }
+    for (unsigned i = 0; i < 2; i++) {
+        const SnModConfig *m = &config.mod[i];
+        bool aliased =
+            m->sync ? (uint64_t)clock_fx.midi_interval_us * sn_clock_sync_clocks[m->sync] <
+                          SN_CLOCK_TICK_US * 2u
+                    : m->rate_millihz > 1000000000u / (SN_CLOCK_TICK_US * 2u);
+        if (m->mode > SN_CLOCK_MANUAL && aliased)
+            engine.sn_fx_flags |= 2;
+    }
+    bool delayed = engine.bus.busy && now - engine.bus.started > 1000;
+    bool lag = false;
+    for (unsigned c = 0; c < 2; c++)
+        for (unsigned n = 0; n < 3; n++)
+            lag |= engine.sn_target_hz[c][n] > 0 &&
+                   engine.bus.tone[c][n] != engine.bus.tone_sent[c][n];
+    engine.sn_clock_state =
+        !clock_requested.available ? SN_UNAVAILABLE
+        : clock_counter.stopped    ? SN_STOPPED
+        : engine.sn_experimental || delayed || engine.sn_clip_mask || engine.sn_fx_flags ||
+                (config.follow == SN_FOLLOW_FULL && lag) || engine.sn_stop_pending
+            ? SN_DEGRADED
+            : SN_VALID;
 }
-static void sn_clock_start(void) {
-    const SnClockConfig boot_clock = {SN_CLOCK_OFF, 0, 24, 4, 0, 1};
-    sn_clock_init(&clock_fx, &boot_clock);
-    memset(seen_clock_sequence, 0xff, sizeof(seen_clock_sequence));
+static void __attribute__((noinline)) sn_clock_start(void) {
+    sn_clock_init(&clock_fx, &engine.project.sn_clock);
+    memset(seen_clock_sequence, 255, 8);
     seen_note_trigger = engine.sn_note_trigger;
     seen_manual_trigger = engine.sn_manual_trigger;
     seen_midi_clocks = engine_transport_clocks(&engine);
-    next_sn_wait_us = sn_wait_us = sn_clock_write_us(&clock_fx.config);
     pio_gpio_init(clock_pio, PIN_SN_CLK_RAW);
-    pio_sm_config cfg = sn_clock_program_get_default_config(clock_offset);
-    sm_config_set_set_pins(&cfg, PIN_SN_CLK_RAW, 1);
-    sm_config_set_clkdiv(&cfg, 1.0f);
-    pio_sm_init(clock_pio, (unsigned)clock_sm, clock_offset, &cfg);
     pio_sm_set_consecutive_pindirs(clock_pio, (unsigned)clock_sm, PIN_SN_CLK_RAW, 1, true);
-    last_clock_half = sn_clock_sample(&clock_fx);
-    pio_sm_set_pins_with_mask(clock_pio, (unsigned)clock_sm, 0, 1u << PIN_SN_CLK_RAW);
-    pio_sm_put(clock_pio, (unsigned)clock_sm, last_clock_half - 5u);
-    pio_sm_set_enabled(clock_pio, (unsigned)clock_sm, true);
-    clock_last_irq_us = time_us_32();
-    hard_assert(
-        add_repeating_timer_us(-(int64_t)SN_CLOCK_TICK_US, sn_clock_irq, NULL, &clock_timer));
-    clock_timer_active = true;
+    clock_requested = sn_clock_sample(&clock_fx);
+    uint64_t now = time_us_64();
+    clock_last_us = (uint32_t)now;
+    sn_counter_init(&clock_counter, clock_requested, now);
+    clock_counter.stopped = true; /* first start must initialize and enable the SM */
+    sn_hardware_clock(clock_requested,
+                      engine.project.sn_clock.stopped || !clock_requested.available, now);
 }
 static const unsigned cs[3] = {PIN_SAA_CS_N, PIN_SN1_CS_N, PIN_SN2_CS_N};
 static void bus_cycle(unsigned select, bool address, uint8_t byte, unsigned duration) {
@@ -179,6 +225,11 @@ static void sn_end(void *ctx) {
     gpio_put(cs[2], 1);
     busy_wait_us_32(2);
 }
+static uint64_t sn_completed_cycles(void *ctx) {
+    (void)ctx;
+    sn_counter_advance(&clock_counter, time_us_64());
+    return clock_counter.cycles;
+}
 static void clock_start(unsigned pin, unsigned wrap) {
     pwm_config c = pwm_get_default_config();
     pwm_config_set_wrap(&c, (uint16_t)wrap);
@@ -199,10 +250,6 @@ static void sound_off(void) {
         engine_panic(&engine, -1);
     pwm_set_enabled(pwm_gpio_to_slice_num(PIN_SAA_CLK_RAW), false);
     rail_on = false;
-    if (clock_timer_active) {
-        cancel_repeating_timer(&clock_timer);
-        clock_timer_active = false;
-    }
     if (clock_sm >= 0) {
         pio_sm_set_enabled(clock_pio, (unsigned)clock_sm, false);
         pio_sm_clear_fifos(clock_pio, (unsigned)clock_sm);
@@ -236,10 +283,11 @@ static void sound_on(void) {
     gpio_put(PIN_SAA_A0, 0);
     gpio_set_dir(PIN_SAA_A0, GPIO_OUT);
     clock_start(PIN_SAA_CLK_RAW, 15);
+    engine_reset_audio(&engine,
+                       (SoundSink){saa_write, sn_begin, sn_end, NULL, sn_completed_cycles});
     sn_clock_start();
     rail_on = true;
     status.power = true;
-    engine_reset_audio(&engine, (SoundSink){saa_write, sn_begin, sn_end, NULL});
     /* Discard stale UART data at rail transition. */
     uint32_t irq = save_and_disable_interrupts();
     uart_tail = uart_head;
@@ -300,19 +348,13 @@ static void midi_received(void *ctx, const uint8_t *data, uint8_t len, uint8_t c
         usb_head = next;
     }
 }
-void tud_mount_cb(void) {
-    usb_suspended = false;
-}
-void tud_umount_cb(void) {
-    usb_suspended = false;
-}
+void tud_mount_cb(void) { usb_suspended = false; }
+void tud_umount_cb(void) { usb_suspended = false; }
 void tud_suspend_cb(bool remote_wakeup_en) {
     (void)remote_wakeup_en;
     usb_suspended = tud_mounted();
 }
-void tud_resume_cb(void) {
-    usb_suspended = false;
-}
+void tud_resume_cb(void) { usb_suspended = false; }
 static void midi_tasks(uint32_t now) {
     static uint32_t previous_overflows;
     if (uart_overflows != previous_overflows) {
@@ -506,13 +548,14 @@ static bool save_settings(void *ctx) {
     engine_panic(&engine, -1);
     uint32_t mute_deadline = time_us_32() + 10000;
     while (bus_pending(&engine.bus) && (int32_t)(time_us_32() - mute_deadline) < 0) {
-        bus_service(&engine.bus, time_us_32(), sn_wait_us);
+        sn_clock_control();
         tud_task();
     }
     if (bus_pending(&engine.bus))
         return false;
     bool ok = commit_settings();
-    /* Flash erase stalls MIDI: flush partial messages and notes. No autosave during a performance.
+    /* Flash erase stalls MIDI: flush partial messages and notes. No autosave during a
+     * performance.
      */
     uint32_t irq = save_and_disable_interrupts();
     uart_tail = uart_head;
@@ -573,8 +616,8 @@ int main(void) {
     gpio_pull_up(PIN_GATE1_N);
     gpio_init(PIN_GATE2_N);
     gpio_pull_up(PIN_GATE2_N);
-    gpio_set_irq_enabled_with_callback(PIN_GATE1_N, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true,
-                                       gate_irq_handler);
+    gpio_set_irq_enabled_with_callback(PIN_GATE1_N, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL,
+                                       true, gate_irq_handler);
     gpio_set_irq_enabled(PIN_GATE2_N, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
     i2c_init(i2c1, 400000);
     gpio_set_function(PIN_UI_SDA, GPIO_FUNC_I2C);
@@ -595,7 +638,7 @@ int main(void) {
                                &settings, &store_sequence);
     tud_task();
     engine_init(&engine, &settings.project[settings.selected],
-                (SoundSink){saa_write, sn_begin, sn_end, NULL});
+                (SoundSink){saa_write, sn_begin, sn_end, NULL, sn_completed_cycles});
     for (int s = 0; s < 2; s++)
         midi_init(&parsers[s], midi_received, &source_id[s]);
     ui_init(&ui, &settings, &engine, save_settings, calibrate, NULL);
@@ -635,7 +678,7 @@ int main(void) {
             power_due = now;
         }
         bool mounted = tud_mounted();
-        status.clock_hz = rail_on ? sn_clock_hz(last_clock_half) : 0;
+        status.clock_hz = rail_on ? engine.sn_clock_hz : 0;
         status.usb = mounted;
         status.suspended = usb_suspended;
         if (was_mounted && !mounted) {
@@ -677,7 +720,6 @@ int main(void) {
         gate_tasks(now);
         if (rail_on) {
             sn_clock_control();
-            bus_service(&engine.bus, time_us_32(), sn_wait_us);
         }
         if (now_us - tick >= 1000) {
             uint32_t elapsed = (now_us - tick) / 1000;

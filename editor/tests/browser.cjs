@@ -72,7 +72,7 @@ const { spawnSync } = require("node:child_process");
   const download = await downloadPromise;
   const fs = require("node:fs");
   const exported = JSON.parse(fs.readFileSync(await download.path()));
-  assert.equal(exported.schema, 10);
+  assert.equal(exported.schema, 11);
   assert.equal(exported.track.level, 75);
   assert.equal(await page.locator("#patch-wave option").count(), 5);
   assert(
@@ -251,11 +251,37 @@ const { spawnSync } = require("node:child_process");
     .getByRole("status")
     .filter({ hasText: "共通設定を読み出しました" })
     .waitFor();
+  await page.locator("#base-clock").fill("8000000");
+  await page.locator("#base-clock").dispatchEvent("change");
+  await page.locator("#clock-follow").selectOption("2");
+  await page.locator("#clock-fx-0").selectOption("8");
+  await page.locator("#clock-depth-0").fill("300");
+  await page.locator("#clock-depth-0").dispatchEvent("change");
+  await page.locator("#clock-fx-1").selectOption("10");
+  await page.locator("#clock-domain-1").selectOption("2");
+  await page.locator("#clock-depth-1").fill("50000");
+  await page.locator("#clock-depth-1").dispatchEvent("change");
   await page.locator("#send-global").click();
   await page
     .getByRole("status")
     .filter({ hasText: "SNクロックと共通設定" })
     .waitFor();
+  await page.locator("#read-global").click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "共通設定を読み出しました" })
+    .waitFor();
+  assert.equal(await page.locator("#base-clock").inputValue(), "8000000");
+  assert.equal(await page.locator("#clock-follow").inputValue(), "2");
+  assert.equal(await page.locator("#clock-fx-1").inputValue(), "10");
+  assert.match(
+    await page.locator("#clock-graph").getAttribute("aria-label"),
+    /計算/,
+  );
+  await page.locator("#trigger-clock").click();
+  await page
+    .locator("#clock-panel")
+    .screenshot({ path: "/tmp/chiptune-v11-clock.png" });
   await page.locator("#cv-panel>summary").click();
   await page.locator("#read-cv").click();
   await page
@@ -371,7 +397,7 @@ const { spawnSync } = require("node:child_process");
   assert.equal(oldWrites, 0);
   await browser.close();
   console.log(
-    "PASS browser: offline editing/export, protocol-2 real-C sync, resource rejection, DIRECT/POLY, PAN, morph, sequence/clock/CV, independent patch save, LIVE coalescing, old-version write lock, chip-specific wave controls and Pulse/Tone3 reservations, mobile layout",
+    "PASS browser: offline editing/export, protocol-3 real-C sync, resource rejection, DIRECT/POLY, PAN, morph, sequence/clock/CV, independent patch save, LIVE coalescing, old-version write lock, chip-specific wave controls and Pulse/Tone3 reservations, mobile layout",
   );
 })().catch((e) => {
   console.error(e);

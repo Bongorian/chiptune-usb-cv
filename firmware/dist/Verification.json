@@ -1,21 +1,21 @@
 {
-  "firmware": "v0.10.0-alpha",
+  "firmware": "v0.11.0-alpha",
   "target": "RP2040 dedicated Chiptune USB/CV board",
   "hardware_tested": false,
   "checks_passed": true,
-  "application_bytes": 173720,
-  "bss_bytes": 127528,
+  "application_bytes": 187180,
+  "bss_bytes": 129908,
   "stack_bytes": 4096,
-  "uf2_bytes": 347648,
-  "uf2_blocks": 679,
+  "uf2_bytes": 374784,
+  "uf2_blocks": 732,
   "uf2_family_id": "0xe48bff56",
-  "application_end": "0x1002a698",
+  "application_end": "0x1002db2c",
   "settings_start": "0x101f0000",
   "settings_reserved_bytes": 65536,
   "settings_region_untouched": true,
   "settings_region_untouched_by_uf2": true,
   "boot_behavior": {
-    "settings_version": 10,
+    "settings_version": 11,
     "unknown_version": "ignore; defaults in RAM; no erase/write",
     "saving": "explicit only"
   },
@@ -31,8 +31,8 @@
     ]
   },
   "sha256": {
-    "chiptune.bin": "6810d398e801fceaaa3238cb9def83b8340d40799bc685d55e5c3163b995f2aa",
-    "chiptune.uf2": "99aa77c1e7e0a8a87a5c09c407d9d6bb6b0ee45010e35ae0b1dbb127637fa4a4"
+    "chiptune.bin": "139f952a60e84f4b1de04b71eddb3ae6cefc716657beca3f356107f0cf02add3",
+    "chiptune.uf2": "708f00a4ea098653e60dbc077b41d20478d2f0c3c34cd5b5f87846ad5854f3b2"
   },
   "untested": [
     "physical USB enumeration/resume/current",

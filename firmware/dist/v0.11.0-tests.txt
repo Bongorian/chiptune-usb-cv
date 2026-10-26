@@ -1,0 +1,77 @@
+Test project /Users/bongorian/Documents/ChatGPT/Gadget/chiptune-usb-cv/build/v10-tests
+    Start 1: synth_tests
+1/9 Test #1: synth_tests ......................   Passed    0.27 sec
+    Start 2: storage_tests
+2/9 Test #2: storage_tests ....................   Passed    0.24 sec
+    Start 3: bus_tests
+3/9 Test #3: bus_tests ........................   Passed    0.23 sec
+    Start 4: protocol_tests
+4/9 Test #4: protocol_tests ...................   Passed    0.24 sec
+    Start 5: ui_tests
+5/9 Test #5: ui_tests .........................   Passed    0.64 sec
+    Start 6: sequence_tests
+6/9 Test #6: sequence_tests ...................   Passed    0.23 sec
+    Start 7: midi_tests
+7/9 Test #7: midi_tests .......................   Passed    0.28 sec
+    Start 8: display_tests
+8/9 Test #8: display_tests ....................   Passed    0.24 sec
+    Start 9: clock_tests
+9/9 Test #9: clock_tests ......................   Passed    0.23 sec
+
+100% tests passed, 0 tests failed out of 9
+
+Total Test time (real) =   2.59 sec
+
+Test project /Users/bongorian/Documents/ChatGPT/Gadget/chiptune-usb-cv/build/v10-release-host
+    Start 1: synth_tests
+1/9 Test #1: synth_tests ......................   Passed    0.21 sec
+    Start 2: storage_tests
+2/9 Test #2: storage_tests ....................   Passed    0.20 sec
+    Start 3: bus_tests
+3/9 Test #3: bus_tests ........................   Passed    0.20 sec
+    Start 4: protocol_tests
+4/9 Test #4: protocol_tests ...................   Passed    0.19 sec
+    Start 5: ui_tests
+5/9 Test #5: ui_tests .........................   Passed    0.22 sec
+    Start 6: sequence_tests
+6/9 Test #6: sequence_tests ...................   Passed    0.21 sec
+    Start 7: midi_tests
+7/9 Test #7: midi_tests .......................   Passed    0.20 sec
+    Start 8: display_tests
+8/9 Test #8: display_tests ....................   Passed    0.21 sec
+    Start 9: clock_tests
+9/9 Test #9: clock_tests ......................   Passed    0.21 sec
+
+100% tests passed, 0 tests failed out of 9
+
+Total Test time (real) =   1.86 sec
+
+✔ PIO limits are derived; exact default and no 250k–4M restriction (1.096458ms)
+✔ two-slot clock wire roundtrip agrees with firmware and survives project save/load (52.843834ms)
+✔ direct PIO extrema, unavailable input and version protection never alter settings (14.276708ms)
+✔ graph uses musical cents, physical Hz/ratio/period and stop states (2.879291ms)
+✔ all compositional factory patches validate (0.717416ms)
+✔ MIDI10 defaults have independent direct tracks (0.240792ms)
+✔ wire schema and checksum reject incompatible versions (50.651333ms)
+✔ real C Track roundtrip including signed fields and MIDI ch16 (15.920459ms)
+✔ mutations before handshake and schema mismatch cannot change C state (14.588167ms)
+✔ sequence and CV signed endpoints roundtrip through firmware (13.87175ms)
+✔ resource errors preserve prior voices and explain alternatives (13.533791ms)
+✔ JSON schema is explicit and imported state is isolated (0.344625ms)
+✔ capabilities and morph topology reflect real chips (0.239375ms)
+✔ global tempo 240 BPM and Gate2 roundtrip without 7-bit truncation (26.754875ms)
+✔ POLY focus disables only the same chip and returns assigned poly voices (13.454125ms)
+✔ structure editing normalizes incompatible layers and unused noise controls (0.206042ms)
+✔ C and Web agree on wave classification and capability masks for every factory (0.115375ms)
+✔ C and Web construct the same chip-specific waveforms without new stored fields (0.389083ms)
+✔ musical controls exclude unsupported or ineffective chip parameters (0.250333ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 201.482042
+
+PASS browser: offline editing/export, protocol-3 real-C sync, resource rejection, DIRECT/POLY, PAN, morph, sequence/clock/CV, independent patch save, LIVE coalescing, old-version write lock, chip-specific wave controls and Pulse/Tone3 reservations, mobile layout

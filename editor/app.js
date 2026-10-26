@@ -1,4 +1,19 @@
 import {
+  clockDefault,
+  clockPlan,
+  basePlan,
+  directPlan,
+  MIN_HZ,
+  MAX_HZ,
+  fxNames,
+  domainNames,
+  encodeClock,
+  decodeClock,
+  decodeClockStatus,
+  clockSimulator,
+  syncClocks,
+} from "./clock.js";
+import {
   fields,
   SCHEMA,
   PROTOCOL,
@@ -73,9 +88,12 @@ let selected = 0,
   liveTimer = null,
   sending = false;
 let global = [
-  1, 0, 0, 24, 4, 0, 1, 7, 0, 0, 90, 0, 70, 100, 100, 100, 0, 50, 100, 25, 75,
-  100, 50, 0, 0,
+  7, 0, 0, 90, 0, 70, 100, 100, 100, 0, 50, 100, 25, 75, 100, 50, 0, 0,
 ];
+let clock = clockDefault(),
+  clockDirty = false,
+  clockStatus = null,
+  clockPolling = false;
 let cvs = [newCv(0), newCv(1)],
   matrix = Array.from({ length: 8 }, () => ({
     source: 0,
@@ -93,7 +111,7 @@ function message(text, error = false) {
   $("message").classList.toggle("error", error);
 }
 function connected() {
-  $("connection-state").textContent = ready ? "CONNECTED · v0.10" : "OFFLINE";
+  $("connection-state").textContent = ready ? "CONNECTED · v0.11" : "OFFLINE";
   $("connection-state").classList.toggle("connected", ready);
   for (const id of [
     "poly-focus",
@@ -109,6 +127,7 @@ function connected() {
     "read-sequence",
     "send-sequence",
     "read-global",
+    "trigger-clock",
     "send-global",
     "read-cv",
     "send-cv",
@@ -152,7 +171,7 @@ function received(event) {
         2: "パラメータまたは回路の競合",
         3: "本体で編集中、または音源の電源がOFFです",
         4: "保存に失敗しました。保存済みデータは保持されています",
-        5: "スキーマ不一致。v0.10との再接続が必要です",
+        5: "スキーマ不一致。v0.11との再接続が必要です",
       }[r.status] || "本体エラー";
     if (r.status === 2 && r.data.length >= 6) {
       const n = r.data[4];
@@ -173,7 +192,7 @@ function request(command, payload = []) {
   const run = () =>
     new Promise((resolve, reject) => {
       if (!output || !input || (command !== 0 && !ready)) {
-        reject(Error("v0.10本体へ接続してください。書き込みは無効です。"));
+        reject(Error("v0.11本体へ接続してください。書き込みは無効です。"));
         return;
       }
       const id = requestId++ % 128;
@@ -805,56 +824,274 @@ function renderSequence() {
     $("steps").append(box);
   }
 }
+function clockNumber(parent, label, value, min, max, step, change, id) {
+  const l = document.createElement("label");
+  l.className = "control";
+  l.textContent = label;
+  const el = document.createElement("input");
+  el.type = "number";
+  el.min = min;
+  el.max = max;
+  el.step = step;
+  el.value = value;
+  if (id) el.id = id;
+  el.setAttribute("aria-label", label);
+  el.onchange = () => {
+    const v = Number(el.value);
+    if (!Number.isFinite(v) || v < min || v > max) {
+      message("Clock parameter range", true);
+      return;
+    }
+    change(v);
+    clockDirty = true;
+    drawClock();
+  };
+  l.append(el);
+  parent.append(l);
+  return el;
+}
+function drawClock() {
+  const canvas = $("clock-graph"),
+    ctx = canvas.getContext("2d"),
+    sim = clockSimulator(clock, global.slice(9, 17), global[3] + 30);
+  const samples = Array.from({ length: 257 }, (_, i) => sim(i ? 4 / 256 : 0));
+  const valid = samples.filter((p) => p.available && p.hz > 0).map((p) => p.hz),
+    lo = Math.min(...valid),
+    hi = Math.max(...valid);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = "#6dd8b1";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  let pen = false;
+  samples.forEach((p, i) => {
+    if (!p.available || p.hz <= 0) {
+      pen = false;
+      return;
+    }
+    const y =
+        hi === lo
+          ? canvas.height / 2
+          : canvas.height -
+            18 -
+            ((Math.log(p.hz) - Math.log(lo)) / (Math.log(hi) - Math.log(lo))) *
+              (canvas.height - 36),
+      x = (i * canvas.width) / 256;
+    if (pen) ctx.lineTo(x, y);
+    else ctx.moveTo(x, y);
+    pen = true;
+  });
+  ctx.stroke();
+  ctx.fillStyle = "#9baebc";
+  ctx.font = "12px sans-serif";
+  ctx.fillText(
+    valid.length
+      ? `${lo.toPrecision(5)} – ${hi.toPrecision(5)} Hz · 0–4 s`
+      : "STOPPED / UNAVAILABLE",
+    8,
+    14,
+  );
+  const p = basePlan(clock),
+    d = clockStatus;
+  $("clock-status").textContent = d
+    ? `${d.state}${d.experimental ? " · EXPERIMENTAL" : ""} · 計算上 ${d.hz.toPrecision(8)} Hz${d.stop_pending ? " · STOP待ち" : ""}${d.fx_flags & 1 ? " · FX late" : ""}${d.fx_flags & 2 ? " · FX alias" : ""} · clip 0x${d.clips.toString(16)} · pending ${d.pending}`
+    : `${ready ? "CONNECTED · 設定" : "OFFLINE · 基本"} ${p.hz.toPrecision(8)} Hz${p.experimental ? " · EXPERIMENTAL" : ""}`;
+  $("clock-registers").textContent = d
+    ? `PIO X=${d.period}, div=${d.div256}/256; wait=${d.wait_us} µs (max ${d.max_wait_us}, active ${d.age_us}); desired [${d.desired}], sent [${d.sent}]; FX max=${d.max_us} µs, late=${d.late}, updates=${d.updates}, restarts=${d.restarts}. target Hz [${d.targets.map((v) => v.toPrecision(5))}], sent error cents [${d.targets.map((t, i) => (t > 0 && d.sent[i] > 0 && d.sent[i] <= 1023 && d.hz > 0 ? (1200 * Math.log2(d.hz / (32 * d.sent[i] * t))).toFixed(2) : "—"))}]. FULLのdesired/sent差はレジスタ追従待ちです。`
+    : "未接続。PIO周期・分周値は設定から計算されます。";
+}
 function renderGlobal() {
   const parent = $("clock-controls");
   parent.replaceChildren();
+  clockNumber(
+    parent,
+    "BASE CLOCK · Hz",
+    clock.base_hz,
+    MIN_HZ,
+    MAX_HZ,
+    "any",
+    (v) => {
+      clock.base_hz = v;
+      clock.direct = 0;
+    },
+    "base-clock",
+  );
+  control(
+    parent,
+    "PITCH FOLLOW",
+    clock.follow,
+    { options: ["RAW", "BASE", "FULL"], id: "clock-follow" },
+    (v) => {
+      clock.follow = v;
+      clockDirty = true;
+      drawClock();
+    },
+  );
+  control(
+    parent,
+    "Clock stop",
+    clock.stopped,
+    { options: ["Run", "Stop after current transfer"], id: "clock-stop" },
+    (v) => {
+      clock.stopped = v;
+      clockDirty = true;
+      drawClock();
+    },
+  );
+  clock.mod.forEach((m, i) => {
+    const box = document.createElement("fieldset");
+    box.className = "controls";
+    const title = document.createElement("legend");
+    title.textContent = `MOD ${i ? "B" : "A"}`;
+    box.append(title);
+    parent.append(box);
+    control(
+      box,
+      "FX TYPE",
+      m.mode,
+      { options: fxNames, id: `clock-fx-${i}` },
+      (v) => {
+        m.mode = v;
+        if (v === 17 && m.rate_millihz < 20000) m.rate_millihz = 250000;
+        clockDirty = true;
+        renderGlobal();
+      },
+    );
+    control(
+      box,
+      "DOMAIN",
+      m.domain,
+      { options: domainNames, id: `clock-domain-${i}` },
+      (v) => {
+        m.domain = v;
+        m.offset = 0;
+        m.depth = v === 0 ? 1200 : v === 1 ? 100000 : v === 2 ? 500000 : 32;
+        clockDirty = true;
+        renderGlobal();
+      },
+    );
+    const unit = ["cents", "Hz", "ppm", "SM cycles"][m.domain];
+    clockNumber(
+      box,
+      `OFFSET · ${unit}`,
+      m.offset,
+      -2147483648,
+      2147483647,
+      1,
+      (v) => (m.offset = v),
+      `clock-offset-${i}`,
+    );
+    clockNumber(
+      box,
+      `DEPTH · ${unit}`,
+      m.depth,
+      -2147483648,
+      2147483647,
+      1,
+      (v) => (m.depth = v),
+      `clock-depth-${i}`,
+    );
+    clockNumber(
+      box,
+      "RATE · Hz",
+      m.rate_millihz / 1000,
+      0,
+      0xffffffff / 1000,
+      0.001,
+      (v) => (m.rate_millihz = Math.round(v * 1000)),
+      `clock-rate-${i}`,
+    );
+    control(
+      box,
+      "SYNC",
+      m.sync,
+      {
+        options: [
+          "Free",
+          ...syncClocks.slice(1).map((n) => `${n} MIDI clocks · ${n}/24 beat`),
+        ],
+      },
+      (v) => {
+        m.sync = v;
+        clockDirty = true;
+        drawClock();
+      },
+    );
+    control(
+      box,
+      "RETRIGGER",
+      m.retrigger,
+      { options: ["Off", "Note / Gate"] },
+      (v) => {
+        m.retrigger = v;
+        clockDirty = true;
+      },
+    );
+    const duration = document.createElement("p");
+    duration.className = "hint";
+    duration.textContent = m.sync
+      ? `1周期 = ${syncClocks[m.sync]}/24拍（MIDI Clock間を補間）`
+      : m.rate_millihz
+        ? `1周期 ≈ ${(1000 / m.rate_millihz).toPrecision(4)}秒 · ${(((global[3] + 30) * 1000) / (60 * m.rate_millihz)).toPrecision(4)}拍 @ ${global[3] + 30} BPM`
+        : "位相停止（0 Hz）";
+    box.append(duration);
+    if (m.mode === 14)
+      control(
+        box,
+        "Envelope curve",
+        m.curve,
+        { options: ["Linear", "Squared", "Smooth"] },
+        (v) => {
+          m.curve = v;
+          clockDirty = true;
+          drawClock();
+        },
+      );
+  });
+  const advanced = $("clock-advanced-controls");
+  advanced.replaceChildren();
+  control(
+    advanced,
+    "Direct PIO",
+    clock.direct,
+    { options: ["Hz setting", "Direct period / divider"] },
+    (v) => {
+      clock.direct = v;
+      clockDirty = true;
+      drawClock();
+    },
+  );
+  clockNumber(
+    advanced,
+    "PIO X · half-period = X + 5",
+    clock.period,
+    0,
+    0xffffffff,
+    1,
+    (v) => {
+      clock.period = v;
+      clock.direct = 1;
+    },
+  );
+  clockNumber(
+    advanced,
+    "PIO divider ×256",
+    clock.div256,
+    256,
+    16777216,
+    1,
+    (v) => {
+      clock.div256 = v;
+      clock.direct = 1;
+    },
+  );
   const specs = [
-    ["Reference", ["4 MHz", "2 MHz", "1 MHz"]],
-    [
-      "FX",
-      [
-        "Off",
-        "Manual",
-        "Rise",
-        "Triangle",
-        "Square",
-        "Random",
-        "Sequence",
-        "Dive",
-      ],
-    ],
-    ["Base drop · 半音", 0, 48],
-    ["Depth · 半音", 0, 48],
-    [
-      "Rate · Hz",
-      [
-        "0.25",
-        "0.5",
-        "1",
-        "2",
-        "4",
-        "8",
-        "16",
-        "32",
-        "50",
-        "80",
-        "100",
-        "160",
-        "250",
-        "400",
-        "600",
-        "800",
-      ],
-    ],
-    ["MIDI sync", 0, 8],
-    ["Note retrigger", ["Off", "On"]],
     [
       "Trigger source",
       ["Any SN", "MIDI SN", "CV1", "CV2", "CH10", "Tone", "Noise", "Melody/CV"],
     ],
     ["Clock input", ["USB", "TRS"]],
     ["Clock policy", ["Auto", "External", "Internal", "Gate"]],
-    ["Tempo · BPM", 0, 210],
+    ["Tempo · BPM", 30, 240],
     ["TRS → USB", ["Off", "On"]],
     ["Master", 0, 100],
     ["SAA level", 0, 100],
@@ -865,19 +1102,31 @@ function renderGlobal() {
   ];
   specs.forEach(([label, lo, hi], i) =>
     control(
-      parent,
+      advanced,
       label,
-      i === 10 ? global[i] + 30 : global[i],
-      Array.isArray(lo)
-        ? { options: lo }
-        : { min: i === 10 ? 30 : lo, max: i === 10 ? 240 : hi },
+      i === 3 ? global[i] + 30 : global[i],
+      Array.isArray(lo) ? { options: lo } : { min: lo, max: hi },
       (v) => {
-        global[i] = i === 10 ? v - 30 : v;
+        global[i] = i === 3 ? v - 30 : v;
         globalDirty = true;
+        drawClock();
       },
     ),
   );
+  drawClock();
 }
+setInterval(async () => {
+  if (!ready || !$("clock-panel").open || clockPolling) return;
+  clockPolling = true;
+  try {
+    clockStatus = decodeClockStatus(await request(27));
+    drawClock();
+  } catch (error) {
+    message(error.message, true);
+  } finally {
+    clockPolling = false;
+  }
+}, 500);
 function renderMatrix() {
   const parent = $("matrix-controls");
   parent.replaceChildren();
@@ -1055,15 +1304,26 @@ $("send-sequence").onclick = () =>
     entry().sequenceDirty = false;
     message("SequenceをRAMへ反映しました。");
   });
+$("trigger-clock").onclick = () =>
+  guard(async () => {
+    await request(28);
+    message("Clock FXをトリガーしました。");
+  });
 $("read-global").onclick = () =>
   guard(async () => {
     global = decodeGlobal(await request(4));
+    clock = decodeClock(await request(25));
+    clockDirty = false;
+    clockStatus = null;
     globalDirty = false;
     renderGlobal();
     message("共通設定を読み出しました。");
   });
 $("send-global").onclick = () =>
   guard(async () => {
+    const clockBytes = encodeClock(clock);
+    clock = decodeClock(await request(26, clockBytes));
+    clockDirty = false;
     global = decodeGlobal(await request(5, encodeGlobal(global)));
     globalDirty = false;
     renderGlobal();
@@ -1242,7 +1502,7 @@ $("export").onclick = () =>
   guard(() => {
     const e = entry();
     download(
-      `${cleanName(e.track.name).trim() || "PATCH"}-v10.json`,
+      `${cleanName(e.track.name).trim() || "PATCH"}-v11.json`,
       JSON.stringify(exportTrack(e.track, e.sequence), null, 2),
     );
   });
@@ -1257,7 +1517,7 @@ $("import").onchange = () =>
     entry().sequenceDirty = true;
     mark();
     render();
-    message("v0.10 JSONをローカルへ読み込みました。");
+    message("v0.11 JSONをローカルへ読み込みました。");
   });
 connected();
 render();

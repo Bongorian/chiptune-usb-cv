@@ -12,9 +12,7 @@ static const Field fields[] = {
 #include "sound_fields.inc"
 };
 #undef FIELD
-unsigned editor_field_count(void) {
-    return sizeof(fields) / sizeof(fields[0]);
-}
+unsigned editor_field_count(void) { return sizeof(fields) / sizeof(fields[0]); }
 int editor_field_get(const Patch *p, unsigned i) {
     if (i >= editor_field_count())
         return 0;
@@ -39,9 +37,7 @@ bool editor_field_set(Patch *p, unsigned i, int value) {
         *b = (uint8_t)value;
     return true;
 }
-void editor_init(Editor *e) {
-    memset(e, 0, sizeof(*e));
-}
+void editor_init(Editor *e) { memset(e, 0, sizeof(*e)); }
 void editor_byte(Editor *e, uint8_t b, uint32_t now) {
     if (b >= 0xf8)
         return;
@@ -80,9 +76,7 @@ static void wide(Editor *e, uint32_t n) {
         n >>= 7;
     }
 }
-static unsigned readword(const uint8_t *b) {
-    return b[0] | (unsigned)b[1] << 7;
-}
+static unsigned readword(const uint8_t *b) { return b[0] | (unsigned)b[1] << 7; }
 static void patch_write(Editor *ed, const Patch *p) {
     put(ed, editor_field_count());
     for (unsigned i = 0; i < editor_field_count(); i++)
@@ -107,9 +101,9 @@ static uint16_t routes(const Project *p, unsigned src, unsigned t) {
 static void track_write(Editor *ed, const Engine *e, unsigned t) {
     const Track *a = &e->project.track[t];
     put(ed, t);
-    const uint8_t values[] = {a->enabled, a->mode, a->voices, a->level,          a->pan,
-                              a->mute,    a->low,  a->high,   a->velocity_curve, a->morph_target,
-                              a->morph};
+    const uint8_t values[] = {
+        a->enabled, a->mode, a->voices,         a->level,        a->pan,  a->mute,
+        a->low,     a->high, a->velocity_curve, a->morph_target, a->morph};
     for (unsigned i = 0; i < sizeof(values); i++)
         put(ed, values[i]);
     for (unsigned i = 0; i < 8; i++)
@@ -167,24 +161,82 @@ static bool track_read(Project *p, const uint8_t *d, unsigned n) {
     /* Prefix is 38 bytes: track+11 controls+name8+dest4+macro8+routes6. */
     return patch_read(&a->patch, d + 38, n - 38);
 }
+/* Explicit wire fields: never copy compiler struct layout into SysEx. */
+static void real_write(Editor *ed, double v) {
+    uint8_t b[8];
+    memcpy(b, &v, 8);
+    for (unsigned i = 0; i < 8; i++)
+        word(ed, b[i]);
+}
+static bool real_read(const uint8_t *d, double *v) {
+    uint8_t b[8];
+    for (unsigned i = 0; i < 8; i++) {
+        if (readword(d + i * 2) > 255)
+            return false;
+        b[i] = (uint8_t)readword(d + i * 2);
+    }
+    memcpy(v, b, 8);
+    return true;
+}
+static uint32_t readwide(const uint8_t *d) {
+    uint32_t v = 0;
+    for (unsigned i = 0; i < 5; i++)
+        v |= (uint32_t)d[i] << (7 * i);
+    return v;
+}
+static void clock_write(Editor *ed, const SnClockConfig *c) {
+    real_write(ed, c->base_hz);
+    wide(ed, c->period);
+    wide(ed, c->div256);
+    put(ed, c->direct);
+    put(ed, c->stopped);
+    put(ed, c->follow);
+    for (unsigned i = 0; i < 2; i++) {
+        const SnModConfig *m = &c->mod[i];
+        put(ed, m->mode);
+        put(ed, m->domain);
+        put(ed, m->sync);
+        put(ed, m->retrigger);
+        put(ed, m->curve);
+        wide(ed, (uint32_t)m->offset);
+        wide(ed, (uint32_t)m->depth);
+        wide(ed, m->rate_millihz);
+    }
+}
+static bool clock_read(SnClockConfig *c, const uint8_t *d, unsigned n) {
+    if (n != 69)
+        return false;
+    memset(c, 0, sizeof(*c));
+    if (!real_read(d, &c->base_hz) || d[20] > 15 || d[25] > 15)
+        return false;
+    c->period = readwide(d + 16);
+    c->div256 = readwide(d + 21);
+    c->direct = d[26];
+    c->stopped = d[27];
+    c->follow = d[28];
+    for (unsigned i = 0; i < 2; i++) {
+        SnModConfig *m = &c->mod[i];
+        const uint8_t *p = d + 29 + i * 20;
+        if (p[9] > 15 || p[14] > 15 || p[19] > 15)
+            return false;
+        m->mode = p[0];
+        m->domain = p[1];
+        m->sync = p[2];
+        m->retrigger = p[3];
+        m->curve = p[4];
+        uint32_t a = readwide(p + 5), b = readwide(p + 10);
+        memcpy(&m->offset, &a, 4);
+        memcpy(&m->depth, &b, 4);
+        m->rate_millihz = readwide(p + 15);
+    }
+    return sn_clock_valid(c);
+}
 static void global_write(Editor *ed, const Project *p) {
-    const uint8_t v[] = {p->sn_reference,
-                         p->sn_clock.mode,
-                         p->sn_clock.base,
-                         p->sn_clock.depth,
-                         p->sn_clock.rate,
-                         p->sn_clock.sync,
-                         p->sn_clock.retrigger,
-                         p->sn_trigger_source,
-                         p->clock_source,
-                         p->clock_policy,
-                         p->tempo,
-                         p->midi_thru};
-    for (unsigned i = 0; i < 12; i++)
-        if (i == 10)
-            word(ed, v[i]);
-        else
-            put(ed, v[i]);
+    put(ed, p->sn_trigger_source);
+    put(ed, p->clock_source);
+    put(ed, p->clock_policy);
+    word(ed, p->tempo);
+    put(ed, p->midi_thru);
     for (unsigned i = 0; i < 4; i++)
         put(ed, p->mix[i]);
     for (unsigned i = 0; i < 8; i++)
@@ -235,8 +287,8 @@ static void conflict_write(Editor *ed, const Engine *e) {
     put(ed, e->conflict.reason);
     put(ed, e->conflict.available);
     const char *why = e->conflict.message[0] ? e->conflict.message : "Invalid parameter value";
-    const char *alternative =
-        e->conflict.suggestion[0] ? e->conflict.suggestion : "Check supported fields and ranges";
+    const char *alternative = e->conflict.suggestion[0] ? e->conflict.suggestion
+                                                        : "Check supported fields and ranges";
     unsigned len = (unsigned)strlen(why);
     put(ed, len);
     for (unsigned i = 0; i < len; i++)
@@ -246,8 +298,8 @@ static void conflict_write(Editor *ed, const Engine *e) {
     for (unsigned i = 0; i < len; i++)
         put(ed, (unsigned)alternative[i]);
 }
-void editor_task(Editor *ed, Engine *e, Settings *s, bool blocked, bool (*save)(void *), void *ctx,
-                 uint32_t now) {
+void editor_task(Editor *ed, Engine *e, Settings *s, bool blocked, bool (*save)(void *),
+                 void *ctx, uint32_t now) {
     if (ed->receiving && now - ed->last_byte > 2000)
         ed->receiving = false;
     if (!ed->ready || ed->length)
@@ -266,7 +318,7 @@ void editor_task(Editor *ed, Engine *e, Settings *s, bool blocked, bool (*save)(
         status = 1;
     bool write = cmd == 2 || cmd == 3 || cmd == 5 || cmd == 6 || cmd == 7 || cmd == 9 ||
                  cmd == 11 || cmd == 14 || cmd == 16 || cmd == 18 || cmd == 19 || cmd == 20 ||
-                 cmd == 22 || cmd == 24;
+                 cmd == 22 || cmd == 24 || cmd == 26 || cmd == 28;
     if (!status && write && !ed->negotiated)
         status = 5;
     if (!status && write && blocked)
@@ -292,7 +344,7 @@ void editor_task(Editor *ed, Engine *e, Settings *s, bool blocked, bool (*save)(
                 break;
             }
             put(ed, 0);
-            put(ed, 10);
+            put(ed, 11);
             put(ed, 0);
             put(ed, PROTOCOL_VERSION);
             put(ed, PATCH_SCHEMA);
@@ -334,25 +386,19 @@ void editor_task(Editor *ed, Engine *e, Settings *s, bool blocked, bool (*save)(
             global_write(ed, &e->project);
             break;
         case 5:
-            if (n != 26) {
+            if (n != 19 || readword(d + 3) > 210) {
                 status = 2;
                 break;
             }
             candidate = e->project;
-            candidate.sn_reference = d[0];
-            candidate.sn_clock = (SnClockConfig){d[1], d[2], d[3], d[4], d[5], d[6]};
-            candidate.sn_trigger_source = d[7];
-            candidate.clock_source = d[8];
-            candidate.clock_policy = d[9];
-            candidate.tempo = (uint8_t)readword(d + 10);
-            if (readword(d + 10) > 210) {
-                status = 2;
-                break;
-            }
-            candidate.midi_thru = d[12];
-            memcpy(candidate.mix, d + 13, 4);
-            memcpy(candidate.clock_sequence, d + 17, 8);
-            candidate.gate_clock = d[25];
+            candidate.sn_trigger_source = d[0];
+            candidate.clock_source = d[1];
+            candidate.clock_policy = d[2];
+            candidate.tempo = (uint8_t)readword(d + 3);
+            candidate.midi_thru = d[5];
+            memcpy(candidate.mix, d + 6, 4);
+            memcpy(candidate.clock_sequence, d + 10, 8);
+            candidate.gate_clock = d[18];
             if (!engine_apply(e, &candidate)) {
                 status = 2;
                 break;
@@ -592,6 +638,65 @@ void editor_task(Editor *ed, Engine *e, Settings *s, bool blocked, bool (*save)(
             }
             ed->changed = true;
             track_write(ed, e, d[0]);
+            break;
+        case 28:
+            if (n) {
+                status = 2;
+                break;
+            }
+            e->sn_manual_trigger++;
+            break;
+        case 25:
+            if (n) {
+                status = 2;
+                break;
+            }
+            clock_write(ed, &e->project.sn_clock);
+            break;
+        case 26:
+            candidate = e->project;
+            if (!clock_read(&candidate.sn_clock, d, n) || !engine_apply(e, &candidate)) {
+                status = 2;
+                break;
+            }
+            ed->changed = true;
+            clock_write(ed, &e->project.sn_clock);
+            break;
+        case 27:
+            if (n) {
+                status = 2;
+                break;
+            }
+            real_write(ed, sn_clock_base(&e->project.sn_clock).hz);
+            real_write(ed, e->sn_clock_hz);
+            wide(ed, e->sn_clock_period);
+            wide(ed, e->sn_clock_div256);
+            put(ed, e->sn_clock_state);
+            put(ed, e->sn_experimental);
+            put(ed, e->project.sn_clock.follow);
+            put(ed, e->sn_stop_pending);
+            put(ed, e->sn_clip_mask);
+            put(ed, bus_pending(&e->bus));
+            real_write(ed, (double)e->bus.last_wait_us);
+            real_write(ed, (double)e->bus.longest_wait_us);
+            real_write(ed, (double)e->bus.wait_age_us);
+            wide(ed, e->clock_updates);
+            wide(ed, e->clock_late);
+            wide(ed, e->clock_max_us);
+            wide(ed, e->clock_restarts);
+            for (unsigned c = 0; c < 2; c++)
+                for (unsigned v = 0; v < 3; v++)
+                    word(ed, e->bus.tone[c][v]);
+            for (unsigned c = 0; c < 2; c++)
+                for (unsigned v = 0; v < 3; v++)
+                    word(ed, e->bus.tone_sent[c][v]);
+            for (unsigned c = 0; c < 2; c++)
+                for (unsigned v = 0; v < 3; v++) {
+                    uint32_t bits;
+                    memcpy(&bits, &e->sn_target_hz[c][v], 4);
+                    wide(ed, bits);
+                }
+            put(ed, e->sn_fx_flags);
             break;
         default:
             status = 1;

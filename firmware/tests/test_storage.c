@@ -1,7 +1,7 @@
-#include "test_common.h"
 #include "store.h"
+#include "test_common.h"
 static union {
-    uint32_t align;
+    uint64_t align;
     uint8_t bytes[STORE_BANK_BYTES * 2];
 } flash, before;
 static StoreRecord a, b;
@@ -53,7 +53,8 @@ int main(void) {
     assert(store_restore(flash.bytes, false, &loaded, &sequence) == -1);
     assert(!memcmp(&before, &flash, sizeof(flash)) && sequence == 0);
     memcpy(flash.bytes, &a, sizeof(a));
-    assert(store_restore(flash.bytes, false, &loaded, &sequence) == 0 && sequence == UINT32_MAX);
+    assert(store_restore(flash.bytes, false, &loaded, &sequence) == 0 &&
+           sequence == UINT32_MAX);
     /* Power interruption at every programmed page, before final commit marker. */
     for (unsigned bytes = 0; bytes < sizeof(b); bytes += 256) {
         memset(flash.bytes + STORE_BANK_BYTES, 255, STORE_BANK_BYTES);
@@ -71,7 +72,8 @@ int main(void) {
     before = flash;
     assert(store_restore(flash.bytes, false, &loaded, &sequence) == -1 && sequence == 0);
     assert(!memcmp(&before, &flash, sizeof(flash)));
-    assert(store_restore(flash.bytes, true, &loaded, &sequence) == -1 && settings_valid(&loaded));
+    assert(store_restore(flash.bytes, true, &loaded, &sequence) == -1 &&
+           settings_valid(&loaded));
     engine.system.brightness = 47;
     engine.system.cv_zero[0] = 17;
     message(0, 0x90, 60, 100);

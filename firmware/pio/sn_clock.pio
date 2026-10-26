@@ -1,6 +1,6 @@
 ; Variable SN clock. At 128MHz, each half-wave is X+5 cycles.
-; X=11..251 -> 4MHz..250kHz, steady 50% duty.
-; Only replace X while low. An empty FIFO recycles X, never stalls.
+; X=0..UINT32_MAX, divider=1..65536 (16.8 fixed point), steady 50% duty.
+; Empty FIFO recycles X. Host reconfiguration restarts at low; transient phase is not measured.
 .program sn_clock
 .wrap_target
     pull noblock

@@ -1,10 +1,8 @@
 #include "engine.h"
 #include <math.h>
-#include <string.h>
 #include <stdio.h>
-static float clamp(float x, float a, float b) {
-    return x < a ? a : x > b ? b : x;
-}
+#include <string.h>
+static float clamp(float x, float a, float b) { return x < a ? a : x > b ? b : x; }
 static void release(Voice *v) {
     if (v->active && !v->releasing) {
         v->held = v->sustained = false;
@@ -21,21 +19,29 @@ static Channel channel_default(void) {
                      .rpn_msb = 127,
                      .rpn_lsb = 127};
 }
-uint32_t engine_sn_reference(const Project *p) {
-    static const uint32_t hz[] = {4000000, 2000000, 1000000};
-    return hz[p->sn_reference < 3 ? p->sn_reference : 0];
+float engine_sn_reference(const Engine *e) {
+    if (e->project.sn_clock.follow == SN_FOLLOW_RAW)
+        return 2000000;
+    if (e->project.sn_clock.follow == SN_FOLLOW_FULL)
+        return (float)e->sn_clock_hz;
+    return e->sn_pitch_hz;
 }
 SnClockConfig engine_effective_clock(const Engine *e) {
     SnClockConfig c = e->project.sn_clock;
-    c.base = (uint8_t)clamp(c.base + e->clock_base, 0, 48);
-    c.depth = (uint8_t)clamp(c.depth + e->clock_depth, 0, 48);
-    if (c.mode == SN_CLOCK_OFF && e->clock_base)
-        c.mode = SN_CLOCK_MANUAL;
-    unsigned base = (c.mode == SN_CLOCK_OFF ? 0 : c.base) + e->project.sn_reference * 12u;
-    c.base = (uint8_t)(base > 48 ? 48 : base);
-    if (c.mode == SN_CLOCK_OFF) {
-        c.mode = SN_CLOCK_MANUAL;
-        c.depth = 0;
+    if (e->clock_base || e->clock_depth) {
+        SnModConfig *m = &c.mod[0];
+        if (m->domain == SN_DOMAIN_MUSIC) {
+            int64_t offset = (int64_t)m->offset + (int32_t)(e->clock_base * 100);
+            int64_t depth = (int64_t)m->depth + (int32_t)(e->clock_depth * 100);
+            m->offset = (int32_t)(offset > INT32_MAX   ? INT32_MAX
+                                  : offset < INT32_MIN ? INT32_MIN
+                                                       : offset);
+            m->depth = (int32_t)(depth > INT32_MAX   ? INT32_MAX
+                                 : depth < INT32_MIN ? INT32_MIN
+                                                     : depth);
+            if (m->mode == SN_CLOCK_OFF)
+                m->mode = SN_CLOCK_MANUAL;
+        }
     }
     return c;
 }
@@ -56,7 +62,8 @@ float engine_quantize(float note, unsigned scale, unsigned root) {
     int center = (int)note;
     float best = 0, distance = 1000;
     for (int n = center - 6; n <= center + 6; n++)
-        if (n >= 0 && n <= 127 && (mask[scale] & (1u << ((unsigned)(n + 12 - (int)root) % 12)))) {
+        if (n >= 0 && n <= 127 &&
+            (mask[scale] & (1u << ((unsigned)(n + 12 - (int)root) % 12)))) {
             float d = fabsf((float)n - note);
             if (d < distance) {
                 distance = d;
@@ -67,6 +74,8 @@ float engine_quantize(float note, unsigned scale, unsigned root) {
 }
 void engine_init(Engine *e, const Project *p, SoundSink sink) {
     memset(e, 0, sizeof(*e));
+    e->sn_clock_hz = 2000000;
+    e->sn_pitch_hz = 2000000;
     e->project = *p;
     e->system =
         (System){.cv_codes_per_volt = {1.0f / .0006875f, 1.0f / .0006875f}, .brightness = 70};
@@ -76,6 +85,14 @@ void engine_init(Engine *e, const Project *p, SoundSink sink) {
     if (!resource_plan(p, NULL, NULL, &e->plan, &e->conflict))
         project_default(&e->project);
     (void)resource_plan(&e->project, NULL, NULL, &e->plan, &e->conflict);
+    SnClockPlan initial = sn_clock_base(&e->project.sn_clock);
+    e->sn_pitch_hz = (float)initial.hz;
+    e->sn_clock_hz = e->project.sn_clock.stopped ? 0 : initial.hz;
+    e->sn_clock_period = initial.period;
+    e->sn_clock_div256 = initial.div256;
+    e->sn_clock_state = e->project.sn_clock.stopped ? SN_STOPPED
+                        : initial.experimental      ? SN_DEGRADED
+                                                    : SN_VALID;
     for (unsigned s = 0; s < SOURCES; s++)
         for (unsigned c = 0; c < 16; c++)
             e->channel[s][c] = channel_default();
@@ -143,9 +160,10 @@ bool engine_apply(Engine *e, const Project *p) {
         return false;
     }
     for (unsigned t = 0; t < TRACKS; t++) {
-        bool structural = !patch_same_structure(&p->track[t].patch, &e->project.track[t].patch) ||
-                          p->track[t].mode != e->project.track[t].mode ||
-                          candidate.count[t] != e->plan.count[t];
+        bool structural =
+            !patch_same_structure(&p->track[t].patch, &e->project.track[t].patch) ||
+            p->track[t].mode != e->project.track[t].mode ||
+            candidate.count[t] != e->plan.count[t];
         bool routing = false;
         for (unsigned s = 0; s < SOURCES; s++)
             for (unsigned c = 0; c < 16; c++)
@@ -164,12 +182,8 @@ bool engine_apply(Engine *e, const Project *p) {
             e->gate_block[i] = e->gate[i];
             e->cv_valid[i] = false;
         }
-    bool clock_change = p->sn_reference != e->project.sn_reference;
-    if (clock_change)
-        for (unsigned t = 0; t < TRACKS; t++)
-            if (e->project.track[t].patch.chip == CHIP_SN)
-                engine_stop_track(e, t);
     e->project = *p;
+    e->sn_pitch_hz = (float)sn_clock_base(&p->sn_clock).hz;
     e->plan = candidate;
     return true;
 }
@@ -310,7 +324,8 @@ void engine_note(Engine *e, unsigned t, unsigned source, unsigned channel, unsig
     if (p->chip == CHIP_SN &&
         (trigger == 0 || (trigger == 1 && source < 2) || (trigger == 2 && source == 2) ||
          (trigger == 3 && source == 3) || (trigger == 4 && source < 2 && channel == 9) ||
-         (trigger == 5 && p->source == SOURCE_TONE) || (trigger == 6 && p->source != SOURCE_TONE) ||
+         (trigger == 5 && p->source == SOURCE_TONE) ||
+         (trigger == 6 && p->source != SOURCE_TONE) ||
          (trigger == 7 && p->source == SOURCE_TONE)))
         e->sn_note_trigger++;
 }
@@ -329,7 +344,8 @@ static void restore_mono(Engine *e, unsigned t) {
     }
     if (best && e->project.track[t].mode == PLAY_LEGATO)
         for (unsigned i = 0; i < 14; i++)
-            if (e->voice[i].active && e->voice[i].track == t && e->voice[i].source == best->source)
+            if (e->voice[i].active && e->voice[i].track == t &&
+                e->voice[i].source == best->source)
                 e->voice[i].releasing = false;
     if (best)
         engine_note(e, t, best->source, best->channel, best->note, best->velocity, best->token,
@@ -343,8 +359,8 @@ static void note_off(Engine *e, unsigned source, unsigned channel, unsigned note
     for (unsigned t = 0; t < TRACKS; t++)
         for (unsigned h = 0; h < HELD_NOTES; h++) {
             HeldNote *k = &e->held[t][h];
-            if (k->velocity && k->source == source && k->channel == channel && k->note == note &&
-                k->token == token) {
+            if (k->velocity && k->source == source && k->channel == channel &&
+                k->note == note && k->token == token) {
                 affected[t] = true;
                 if (e->channel[source][channel].sustain)
                     k->sustained = true;
@@ -446,30 +462,23 @@ static void control(Engine *e, unsigned source, unsigned channel, unsigned cc, u
                sizeof(e->pressed[source][channel]));
     }
     if (source == e->project.clock_source && cc >= 20 && cc <= 27) {
-        SnClockConfig *k = &e->project.sn_clock;
+        SnModConfig *k = &e->project.sn_clock.mod[0];
         if (cc == 20)
-            k->mode = (uint8_t)(value > 7 ? 7 : value);
+            k->mode = (uint8_t)(value >= SN_CLOCK_MODES ? SN_CLOCK_MODES - 1 : value);
         if (cc == 21)
-            k->base = (uint8_t)((value * 48 + 63) / 127);
+            k->offset = ((int32_t)value - 64) * 100;
         if (cc == 22)
-            k->depth = (uint8_t)((value * 48 + 63) / 127);
+            k->depth = (int32_t)value * 100;
         if (cc == 23)
-            k->rate = (uint8_t)((value * 15 + 63) / 127);
+            k->rate_millihz = 250u + (uint32_t)value * 250u;
         if (cc == 24)
             k->sync = (uint8_t)((value * 8 + 63) / 127);
         if (cc == 25)
             k->retrigger = (uint8_t)(value >= 64);
         if (cc == 26 && value >= 64)
             e->sn_manual_trigger++;
-        if (cc == 27) {
-            unsigned ref = value > 2 ? 2 : value;
-            if (ref != e->project.sn_reference) {
-                for (unsigned t = 0; t < TRACKS; t++)
-                    if (e->project.track[t].patch.chip == CHIP_SN)
-                        engine_stop_track(e, t);
-                e->project.sn_reference = (uint8_t)ref;
-            }
-        }
+        if (cc == 27)
+            e->project.sn_clock.follow = (uint8_t)(value > 2 ? 2 : value);
     }
 }
 void engine_message(Engine *e, uint8_t source, const uint8_t *m, uint8_t len) {
@@ -548,7 +557,8 @@ void engine_message(Engine *e, uint8_t source, const uint8_t *m, uint8_t len) {
                                               .note = (uint8_t)a,
                                               .velocity = (uint8_t)(velocity ? velocity : 1)};
                 if (!e->project.sequence[t].arp)
-                    engine_note(e, t, source, channel, a, velocity ? velocity : 1, token, (float)a);
+                    engine_note(e, t, source, channel, a, velocity ? velocity : 1, token,
+                                (float)a);
             }
         return;
     }
@@ -611,8 +621,8 @@ void engine_cv(Engine *e, unsigned input, float volts, bool gate, bool fresh) {
     }
     if (!fresh && c->mode == 1)
         for (unsigned i = 0; i < 14; i++)
-            if (e->voice[i].active && e->voice[i].track == c->track && e->voice[i].source >= 2 &&
-                e->voice[i].source <= 3)
+            if (e->voice[i].active && e->voice[i].track == c->track &&
+                e->voice[i].source >= 2 && e->voice[i].source <= 3)
                 release(&e->voice[i]);
     if (!gate || !fresh)
         engine_release_source(e, c->gate_track, input + 2);
@@ -632,9 +642,10 @@ void engine_cv(Engine *e, unsigned input, float volts, bool gate, bool fresh) {
                 pitch = e->cv_note[i];
         if (c->gate == 2)
             engine_release_source(e, c->gate_track, input + 2);
-        engine_note(e, c->gate_track, input + 2, 0, (unsigned)clamp(pitch, 0, 127), 100, ++e->age,
-                    pitch);
-    } else if (c->gate == 3 && !(e->project.clock_policy == 3 && e->project.gate_clock == input))
+        engine_note(e, c->gate_track, input + 2, 0, (unsigned)clamp(pitch, 0, 127), 100,
+                    ++e->age, pitch);
+    } else if (c->gate == 3 &&
+               !(e->project.clock_policy == 3 && e->project.gate_clock == input))
         sequence_gate(e, c->gate_track);
     else if (c->gate == 4)
         e->sn_manual_trigger++;
@@ -666,9 +677,7 @@ void engine_tick(Engine *e, uint32_t dt) {
     render_tick(e, dt);
 }
 
-void engine_bind_library(Engine *e, const Settings *s) {
-    e->library = s;
-}
+void engine_bind_library(Engine *e, const Settings *s) { e->library = s; }
 bool engine_poly_focus(Engine *e, unsigned track) {
     if (track >= TRACKS)
         return false;

@@ -1,6 +1,6 @@
 {
-  "firmware": "v0.10.0-alpha",
-  "elf_sha256": "9962e1ab8647397f372c19e86d58b612895a0ad6d69cdd13af91c9dd55c4c01b",
+  "firmware": "v0.11.0-alpha",
+  "elf_sha256": "c19d6eda3f9fa649ff6cee00ece98023c6ed269e69149564c0260b1c16a0bf10",
   "hardware_emulated": false,
   "arm_code_executed": true,
   "flash_guard_cases": [
@@ -50,8 +50,8 @@
   "out_of_capacity_rejected": true,
   "boot_cases": [
     "erased",
-    "valid v10",
-    "corrupt v10",
+    "valid v11",
+    "corrupt v11",
     "v6 ignored",
     "OK held"
   ],

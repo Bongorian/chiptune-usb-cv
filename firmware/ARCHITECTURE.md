@@ -1,4 +1,4 @@
-# v0.10 engine and verification
+# v0.11 engine and verification
 
 ## Model and ownership
 
@@ -14,15 +14,15 @@ Voice ownership is `(source, channel, note, 32-bit token)`. Per-input pressed/re
 
 `render.c` computes desired register state every nominal 1 ms. `register_bus.c` services at most one bounded transaction per main-loop call. The queue is the latest value of each register, not an expanding event list. Tone divider byte pairs are atomic snapshots; newer desired values coalesce until the current pair finishes. SAA ENV and SN noise reset epochs preserve retriggers even when register values are unchanged. Mute takes priority over stale pitches.
 
-SN /WE remains LOW across loop iterations for the configured conservative 16–136 µs; the main loop can process MIDI, CV and OLED during this interval. Shared data pins are not changed during the hold. A slowing clock extends an in-flight hold to the safer deadline. This eliminates accumulated synchronous SN write waits, at the cost of delayed/coalesced fast control changes under bus saturation. It does not promise that every 1 ms modulation sample reaches the IC at a 250 kHz clock. Actual hold/setup/throughput still needs logic-analyzer confirmation.
+SN /WE remains LOW asynchronously until a conservative budget of 40 input clocks has completed. READY is unconnected on the routed board. The shared data pins remain unchanged, so SAA register writes also wait while an SN byte is held. MIDI, CV, OLED and synthesis continue. PIO configuration-derived frequency and elapsed time supply conservative clock credit; timing reconfiguration discards uncertain phase. A stop finishes the in-flight divider pair before disabling the clock. No 16–136µs timeout or 250kHz–4MHz clamp remains. Slow or rapidly changing clocks can delay/coalesce updates for an arbitrarily long interval; clock diagnostics expose this. Actual setup/hold and completion margins require measurement.
 
-SAA writes remain short, bounded bus operations. The SN PIO clock and 250 µs integer modulation IRQ remain separate from synthesis. OLED transfers are split into 16-byte chunks with retry/reinitialization; CV/OLED services get a forced opportunity after 4 ms. The foreground UI reuses one static menu buffer rather than stacking large item arrays across resource/persistence calls. Tick catch-up uses elapsed time rather than running an unbounded list of missed ticks. Explicit flash saving stops playback and can interrupt MIDI; there is no background autosave.
+SAA writes remain short, bounded bus operations. The SN PIO clock runs autonomously. The two-slot modulation engine targets a cooperative 250 µs update interval outside interrupts; RAW/BASE/FULL select pitch reference. PIO half-period and divider share a single frequency equation. Time-sensitive USB/CV/OLED continue receiving loop service, but device throughput and jitter require measurement. OLED transfers are split into 16-byte chunks with retry/reinitialization; CV/OLED services get a forced opportunity after 4 ms. The foreground UI reuses one static menu buffer rather than stacking large item arrays across resource/persistence calls. Tick catch-up uses elapsed time rather than running an unbounded list of missed ticks. Explicit flash saving stops playback and can interrupt MIDI; there is no background autosave.
 
 Pitch ratio, SAA pitch registers, sine and exponential decay use generated LUTs. The render path has no `pow/exp/sin/log` calls. Constant floating-point divisions were changed to reciprocal multiplication without enabling unsafe fast-math. Variable ADSR/glide/divider calculations still use RP2040 ROM float operations. The compositional morph uses bounded integer interpolation.
 
 ## Tests and what the numbers mean
 
-- Eight ASan/UBSan host suites cover model/resource constraints, all factories, MIDI ownership/steals/sustain/legato, stereo PAN, SAA ENV/AM/layers/noise and SN metal/sweeps, CV freshness/reroute/0V, transport/arp, torn writes/rollback/independent saves, strict SysEx version gating, bounded bus transport, UI fuzzing and OLED recovery.
+- Nine ASan/UBSan host suites cover model/resource constraints, all factories, MIDI ownership/steals/sustain/legato, stereo PAN, SAA ENV/AM/layers/noise and SN metal/sweeps, CV freshness/reroute/0V, transport/arp, torn writes/rollback/independent saves, strict SysEx version gating, bounded bus transport, UI fuzzing and OLED recovery.
 - Node tests exchange actual protocol frames with the portable C engine. Browser tests run the same C bridge through mock Web MIDI: offline JSON, connect/read/write, old-version write lock, resource rejection, POLY FOCUS, PAN, morph, sequence/CV/global saves, asynchronous LIVE slider preservation and mobile overflow. No physical MIDI devices are used by these tests.
 - The linked ARM Release ELF executes through startup and stressed engine ticks in Unicorn. Only platform/ROM/SIO boundaries are functionally stubbed. Boot tests reject flash writes, validate storage startup and execute the real SDK capacity guard. Runtime probes record instruction counts, stubbed arithmetic calls and observed stack depth.
 - `Performance.json` is host timing over 10,000 ticks each at 10 and 14 logical voices with envelopes, glide, LFO, morph and eight modulation routes. It is not RP2040 timing or an exhaustive maximum over all project states.
@@ -30,7 +30,7 @@ Pitch ratio, SAA pitch registers, sine and exponential decay use generated LUTs.
 
 The packaged runtime report records the instruction counts and stubbed runtime calls for the current stress configuration. It does not establish the hardware deadline.
 
-**On-device worst-case timing is an open hardware validation item.** The firmware records `tick_max_us` and `tick_overruns` (both exposed by SysEx diagnostics); overruns include a missed update interval. Measure 14 independent voices, both inputs at MIDI saturation, CV/Gates, OLED editing, all clock modes, and 250 kHz SN writes. If the measured tick exceeds 1 ms, reduce update work/voice cost before declaring a production real-time guarantee. Host timing does not establish RP2040 timing margin.
+**On-device worst-case timing is an open hardware validation item.** The firmware records `tick_max_us` and `tick_overruns` (both exposed by SysEx diagnostics); overruns include a missed update interval. Measure 14 independent voices, both inputs at MIDI saturation, CV/Gates, OLED editing, all clock modes, and low/experimental-high SN clocks, pending transfers and stop/resume. If the measured tick exceeds 1 ms, reduce update work/voice cost before declaring a production real-time guarantee. Host timing does not establish RP2040 timing margin.
 
 ## Removed design
 
@@ -38,4 +38,6 @@ The old `studio.c`, `studio_types.h` and parallel engine have been removed. Ther
 
 ## Flash integrity
 
-Physical flash stays 2 MiB in SDK guards; only the linker limits application space to `0x1f0000`. The two 32 KiB settings banks start at offsets `0x1f0000` and `0x1f8000`. Only version 10 with exact size, CRC, commit marker and semantic/resource validity is accepted. The new bank is erased/programmed while the previous bank survives; the first-page commit marker is programmed last. Software tests interrupt every pre-commit page and corrupt CRC/versions, including sequence wrap. Real flash brownout behavior is not emulated.
+Physical flash stays 2 MiB in SDK guards; only the linker limits application space to `0x1f0000`. The two 32 KiB settings banks start at offsets `0x1f0000` and `0x1f8000`. Only version 11 with exact size, CRC, commit marker and semantic/resource validity is accepted. The new bank is erased/programmed while the previous bank survives; the first-page commit marker is programmed last. Software tests interrupt every pre-commit page and corrupt CRC/versions, including sequence wrap. Real flash brownout behavior is not emulated.
+
+The ARM clock-control probe executes the linked initialization, MMIO writes, low-clock transfer/stop, high-clock resume and PANIC path. MMIO alias behavior and ROM/time boundaries are modeled; PIO edges are checked separately from assembled instructions. `Clock_Verification.json` is not a device timing test.

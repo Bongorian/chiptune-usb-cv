@@ -163,7 +163,7 @@ def verify(path):
         assert image.flash_guard(name, CAPACITY, BANK) == 'rejected', name
     erased = b'\xff' * (2 * BANK)
     current, trace = image.boot(erased)
-    header = struct.pack('<5I', 0x43545031, 10, 12, len(current), 0)
+    header = struct.pack('<6I', 0x43545031, 11, 12, len(current), 0, 0)
     record = bytearray(header + current)
     struct.pack_into('<I', record, 16, zlib.crc32(record[4:]))
     area = record + bytearray(erased[len(record):])
@@ -172,15 +172,15 @@ def verify(path):
     image.boot(bytes(area))
     unknown=bytearray(record)
     struct.pack_into('<I',unknown,4,6)
-    struct.pack_into('<I',unknown,20,6)
+    struct.pack_into('<I',unknown,24,6)
     struct.pack_into('<I',unknown,16,0)
     struct.pack_into('<I',unknown,16,zlib.crc32(unknown[4:]))
     image.boot(bytes(unknown)+erased[len(unknown):])
     image.boot(bytes(record)+erased[len(record):], defaults=True, expected_sequence=12, expected_bank=0)
-    return {'firmware': 'v0.10.0-alpha', 'elf_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+    return {'firmware': 'v0.11.0-alpha', 'elf_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
             'hardware_emulated': False, 'arm_code_executed': True,
             'flash_guard_cases': guards, 'out_of_capacity_rejected': True,
-            'boot_cases': ['erased', 'valid v10', 'corrupt v10', 'v6 ignored', 'OK held'],
+            'boot_cases': ['erased', 'valid v11', 'corrupt v11', 'v6 ignored', 'OK held'],
             'boot_trace': trace, 'boot_flash_writes': 0,
             'limitations': ['SDK setup, USB task, SIO division, ROM memory and floating-point operations are stubbed',
                             'no physical USB/I2C/flash/audio test']}

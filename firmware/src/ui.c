@@ -1,22 +1,28 @@
 #include "ui.h"
 #include "editor.h"
-#include <stdio.h>
-#include <string.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 static const uint8_t glyph[36][5] = {
-    {0x3e, 0x51, 0x49, 0x45, 0x3e}, {0, 0x42, 0x7f, 0x40, 0},       {0x42, 0x61, 0x51, 0x49, 0x46},
-    {0x21, 0x41, 0x45, 0x4b, 0x31}, {0x18, 0x14, 0x12, 0x7f, 0x10}, {0x27, 0x45, 0x45, 0x45, 0x39},
-    {0x3c, 0x4a, 0x49, 0x49, 0x30}, {0x01, 0x71, 0x09, 0x05, 0x03}, {0x36, 0x49, 0x49, 0x49, 0x36},
-    {0x06, 0x49, 0x49, 0x29, 0x1e}, {0x7e, 0x11, 0x11, 0x11, 0x7e}, {0x7f, 0x49, 0x49, 0x49, 0x36},
-    {0x3e, 0x41, 0x41, 0x41, 0x22}, {0x7f, 0x41, 0x41, 0x22, 0x1c}, {0x7f, 0x49, 0x49, 0x49, 0x41},
-    {0x7f, 0x09, 0x09, 0x09, 0x01}, {0x3e, 0x41, 0x49, 0x49, 0x7a}, {0x7f, 0x08, 0x08, 0x08, 0x7f},
-    {0, 0x41, 0x7f, 0x41, 0},       {0x20, 0x40, 0x41, 0x3f, 0x01}, {0x7f, 0x08, 0x14, 0x22, 0x41},
-    {0x7f, 0x40, 0x40, 0x40, 0x40}, {0x7f, 0x02, 0x0c, 0x02, 0x7f}, {0x7f, 0x04, 0x08, 0x10, 0x7f},
-    {0x3e, 0x41, 0x41, 0x41, 0x3e}, {0x7f, 0x09, 0x09, 0x09, 0x06}, {0x3e, 0x41, 0x51, 0x21, 0x5e},
-    {0x7f, 0x09, 0x19, 0x29, 0x46}, {0x46, 0x49, 0x49, 0x49, 0x31}, {0x01, 0x01, 0x7f, 0x01, 0x01},
-    {0x3f, 0x40, 0x40, 0x40, 0x3f}, {0x1f, 0x20, 0x40, 0x20, 0x1f}, {0x3f, 0x40, 0x38, 0x40, 0x3f},
-    {0x63, 0x14, 0x08, 0x14, 0x63}, {0x07, 0x08, 0x70, 0x08, 0x07}, {0x61, 0x51, 0x49, 0x45, 0x43}};
+    {0x3e, 0x51, 0x49, 0x45, 0x3e}, {0, 0x42, 0x7f, 0x40, 0},
+    {0x42, 0x61, 0x51, 0x49, 0x46}, {0x21, 0x41, 0x45, 0x4b, 0x31},
+    {0x18, 0x14, 0x12, 0x7f, 0x10}, {0x27, 0x45, 0x45, 0x45, 0x39},
+    {0x3c, 0x4a, 0x49, 0x49, 0x30}, {0x01, 0x71, 0x09, 0x05, 0x03},
+    {0x36, 0x49, 0x49, 0x49, 0x36}, {0x06, 0x49, 0x49, 0x29, 0x1e},
+    {0x7e, 0x11, 0x11, 0x11, 0x7e}, {0x7f, 0x49, 0x49, 0x49, 0x36},
+    {0x3e, 0x41, 0x41, 0x41, 0x22}, {0x7f, 0x41, 0x41, 0x22, 0x1c},
+    {0x7f, 0x49, 0x49, 0x49, 0x41}, {0x7f, 0x09, 0x09, 0x09, 0x01},
+    {0x3e, 0x41, 0x49, 0x49, 0x7a}, {0x7f, 0x08, 0x08, 0x08, 0x7f},
+    {0, 0x41, 0x7f, 0x41, 0},       {0x20, 0x40, 0x41, 0x3f, 0x01},
+    {0x7f, 0x08, 0x14, 0x22, 0x41}, {0x7f, 0x40, 0x40, 0x40, 0x40},
+    {0x7f, 0x02, 0x0c, 0x02, 0x7f}, {0x7f, 0x04, 0x08, 0x10, 0x7f},
+    {0x3e, 0x41, 0x41, 0x41, 0x3e}, {0x7f, 0x09, 0x09, 0x09, 0x06},
+    {0x3e, 0x41, 0x51, 0x21, 0x5e}, {0x7f, 0x09, 0x19, 0x29, 0x46},
+    {0x46, 0x49, 0x49, 0x49, 0x31}, {0x01, 0x01, 0x7f, 0x01, 0x01},
+    {0x3f, 0x40, 0x40, 0x40, 0x3f}, {0x1f, 0x20, 0x40, 0x20, 0x1f},
+    {0x3f, 0x40, 0x38, 0x40, 0x3f}, {0x63, 0x14, 0x08, 0x14, 0x63},
+    {0x07, 0x08, 0x70, 0x08, 0x07}, {0x61, 0x51, 0x49, 0x45, 0x43}};
 static void pixel(Ui *u, int x, int y, bool white) {
     if (x < 0 || x > 127 || y < 0 || y > 63)
         return;
@@ -112,11 +118,20 @@ static void text(Ui *u, int x, int y, const char *s, int scale, bool white) {
                     box(u, x + col * scale, y + row * scale, scale, scale, white);
     }
 }
-typedef enum { ITEM_U8, ITEM_I8, ITEM_U16, ITEM_LINK, ITEM_ACTION } ItemType;
+typedef enum {
+    ITEM_U8,
+    ITEM_I8,
+    ITEM_U16,
+    ITEM_U32,
+    ITEM_I32,
+    ITEM_HZ,
+    ITEM_LINK,
+    ITEM_ACTION
+} ItemType;
 typedef struct {
     const char *label;
     void *value;
-    int min, max, step;
+    int64_t min, max, step;
     unsigned type, key;
     const char *const *names;
 } Item;
@@ -137,7 +152,8 @@ enum {
     ACT_AUDITION,
     ACT_NAME,
     ACT_POLY_FOCUS,
-    ACT_DIRECT10
+    ACT_DIRECT10,
+    ACT_CLOCK_TRIGGER
 };
 static const char *const mode_names[] = {"DIRECT", "POLY", "LEGATO"};
 static const char *const chips[] = {"SAA1099", "SN76489"};
@@ -157,9 +173,12 @@ static const char *const rates[] = {"FAST", "MID", "SLOW", "KEY TRACK"};
 static const char *const shapes[] = {"ZERO",     "MAX",      "DECAY ONCE", "SAW DOWN",
                                      "TRI ONCE", "TRIANGLE", "RISE ONCE",  "SAW UP"};
 static const char *const lfos[] = {"SINE", "TRIANGLE", "SQUARE", "RANDOM"};
-static const char *const clock_modes[] = {"OFF",    "MANUAL", "RISE",     "TRIANGLE",
-                                          "SQUARE", "RANDOM", "SEQUENCE", "DIVE"};
-static const char *const references[] = {"4 MHZ", "2 MHZ", "1 MHZ"};
+static const char *const clock_modes[] = {
+    "OFF",       "MANUAL",  "RISE",  "TRIANGLE",    "SQUARE",      "RANDOM", "SEQUENCE",
+    "DIVE",      "SINE",    "SAW",   "RANDOM WALK", "SLEW RANDOM", "WOW",    "FLUTTER",
+    "CURVE ENV", "RATCHET", "BURST", "AUDIO RATE",  "SAW DOWN"};
+static const char *const follows[] = {"RAW", "BASE", "FULL"};
+static const char *const domains[] = {"MUSIC CENT", "PHYSICAL HZ", "RATIO PPM", "PIO PERIOD"};
 static const char *const save_names[] = {"PATCH ONLY", "TRACK ONLY", "PROJECT", "SYSTEM ONLY"};
 static const char *const arp_names[] = {"OFF", "UP", "DOWN", "UP-DOWN", "RANDOM", "CHORD"};
 static const char *const cv_modes[] = {"OFF", "1V/OCT", "MODULATE"};
@@ -184,13 +203,22 @@ static void error(Ui *u) {
     u->page = UI_CONFLICT;
     u->edit = false;
 }
-static int read_item(const Item *i) {
-    return i->type == ITEM_U16  ? *(uint16_t *)i->value
-           : i->type == ITEM_I8 ? *(int8_t *)i->value
-                                : *(uint8_t *)i->value;
+static int64_t read_item(const Item *i) {
+    return i->type == ITEM_U32   ? *(uint32_t *)i->value
+           : i->type == ITEM_I32 ? *(int32_t *)i->value
+           : i->type == ITEM_HZ  ? (int64_t)*(double *)i->value
+           : i->type == ITEM_U16 ? *(uint16_t *)i->value
+           : i->type == ITEM_I8  ? *(int8_t *)i->value
+                                 : *(uint8_t *)i->value;
 }
-static void write_item(const Item *i, int n) {
-    if (i->type == ITEM_U16)
+static void write_item(const Item *i, int64_t n) {
+    if (i->type == ITEM_U32)
+        *(uint32_t *)i->value = (uint32_t)n;
+    else if (i->type == ITEM_I32)
+        *(int32_t *)i->value = (int32_t)n;
+    else if (i->type == ITEM_HZ)
+        *(double *)i->value = (double)n;
+    else if (i->type == ITEM_U16)
         *(uint16_t *)i->value = (uint16_t)n;
     else if (i->type == ITEM_I8)
         *(int8_t *)i->value = (int8_t)n;
@@ -209,17 +237,15 @@ static unsigned build(Ui *u, Item a[48]) {
             if (wave_choice[p->chip][i] == patch_wave(p))
                 u->wave = (uint8_t)i;
     }
-#define V(label, ptr, type, lo, hi, step, choices)                                                 \
+#define V(label, ptr, type, lo, hi, step, choices)                                             \
     a[n++] = (Item){label, ptr, lo, hi, step, type, 0, choices}
 #define U(label, ptr, lo, hi) V(label, ptr, ITEM_U8, lo, hi, 1, NULL)
 #define W(label, ptr, lo, hi, step) V(label, ptr, ITEM_U16, lo, hi, step, NULL)
 #define I(label, ptr, lo, hi) V(label, ptr, ITEM_I8, lo, hi, 1, NULL)
 #define C(label, ptr, lo, hi, choices) V(label, ptr, ITEM_U8, lo, hi, 1, choices)
 #define L(title, target) a[n++] = (Item){.label = title, .type = ITEM_LINK, .key = target}
-#define A(title, action)                                                                           \
-    a[n++] = (Item) {                                                                              \
-        .label = title, .type = ITEM_ACTION, .key = action                                         \
-    }
+#define A(title, action)                                                                       \
+    a[n++] = (Item) { .label = title, .type = ITEM_ACTION, .key = action }
     switch (u->page) {
     case UI_MENU:
         U("TRACK", &u->track, 0, TRACKS - 1);
@@ -267,8 +293,10 @@ static unsigned build(Ui *u, Item a[48]) {
                 C("NOISE TYPE", &p->noise_type, 0, 1, noise_types);
         }
         if (features & PATCH_F_NOISE_TRACK) {
-            I(features & PATCH_F_PULSE ? "PULSE TUNE" : "NOISE PITCH", &p->noise_pitch, -48, 48);
-            I(features & PATCH_F_PULSE ? "PULSE SWEEP" : "NOISE SWEEP", &p->noise_sweep, -48, 48);
+            I(features & PATCH_F_PULSE ? "PULSE TUNE" : "NOISE PITCH", &p->noise_pitch, -48,
+              48);
+            I(features & PATCH_F_PULSE ? "PULSE SWEEP" : "NOISE SWEEP", &p->noise_sweep, -48,
+              48);
         }
         if (features & PATCH_F_NOISE_MIX)
             U("NOISE MIX", &p->noise_mix, 0, 100);
@@ -353,16 +381,34 @@ static unsigned build(Ui *u, Item a[48]) {
         U("MORPH A-B", &t->morph, 0, 100);
         A("PATCH NAME", ACT_NAME);
         break;
-    case UI_CLOCK:
-        C("REFERENCE", &project->sn_reference, 0, 2, references);
-        C("FX", &project->sn_clock.mode, 0, 7, clock_modes);
-        U("BASE DROP ST", &project->sn_clock.base, 0, 48);
-        U("DEPTH ST", &project->sn_clock.depth, 0, 48);
-        U("RATE", &project->sn_clock.rate, 0, 15);
-        U("SYNC", &project->sn_clock.sync, 0, 8);
-        C("RETRIGGER", &project->sn_clock.retrigger, 0, 1, yesno);
+    case UI_CLOCK: {
+        SnClockConfig *c = &project->sn_clock;
+        SnModConfig *m = &c->mod[u->clock_slot];
+        V("BASE CLOCK HZ", &c->base_hz, ITEM_HZ, 1, SN_CLOCK_SYS_HZ / 10, 1, NULL);
+        C("FOLLOW", &c->follow, 0, 2, follows);
+        C("STOP CLOCK", &c->stopped, 0, 1, yesno);
+        U("MOD A/B", &u->clock_slot, 0, 1);
+        C("CLOCK FX", &m->mode, 0, SN_CLOCK_MODES - 1, clock_modes);
+        C("DOMAIN", &m->domain, 0, 3, domains);
+        V("OFFSET", &m->offset, ITEM_I32, INT32_MIN, INT32_MAX, 1, NULL);
+        V("DEPTH", &m->depth, ITEM_I32, INT32_MIN, INT32_MAX, 1, NULL);
+        V("RATE MILLIHZ", &m->rate_millihz, ITEM_U32, 0, UINT32_MAX, 1, NULL);
+        U("SYNC CLOCKS", &m->sync, 0, 8);
+        C("RETRIGGER", &m->retrigger, 0, 1, yesno);
         U("TRIGGER FROM", &project->sn_trigger_source, 0, 7);
+        U("CURVE", &m->curve, 0, 2);
+        A("TRIGGER", ACT_CLOCK_TRIGGER);
+        L("ADVANCED / STATUS", UI_CLOCK_ADVANCED);
         break;
+    }
+    case UI_CLOCK_ADVANCED: {
+        SnClockConfig *c = &project->sn_clock;
+        C("DIRECT PIO", &c->direct, 0, 1, yesno);
+        V("PIO X", &c->period, ITEM_U32, 0, UINT32_MAX, 1, NULL);
+        V("DIV *256", &c->div256, ITEM_U32, SN_CLOCK_DIV_MIN, SN_CLOCK_DIV_MAX, 1, NULL);
+        L("CLOCK", UI_CLOCK);
+        break;
+    }
     case UI_SEQUENCE: {
         Sequence *q = &project->sequence[u->track];
         C("SEQUENCE", &q->enabled, 0, 1, yesno);
@@ -440,9 +486,7 @@ static unsigned build(Ui *u, Item a[48]) {
 #undef A
     return n;
 }
-unsigned ui_count(Ui *u) {
-    return build(u, items);
-}
+unsigned ui_count(Ui *u) { return build(u, items); }
 void ui_init(Ui *u, Settings *s, Engine *e, bool (*save)(void *),
              bool (*calibrate)(void *, unsigned, bool), void *ctx) {
     memset(u, 0, sizeof(*u));
@@ -521,6 +565,8 @@ static void perform(Ui *u, unsigned action, uint32_t now) {
                 error(u);
         } else
             toast(u, "EMPTY TRACK SLOT", now);
+    } else if (action == ACT_CLOCK_TRIGGER) {
+        e->sn_manual_trigger++;
     } else if (action == ACT_PANIC) {
         engine_panic(e, -1);
         toast(u, "ALL NOTES OFF", now);
@@ -604,12 +650,16 @@ void ui_click(Ui *u, unsigned button, bool long_press, uint32_t now) {
     Item *item = &items[u->field];
     if (u->edit) {
         if (button != 1) {
-            int v = u->value +
-                    (button == 2 ? 1 : -1) * item->step * (u->acceleration ? u->acceleration : 1);
+            int64_t v = u->value + (button == 2 ? 1 : -1) * item->step *
+                                       (u->acceleration ? u->acceleration : 1);
             u->value = v < item->min ? item->min : v > item->max ? item->max : v;
             return;
         }
         write_item(item, u->value);
+        if (item->type == ITEM_HZ)
+            u->draft.sn_clock.direct = 0;
+        if (!strcmp(item->label, "PIO X") || !strcmp(item->label, "DIV *256"))
+            u->draft.sn_clock.direct = 1;
         Patch *p = &u->draft.track[u->track].patch;
         if (item->value == &p->chip)
             patch_default(p, (unsigned)u->value);
@@ -651,8 +701,8 @@ void ui_click(Ui *u, unsigned button, bool long_press, uint32_t now) {
         bool local = item->value == &u->track || item->value == &u->slot ||
                      item->value == &u->save_kind || item->value == &u->factory ||
                      item->value == &u->step || item->value == &u->mod ||
-                     item->value == &u->input || item->value == &u->macro ||
-                     item->value == &u->system_draft.brightness;
+                     item->value == &u->input || item->value == &u->clock_slot ||
+                     item->value == &u->macro || item->value == &u->system_draft.brightness;
         if (item->value == &u->system_draft.brightness)
             u->engine->system.brightness = u->system_draft.brightness;
         u->edit = false;
@@ -672,9 +722,9 @@ void ui_click(Ui *u, unsigned button, bool long_press, uint32_t now) {
         return;
     }
     if (item->type == ITEM_ACTION) {
-        if (item->key == ACT_SAVE || item->key == ACT_LOAD_PROJECT || item->key == ACT_LOAD_TRACK ||
-            item->key == ACT_BOOT || item->key == ACT_PATCH || item->key == ACT_POLY_FOCUS ||
-            item->key == ACT_DIRECT10) {
+        if (item->key == ACT_SAVE || item->key == ACT_LOAD_PROJECT ||
+            item->key == ACT_LOAD_TRACK || item->key == ACT_BOOT || item->key == ACT_PATCH ||
+            item->key == ACT_POLY_FOCUS || item->key == ACT_DIRECT10) {
             u->confirm = true;
             u->confirm_yes = false;
             u->action = item->key;
@@ -745,10 +795,11 @@ static void header(Ui *u, const char *s) {
     line(u, 0, 10, 127, 10);
 }
 static void footer(Ui *u, const char *s) {
+    box(u, 0, 54, 128, 10, false);
     line(u, 0, 53, 127, 53);
     text(u, 0, 56, s, 1, true);
 }
-static void item_value(Ui *u, const Item *i, int value, char out[32]) {
+static void item_value(Ui *u, const Item *i, int64_t value, char out[32]) {
     if (i->names) {
         snprintf(out, 32, "%s", i->names[value - i->min]);
         return;
@@ -757,16 +808,16 @@ static void item_value(Ui *u, const Item *i, int value, char out[32]) {
         !strcmp(i->label, "CV TRACK") || !strcmp(i->label, "GATE TRACK")) {
         unsigned c = receive(&u->engine->project, (unsigned)value);
         if (c < 16)
-            snprintf(out, 32, "%u CH%u", value + 1, c + 1);
+            snprintf(out, 32, "%u CH%u", (unsigned)value + 1, c + 1);
         else
-            snprintf(out, 32, "%u OFF", value + 1);
+            snprintf(out, 32, "%u OFF", (unsigned)value + 1);
         return;
     }
     if (!strcmp(i->label, "FACTORY")) {
         Patch p;
         char name[9];
         patch_factory((unsigned)value, &p, name);
-        snprintf(out, 32, "%02d %.8s", value + 1, name);
+        snprintf(out, 32, "%02d %.8s", (int)value + 1, name);
         return;
     }
     if (!strcmp(i->label, "SOURCE") && u->page == UI_MOD) {
@@ -798,7 +849,7 @@ static void item_value(Ui *u, const Item *i, int value, char out[32]) {
         return;
     }
     if (!strcmp(i->label, "TEMPO BPM")) {
-        snprintf(out, 32, "%d", value + 30);
+        snprintf(out, 32, "%lld", (long long)value + 30);
         return;
     }
     if (!strcmp(i->label, "RECEIVE CH") && value == 16) {
@@ -809,7 +860,7 @@ static void item_value(Ui *u, const Item *i, int value, char out[32]) {
                !strcmp(i->label, "RECEIVE CH") || !strcmp(i->label, "INPUT") ||
                !strcmp(i->label, "STEP") || !strcmp(i->label, "MOD SLOT") ||
                !strcmp(i->label, "MACRO");
-    snprintf(out, 32, "%d", value + (one ? 1 : 0));
+    snprintf(out, 32, "%lld", (long long)value + (one ? 1 : 0));
 }
 void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
     memset(u->frame, 0, sizeof(u->frame));
@@ -886,8 +937,9 @@ void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
         static const char *titles[] = {"HOME",           "MENU",          "PLAY / SOUND",
                                        "ADVANCED SOUND", "SN CLOCK: ALL", "SEQUENCE / ARP",
                                        "MOD / MACROS",   "CV / GATE",     "SAVE / LOAD",
-                                       "SYSTEM",         "NAME",          "CONFLICT"};
-        header(u, u->page == UI_SYSTEM ? "SYSTEM V0.10" : titles[u->page]);
+                                       "SYSTEM",         "NAME",          "CONFLICT",
+                                       "CLOCK ADVANCED"};
+        header(u, u->page == UI_SYSTEM ? "SYSTEM V0.11" : titles[u->page]);
         unsigned n = build(u, items);
         if (u->field >= n)
             u->field = 0;
@@ -924,6 +976,23 @@ void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
             }
             footer(u, "OK:OPEN HOLD:BACK");
         }
+    }
+    if (u->page == UI_CLOCK || u->page == UI_CLOCK_ADVANCED) {
+        static const char *states[] = {"VALID", "DEGRADED", "UNAVAILABLE", "STOPPED"};
+        Engine *e = u->engine;
+        if (u->page == UI_CLOCK_ADVANCED && (now / 2000) % 2) {
+            unsigned c = (now / 4000) % 2;
+            snprintf(label, sizeof(label), "%c %u %u %u C%u", c ? 'R' : 'L', e->bus.tone[c][0],
+                     e->bus.tone[c][1], e->bus.tone[c][2], e->sn_clip_mask);
+        } else if (u->page == UI_CLOCK_ADVANCED) {
+            snprintf(label, sizeof(label), "WAIT %llu US Q%u",
+                     (unsigned long long)e->bus.last_wait_us, bus_pending(&e->bus));
+        } else {
+            snprintf(label, sizeof(label), "%.4gHZ %s%s", e->sn_clock_hz,
+                     states[e->sn_clock_state < 4 ? e->sn_clock_state : 2],
+                     e->sn_experimental ? " EXP" : "");
+        }
+        footer(u, label);
     }
     if (u->toast_until && (int32_t)(u->toast_until - now) > 0) {
         box(u, 0, 43, 128, 10, false);

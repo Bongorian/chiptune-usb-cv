@@ -6,7 +6,7 @@
 #define STORE_FLASH_OFFSET (STORE_PHYSICAL_BYTES - 2u * STORE_BANK_BYTES)
 #define STORE_COMMIT 0x43545031u
 typedef struct {
-    uint32_t commit, version, sequence, length, crc;
+    uint32_t commit, version, sequence, length, crc, reserved;
     Settings settings;
 } StoreRecord;
 uint32_t store_crc(const void *data, size_t length);

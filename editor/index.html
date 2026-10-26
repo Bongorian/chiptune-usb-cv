@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Wave Lab v0.10</title>
+    <title>Wave Lab v0.11</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <header>
-      <a class="brand" href="#">WAVE LAB <small>v0.10</small></a
+      <a class="brand" href="#">WAVE LAB <small>v0.11</small></a
       ><span>SAA1099 × SN76489 × 2</span
       ><span id="connection-state">OFFLINE</span
       ><button id="connect">USB MIDI接続</button>
@@ -107,10 +107,27 @@
         <details class="card" id="clock-panel">
           <summary>SN共通クロック</summary>
           <p class="hint">
-            SNの全トーン・ノイズに作用します。実クロックを下げると音程も下がります。SAAは独立8
-            MHzです。
+            SN左右共通。SAAは独立8
+            MHz。MUSICはセント、PHYSICALはHz・比率・PIO周期で変調します。FULLは音程維持を試みますが、10bit分周器の範囲と転送速度で制約されます。
+          </p>
+          <p id="clock-status" role="status"></p>
+          <canvas
+            id="clock-graph"
+            width="800"
+            height="180"
+            style="width: 100%; height: 180px"
+            aria-label="設定から計算したクロック周波数の4秒プレビュー"
+          ></canvas>
+          <p class="hint">
+            設定から計算した4秒間のプレビュー（縦軸は対数）。実測値ではありません。同期プレビューは設定テンポを使います。Audio-rateは表示・250µs更新周期で折り返しが生じます。
           </p>
           <div id="clock-controls" class="controls"></div>
+          <details>
+            <summary>Advanced · PIO / diagnostics / transport</summary>
+            <p id="clock-registers"></p>
+            <div id="clock-advanced-controls" class="controls"></div>
+          </details>
+          <button id="trigger-clock" disabled>FXを手動トリガー</button>
           <button id="read-global" disabled>本体から取得</button
           ><button id="send-global" disabled>共通設定を反映</button>
         </details>

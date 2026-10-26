@@ -58,6 +58,7 @@ jobs:
       - run: python3 firmware/tests/check_pio_clock.py build/firmware/sn_clock.pio.h
       - run: python3 -m pip install -r firmware/tests/requirements-arm.txt
       - run: python3 firmware/tests/check_arm_boot.py build/firmware/chiptune.elf --output build/firmware/Boot_Verification.json
+      - run: python3 firmware/tests/check_arm_clock.py build/firmware/chiptune.elf --output build/firmware/Clock_Verification.json
       - run: python3 firmware/tests/check_arm_runtime.py build/firmware/chiptune.elf build/worst-project.bin build/worst-settings.bin --output build/firmware/Runtime_Verification.json
       - run: python3 firmware/tools/verify_build.py build/firmware --output build/firmware/Verification.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -70,3 +71,4 @@ jobs:
             build/firmware/Boot_Verification.json
             build/firmware/Runtime_Verification.json
             build/firmware/Performance.json
+            build/firmware/Clock_Verification.json

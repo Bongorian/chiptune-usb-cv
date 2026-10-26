@@ -1,10 +1,10 @@
-# Chiptune USB/CV v0.10.0-alpha
+# Chiptune USB/CV v0.11.0-alpha
 
 SAA1099 × 1、SN76489AN × 2、RP2040の専用基板用です。単一の発音エンジン、構成可能な音色、DIRECT/POLY、独立保存とWave Labを備えます。実機検証の対象と手順は[BRINGUP.md](BRINGUP.md)に記載しています。
 
-[UF2](dist/chiptune-v0.10.0-alpha.uf2) / [検証結果](dist/Verification.json) / [実機確認](BRINGUP.md) / [音量・音程の根拠](LEVELS_AND_PITCH.md)
+[UF2](dist/chiptune-v0.11.0-alpha.uf2) / [検証結果](dist/Verification.json) / [実機確認](BRINGUP.md) / [音量・音程の根拠](LEVELS_AND_PITCH.md)
 
-**保存形式はversion 10、SysExはprotocol 2 / schema 10です。旧形式は移行せず無視します。旧USER音色、CV校正、明るさは引き継ぎません。起動時は消去・書き込みを行わず、初期値をRAMへ作ります。既存設定を残す必要がある場合は、新版から保存する前に退避してください。**
+**保存形式はversion 11、SysExはprotocol 3 / schema 11です。旧形式は移行せず無視します。旧USER音色、CV校正、明るさは引き継ぎません。起動時は消去・書き込みを行わず、初期値をRAMへ作ります。既存設定を残す必要がある場合は、新版から保存する前に退避してください。**
 
 ## 最初に弾く
 
@@ -36,7 +36,7 @@ Track 11–14は初期状態OFF。14は物理回路の総数で、初期配置�
 
 PLAY / SOUNDには音色選択、CHIP/WAVEと固有設定、音量、PAN、ミュート、Track ON、モード、声数、ADSR、主要音色パラメータ、受信ch、A2試聴、保存があります。音色はFACTORYで候補を選び、LOAD PATCHで適用します。候補選択だけでは発音を変更しません。
 
-Advancedには音源構造、ENV、ノイズ、レイヤー、移調、LFO、モーフィングを置きます。CLOCK、SEQUENCE/ARP、MOD、CV、SYSTEMはMenuから開きます。SYSTEMの見出しはV0.10です。未保存を示す「*」は操作後の目印であり、個々の保存対象の差分判定ではありません。
+Advancedには音源構造、ENV、ノイズ、レイヤー、移調、LFO、モーフィングを置きます。CLOCK、SEQUENCE/ARP、MOD、CV、SYSTEMはMenuから開きます。SYSTEMの見出しはV0.11です。未保存を示す「*」は操作後の目印であり、個々の保存対象の差分判定ではありません。
 
 競合時は元の構成・別Trackの発音を維持し、理由と代替案を表示します。POLY FOCUSとDIRECT10 RESET、保存・読込・USB更新は本体上で確認画面を出します。
 
@@ -63,7 +63,7 @@ PLAY / SOUNDのCHIPとWAVE、およびWave Labの「発音 / WAVE」で選択し
 
 NOISE、SAA AM、SN METALも選択できます。通常画面ではSAAにSN固有のWhite/Periodic切替や左右デチューンを表示せず、SNにSAA ENV設定を表示しません。固定レートのNoiseでは音程・Glide・Vibrato・Detuneを表示しません。SAAのTone+Noiseに独立した連続ミックス比はありません。
 
-PULSEのパルス幅は固定で、PWMではありません。約6.7%は周期中の短い側の幅を表し、出力の極性は音声段に依存します。音程は`SN reference / (32 × Tone3 divider × 15)`として変換します。10 bit分周のため高音域では量子化誤差が増えます。レジスター設定とノート換算はテスト対象ですが、実チップの波形・極性・実周波数は[実機確認](BRINGUP.md)の対象です。
+PULSEのパルス幅は固定で、PWMではありません。約6.7%は周期中の短い側の幅を表し、出力の極性は音声段に依存します。音程は`追従モードの基準クロック / (32 × Tone3 divider × 15)`として変換します。10 bit分周のため高音域では量子化誤差が増えます。レジスター設定とノート換算はテスト対象ですが、実チップの波形・極性・実周波数は[実機確認](BRINGUP.md)の対象です。
 
 [本体のWAVE選択・固有設定の描画例](assets/ui-waves-v10.png)はCのOLED描画処理から生成しています。
 
@@ -115,7 +115,7 @@ python3 -m http.server 8766 --directory editor
 # http://localhost:8766
 ```
 
-Chrome等のWeb MIDI対応ブラウザーでUSB MIDIを接続し、入出力を選択します。protocol 2/schema 10/firmware 0.10.0の完全一致を確認してから書込を有効にします。未接続でも編集・v0.10 Track JSONの入出力ができます。双方向同期は明示的な読出しと書込応答によります。本体操作を自動で常時取り込む購読型同期はありません。
+Chrome等のWeb MIDI対応ブラウザーでUSB MIDIを接続し、入出力を選択します。protocol 3/schema 11/firmware 0.11.0の完全一致を確認してから書込を有効にします。未接続でも編集・v0.11 Track JSONの入出力ができます。双方向同期は明示的な読出しと書込応答によります。本体操作を自動で常時取り込む購読型同期はありません。
 
 ## ビルドと検証
 
@@ -135,6 +135,7 @@ python3 firmware/tests/check_pio_clock.py build/firmware/sn_clock.pio.h
 python3 -m pip install -r firmware/tests/requirements-arm.txt
 python3 firmware/tests/check_arm_boot.py build/firmware/chiptune.elf --output build/firmware/Boot_Verification.json
 build/tests/performance build/worst-project.bin build/worst-settings.bin > build/Performance.json
+python3 firmware/tests/check_arm_clock.py build/firmware/chiptune.elf --output build/firmware/Clock_Verification.json
 python3 firmware/tests/check_arm_runtime.py build/firmware/chiptune.elf build/worst-project.bin build/worst-settings.bin --output build/firmware/Runtime_Verification.json
 python3 firmware/tools/verify_build.py build/firmware --output build/firmware/Verification.json
 ```
@@ -146,3 +147,9 @@ EDITOR_BRIDGE="$PWD/build/tests/editor_bridge" EDITOR_URL=http://127.0.0.1:8766 
 ```
 
 配布UF2はRP2040 family ID、BINとの一致、全ブロック、USB MIDI記述子、2 MiB容量、設定領域の非重複を検査します。開発用USB VID/PIDのため、製品として配布する際は割り当てを確認してください。ホスト試験とARM命令実行は実機動作の証明ではありません。実時間の最悪値は診断の`tick_max_us`と`tick_overruns`を基板で測定してください。
+
+## v0.11 SN CLOCK
+
+REFERENCE選択をBASE CLOCKのHz入力とAdvanced PIO編集へ変更しました。初期2 MHz、FOLLOWはBASE。RAW／FULLも選べます。MOD A/BはMUSIC（セント）とPHYSICAL（Hz・ppm・周期）を使い、既存FXと追加FXを合成します。停止は進行中の転送完了後です。[詳しい操作・計算式・診断・制約](SN_CLOCK.md)を参照してください。極低速SN転送中は共有バス上のSAA更新も待ちます。
+
+[本体UIのC描画例](assets/ui-v11.png)。Clock画面下端には計算Hzと状態、Advancedにはレジスタ・待ち情報を表示します。

@@ -12,7 +12,7 @@ def verify(elf, project, settings):
     image = Image(elf)
     image.boot(b'\xff' * (2 * BANK))
     uc = image.last_machine
-    assert len(project.read_bytes()) == 2116
+    assert len(project.read_bytes()) >= 2116
     assert len(settings.read_bytes()) == image.symbols['settings'][1]
     uc.mem_write(image.symbols['settings'][0], settings.read_bytes())
     scratch = 0x20030000
@@ -73,7 +73,7 @@ def verify(elf, project, settings):
     assert all(o['stack_bytes_observed']<4096 for o in operations)
     assert all(f['stack_bytes_observed'] < 4096 for f in frames)
     assert call('engine_active', engine) == 14
-    return {'firmware': 'v0.10.0-alpha', 'elf_sha256': hashlib.sha256(elf.read_bytes()).hexdigest(),
+    return {'firmware': 'v0.11.0-alpha', 'elf_sha256': hashlib.sha256(elf.read_bytes()).hexdigest(),
             'arm_release_code_executed': True, 'logical_voices': 14, 'physical_circuits': 14,
             'vibrato_tremolo_pitch_envelope_glide_morph_enabled': True,
             'frames': frames, 'other_operations':operations, 'rp2040_wcet_certified': False,

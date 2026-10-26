@@ -13,9 +13,9 @@
 #define HELD_NOTES 16
 #define SOURCES 2
 #define CV_SCALES 8
-#define SETTINGS_VERSION 10u
-#define PROTOCOL_VERSION 2u
-#define PATCH_SCHEMA 10u
+#define SETTINGS_VERSION 11u
+#define PROTOCOL_VERSION 3u
+#define PATCH_SCHEMA 11u
 
 typedef enum { CHIP_SAA, CHIP_SN } Chip;
 typedef enum { SOURCE_TONE, SOURCE_NOISE, SOURCE_MIX } Source;
@@ -68,7 +68,8 @@ typedef struct {
     uint16_t attack, decay, release, pitch_decay, glide, layer_decay;
     uint8_t chip, source, env, output, layers, layer_source;
     uint8_t shape, env_steps, env_invert, retrigger, noise_rate, noise_type;
-    uint8_t sustain, level, noise_mix, vibrato, tremolo, detune, lfo_rate, lfo_shape, layer_level;
+    uint8_t sustain, level, noise_mix, vibrato, tremolo, detune, lfo_rate, lfo_shape,
+        layer_level;
     int8_t transpose, fine, pitch_amount, env_ratio, layer_interval, stack_interval;
     int8_t noise_pitch, noise_sweep;
 } Patch;
@@ -103,7 +104,7 @@ typedef struct {
     CvRoute cv[2];
     ModRoute mod[MOD_SLOTS];
     SnClockConfig sn_clock;
-    uint8_t mix[4], sn_reference, sn_trigger_source;
+    uint8_t mix[4], sn_trigger_source;
     uint8_t clock_source, clock_policy, gate_clock, tempo, midi_thru;
     uint8_t clock_sequence[8];
 } Project;

@@ -48,6 +48,10 @@ def trace(words, count, end, update=None):
                 target = w & 31
         else:
             raise AssertionError(f'Unexpected instruction {w:04x}')
+        # Collapse the delay loop arithmetically for 32-bit extreme counters.
+        if op == 0 and ((w >> 5) & 7) == 4 and target == pc and y:
+            cycles += y
+            y = 0
         cycles += delay + 1
         pc = 0 if target == len(words) else target
     return edges
@@ -61,21 +65,30 @@ def verify(header):
     assert '#define sn_clock_wrap_target 0' in source
     assert '#define sn_clock_wrap 8' in source
     static_count = transitions = 0
-    for half in range(16, 257):
+    for half in list(range(5, 1025))+[65535, 1000000, 2**32+4]:
         edges = trace(words, half - 5, half * 20)
         spans = [b[0] - a[0] for a, b in zip(edges, edges[1:])]
         assert len(spans) >= 12 and all(n == half for n in spans), (half, spans)
         static_count += 1
-    for old, new in [(16, 256), (256, 16), (32, 64), (64, 32)]:
+    for old, new in [(5, 256), (256, 5), (32, 64), (64, 32)]:
         for when in range(2 * old + 5):
             edges = trace(words, old - 5, 12 * max(old, new), (when, new - 5))
             spans = [b[0] - a[0] for a, b in zip(edges, edges[1:])]
             assert all(n in (old, new) for n in spans), (old, new, when, spans)
             assert spans[-4:] == [new] * 4, (old, new, when, spans)
             transitions += 1
-    return {'assembled_pio_verified': True, 'static_periods': static_count,
+    fractional=0
+    for half in [5,16,32,256,65536,2**32+4]:
+        for divisor in [256,257,4095,4096,65535,16777216]:
+            edges=trace(words,half-5,half*20)
+            ticks=[(c*divisor+255)//256 for c,_ in edges]
+            spans=[b-a for a,b in zip(ticks,ticks[1:])]
+            low=half*divisor//256;high=(half*divisor+255)//256
+            assert all(t in (low,high) for t in spans)
+            fractional+=1
+    return {'fractional_divider_cases':fractional,'assembled_pio_verified' : True, 'static_periods': static_count,
             'transition_phases': transitions, 'duty_percent': 50,
-            'clock_hz_range': [250000, 4000000], 'physical_tested': False}
+            'clock_hz_range': [128000000/(2*(2**32+4)*65536), 12800000], 'divider256_range':[256,16777216], 'extreme_counter_tested':True, 'physical_tested': False}
 
 
 if __name__ == '__main__':

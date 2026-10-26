@@ -1,8 +1,8 @@
 #pragma once
 #include "model.h"
-#include "sound_math.h"
 #include "register_bus.h"
 #include "resources.h"
+#include "sound_math.h"
 typedef struct {
     bool active, held, sustained, releasing;
     uint8_t source, channel, note, velocity, track, slot, pressure;
@@ -49,6 +49,12 @@ typedef struct Engine {
     uint32_t sn_note_trigger, sn_manual_trigger;
     uint32_t test_due, test_off;
     float clock_base, clock_depth;
+    double sn_clock_hz; /* PIO configuration-derived frequency; never a measurement */
+    float sn_pitch_hz, sn_target_hz[2][3];
+    uint32_t sn_clock_period, sn_clock_div256;
+    uint32_t clock_updates, clock_late, clock_max_us, clock_restarts;
+    uint8_t sn_clip_mask, sn_clock_state, sn_fx_flags;
+    bool sn_experimental, sn_stop_pending;
     uint8_t midi_channel[SOURCES];
     uint32_t midi_time[SOURCES];
     bool midi_seen[SOURCES];
@@ -66,7 +72,7 @@ void engine_cv(Engine *e, unsigned input, float volts, bool gate, bool fresh);
 void engine_audition(Engine *e, unsigned track, unsigned note, unsigned mode);
 unsigned engine_active(const Engine *e);
 unsigned engine_track_notes(const Engine *e, unsigned track);
-uint32_t engine_sn_reference(const Project *p);
+float engine_sn_reference(const Engine *e);
 SnClockConfig engine_effective_clock(const Engine *e);
 uint32_t engine_transport_clocks(const Engine *e);
 float engine_quantize(float note, unsigned scale, unsigned root);
@@ -76,7 +82,7 @@ void engine_release_source(Engine *e, unsigned track, unsigned source);
 void sequence_tick(Engine *e, uint32_t dt);
 void sequence_run(Engine *e, bool run, bool restart);
 void sequence_gate(Engine *e, unsigned track);
-uint16_t sn_divider_clock(float hz, uint32_t clock, bool *clamped);
+uint16_t sn_divider_clock(float hz, float clock, bool *clamped);
 uint8_t sn_attenuation(float gain);
 
 void saa_note_register(float note, uint8_t *oct, uint8_t *reg, bool *clamped);

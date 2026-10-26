@@ -1,0 +1,18 @@
+Chiptune USB/CV v0.11.0-alpha — dedicated RP2040/SAA1099/SN76489AN board
+
+UF2: chiptune-v0.11.0-alpha.uf2
+Settings 11 / SysEx protocol 3 / schema 11. Use the matching editor/ files.
+Old settings are ignored without boot erase/write; explicit saves use dual banks.
+
+SN common clock: Hz/direct PIO, RAW/BASE/FULL, two modulation slots.
+The generator range is calculated, not a measured IC operating range. Clocks
+above the manufacturer's range are experimental. READY is unconnected.
+An SN byte holds the shared data bus until its clock budget completes; SAA
+register updates also wait. USB/MIDI/CV/OLED processing continues.
+
+Reports describe software checks with stubbed hardware/ROM/time where noted.
+Physical sound, GPIO timing, out-of-spec clocks, power-loss retention and
+RP2040 1ms/250us worst-case execution times have not been measured.
+See firmware/README.md, SN_CLOCK.md and BRINGUP.md in the source repository.
+Development USB VID/PID is not an assigned production identity.
+LICENSES and THIRD_PARTY_NOTICES cover bundled runtimes.

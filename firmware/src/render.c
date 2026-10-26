@@ -1,9 +1,7 @@
 #include "engine.h"
 #include <math.h>
 #include <string.h>
-static float bound(float x, float lo, float hi) {
-    return x < lo ? lo : x > hi ? hi : x;
-}
+static float bound(float x, float lo, float hi) { return x < lo ? lo : x > hi ? hi : x; }
 static float source_value(Engine *e, const ModRoute *m) {
     if (m->source == 1 || m->source == 2)
         return e->cv_valid[m->source - 1] ? e->cv[m->source - 1] : 0;
@@ -12,9 +10,9 @@ static float source_value(Engine *e, const ModRoute *m) {
         for (unsigned s = 0; s < SOURCES; s++)
             for (unsigned c = 0; c < 16; c++)
                 if (e->project.route[s][c] & (1u << m->track)) {
-                    float v =
-                        (m->source == 3 ? e->channel[s][c].modulation : e->channel[s][c].pressure) /
-                        127.0f;
+                    float v = (m->source == 3 ? e->channel[s][c].modulation
+                                              : e->channel[s][c].pressure) /
+                              127.0f;
                     if (v > value)
                         value = v;
                 }
@@ -104,11 +102,16 @@ static uint8_t saa_gain(float gain, float pan, unsigned output) {
 }
 static void sn_pitch(Engine *e, unsigned c, unsigned n, float hz) {
     bool clamp;
-    unsigned divider = sn_divider_clock(hz, engine_sn_reference(&e->project), &clamp);
+    unsigned divider = sn_divider_clock(hz, engine_sn_reference(e), &clamp);
     bus_tone(&e->bus, c, n, divider);
+    e->sn_target_hz[c][n] = hz;
+    if (clamp)
+        e->sn_clip_mask |= (uint8_t)(1u << (c * 3 + n));
     e->pitch_clamps += clamp;
 }
 void render_tick(Engine *e, uint32_t dt) {
+    e->sn_clip_mask = 0;
+    memset(e->sn_target_hz, 0, sizeof(e->sn_target_hz));
     memset(e->pitch_mod, 0, sizeof(e->pitch_mod));
     memset(e->pan_mod, 0, sizeof(e->pan_mod));
     e->clock_base = e->clock_depth = 0;
@@ -127,8 +130,8 @@ void render_tick(Engine *e, uint32_t dt) {
         for (unsigned input = 0; input < 2; input++)
             if (e->cv_valid[input] && e->project.cv[input].mode == 2 &&
                 e->project.cv[input].track == t && e->project.cv[input].parameter == MOD_MORPH)
-                morph = (unsigned)bound((float)morph + e->cv[input] * e->project.cv[input].amount,
-                                        0, 100);
+                morph = (unsigned)bound(
+                    (float)morph + e->cv[input] * e->project.cv[input].amount, 0, 100);
         if (a->morph_target && e->library)
             patch_morph(&e->effective[t], &a->patch, &e->library->patches[a->morph_target - 1],
                         morph);
@@ -175,7 +178,8 @@ void render_tick(Engine *e, uint32_t dt) {
         else
             v->pitch = v->target;
         const Channel *c = v->source < SOURCES ? &e->channel[v->source][v->channel] : NULL;
-        float progress = 1 - bound((float)v->elapsed / (p->pitch_decay ? p->pitch_decay : 1), 0, 1);
+        float progress =
+            1 - bound((float)v->elapsed / (p->pitch_decay ? p->pitch_decay : 1), 0, 1);
         float pitch = v->pitch + p->transpose + p->fine * 0.01f + e->pitch_mod[t] +
                       p->pitch_amount * progress + p->vibrato * 0.01f * e->lfo[t];
         if (c)
@@ -187,8 +191,8 @@ void render_tick(Engine *e, uint32_t dt) {
         gain *= 1 - p->tremolo * 0.01f * (.5f + .5f * e->lfo[t]);
         if (a->mute)
             gain = 0;
-        float pan =
-            bound(a->pan * 0.01f + e->pan_mod[t] + (c ? (c->pan - 64) * (1.0f / 127.0f) : 0), 0, 1);
+        float pan = bound(
+            a->pan * 0.01f + e->pan_mod[t] + (c ? (c->pan - 64) * (1.0f / 127.0f) : 0), 0, 1);
         uint16_t out = e->plan.outputs[t][v->slot];
         float noise_hz = p->chip == CHIP_SN && p->source != SOURCE_TONE && p->noise_rate == 3
                              ? midi_note_hz(pitch + p->noise_pitch + p->noise_sweep * progress)
@@ -224,8 +228,8 @@ void render_tick(Engine *e, uint32_t dt) {
                             if (p->noise_rate == 3) {
                                 bool nc;
                                 saa_pitch(e, group * 3,
-                                          pitch + p->noise_pitch + p->noise_sweep * progress, oct,
-                                          &nc);
+                                          pitch + p->noise_pitch + p->noise_sweep * progress,
+                                          oct, &nc);
                             }
                         }
                         if (p->env == ENV_OSC && p->shape >= 2 && clamp)
@@ -260,8 +264,8 @@ void render_tick(Engine *e, uint32_t dt) {
                             colour |= (uint8_t)(p->noise_rate << (group * 4));
                             if (p->noise_rate == 3)
                                 saa_pitch(e, group * 3,
-                                          pitch + p->noise_pitch + p->noise_sweep * progress, oct,
-                                          &clamp);
+                                          pitch + p->noise_pitch + p->noise_sweep * progress,
+                                          oct, &clamp);
                         }
                     }
                     amp[n] = saa_gain(gain, pan, p->output);
@@ -291,9 +295,11 @@ void render_tick(Engine *e, uint32_t dt) {
                     bus_noise(&e->bus, side, (p->noise_type ? 4u : 0u) | p->noise_rate, false);
                     if (p->noise_rate == 3)
                         sn_pitch(e, side, 2,
-                                 noise_hz * (p->noise_type ? 32.0f : 15.0f) * fast_ratio(detune));
+                                 noise_hz * (p->noise_type ? 32.0f : 15.0f) *
+                                     fast_ratio(detune));
                     if (p->source == SOURCE_MIX) {
-                        volume[side][2] = sn_attenuation(side_gain * (1 - p->noise_mix * 0.01f));
+                        volume[side][2] =
+                            sn_attenuation(side_gain * (1 - p->noise_mix * 0.01f));
                         side_gain *= p->noise_mix * 0.01f;
                     }
                     volume[side][3] = sn_attenuation(side_gain);

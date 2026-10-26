@@ -67,10 +67,13 @@ test("MIDI10 defaults have independent direct tracks", () => {
 });
 test("wire schema and checksum reject incompatible versions", () => {
   const b = frame(0, 1, [SCHEMA]);
-  assert.equal(b[4], 2);
+  assert.equal(b[4], 3);
   const r = bridge([b])[0];
   assert.equal(r.status, 0);
   verifyHello(r.data);
+  const differentPatchVersion = [...r.data];
+  differentPatchVersion[2] = 1;
+  assert.throws(() => verifyHello(differentPatchVersion));
   assert.throws(() => verifyHello([0, 9, 0, 1, 9]));
   const bad = Uint8Array.from([240, 125, 67, 84, 1, 1, 64, 0, 0, 247]);
   assert.throws(() => parseFrame(bad));
@@ -83,7 +86,7 @@ test("real C Track roundtrip including signed fields and MIDI ch16", () => {
   t.patch.pitch_amount = -48;
   t.macro = [-100, 100, 0, 17];
   const r = bridge([
-    frame(0, 1, [10]),
+    frame(0, 1, [SCHEMA]),
     frame(2, 2, encodeTrack(t)),
     frame(1, 3, [0]),
   ]);
@@ -99,7 +102,7 @@ test("mutations before handshake and schema mismatch cannot change C state", () 
     frame(2, 1, encodeTrack(t)),
     frame(0, 2, [9]),
     frame(2, 3, encodeTrack(t)),
-    frame(0, 4, [10]),
+    frame(0, 4, [SCHEMA]),
     frame(1, 5, [0]),
   ]);
   assert.deepEqual(
@@ -115,7 +118,7 @@ test("sequence and CV signed endpoints roundtrip through firmware", () => {
   const c = newCv(0);
   c.amount = -100;
   const r = bridge([
-    frame(0, 1, [10]),
+    frame(0, 1, [SCHEMA]),
     frame(9, 2, encodeSequence(q)),
     frame(11, 3, encodeCv(c)),
   ]);
@@ -127,7 +130,7 @@ test("resource errors preserve prior voices and explain alternatives", () => {
   const t = newTrack(0, factories);
   t.patch = structuredClone(factories[18].patch);
   const r = bridge([
-    frame(0, 1, [10]),
+    frame(0, 1, [SCHEMA]),
     frame(2, 2, encodeTrack(t)),
     frame(1, 3, [0]),
   ]);
@@ -157,12 +160,12 @@ test("capabilities and morph topology reflect real chips", () => {
 });
 
 test("global tempo 240 BPM and Gate2 roundtrip without 7-bit truncation", () => {
-  const read = bridge([frame(0, 1, [10]), frame(4, 2)])[1];
+  const read = bridge([frame(0, 1, [SCHEMA]), frame(4, 2)])[1];
   const v = decodeGlobal(read.data);
-  v[10] = 210;
-  v[24] = 1;
+  v[3] = 210;
+  v[17] = 1;
   const r = bridge([
-    frame(0, 1, [10]),
+    frame(0, 1, [SCHEMA]),
     frame(5, 2, encodeGlobal(v)),
     frame(4, 3),
   ]);
@@ -172,7 +175,7 @@ test("global tempo 240 BPM and Gate2 roundtrip without 7-bit truncation", () => 
 
 test("POLY focus disables only the same chip and returns assigned poly voices", () => {
   const r = bridge([
-    frame(0, 1, [10]),
+    frame(0, 1, [SCHEMA]),
     frame(24, 2, [6]),
     frame(1, 3, [0]),
     frame(1, 4, [7]),

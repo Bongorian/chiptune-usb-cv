@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 static RegisterBus bus;
-static uint32_t now, started, minimum;
+static uint64_t now, started, minimum, cycles, started_cycles;
 static bool held;
 static uint8_t chip, byte, latch[2], saa[32];
 static uint16_t sn[2][8];
@@ -24,10 +24,12 @@ static void begin(void *ctx, uint8_t c, uint8_t value) {
     chip = c;
     byte = value;
     started = now;
+    started_cycles = cycles;
 }
 static void end(void *ctx) {
     (void)ctx;
-    assert(held && now - started >= minimum);
+    assert(held && now - started >= minimum &&
+           cycles - started_cycles >= SN_CLOCK_TRANSFER_CYCLES);
     held = false;
     if (byte & 128) {
         latch[chip] = (byte >> 4) & 7;
@@ -36,8 +38,9 @@ static void end(void *ctx) {
         sn[chip][latch[chip]] = (uint16_t)((sn[chip][latch[chip]] & 15) | ((byte & 63) << 4));
 }
 static void service(unsigned wait) {
-    minimum = wait;
-    bus_service(&bus, now, wait);
+    minimum = 0;
+    cycles += 160u / wait;
+    bus_service(&bus, now, cycles, true);
     now += 4;
 }
 static void drain(unsigned wait) {
@@ -46,7 +49,7 @@ static void drain(unsigned wait) {
     assert(!bus_pending(&bus) && !held);
 }
 int main(void) {
-    bus_init(&bus, (SoundSink){saa_write, begin, end, NULL});
+    bus_init(&bus, (SoundSink){saa_write, begin, end, NULL, NULL});
     drain(16);
     bus_tone(&bus, 0, 0, 568);
     bus_volume(&bus, 0, 0, 3);
@@ -83,12 +86,13 @@ int main(void) {
     bus_tone(&bus, 0, 1, 222);
     while (!bus.busy)
         service(16);
-    uint32_t start = bus.started;
+    uint64_t start = bus.started;
     for (unsigned i = 0; i < 34; i++)
         service(136);
     assert(now - start >= 136);
     drain(136);
     assert(bus.max_pending <= 50);
-    puts("PASS bus: coalescing, byte-pair atomicity, reset events, panic priority, asynchronous "
-         "16–136us hold and clock transitions");
+    puts(
+        "PASS bus: coalescing, byte-pair atomicity, reset events, panic priority, asynchronous "
+        "cycle-counted hold and clock transitions");
 }

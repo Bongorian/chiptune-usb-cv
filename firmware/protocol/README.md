@@ -1,15 +1,15 @@
-# Wave Lab USB MIDI protocol 2 / schema 10
+# Wave Lab USB MIDI protocol 3 / schema 11
 
-v0.10.0専用。USB MIDI cable 0のみ。TRSは通常MIDI用で、エディタ要求を実行しません。旧protocol 1、旧JSON、旧保存形式との互換処理はありません。`0x7D`は開発用の非商用SysEx IDです。
+v0.11.0専用。USB MIDI cable 0のみ。TRSは通常MIDI用で、エディタ要求を実行しません。旧protocol 1、旧JSON、旧保存形式との互換処理はありません。`0x7D`は開発用の非商用SysEx IDです。
 
 ```
-request:  F0 7D 43 54 02 id cmd       payload... checksum F7
-response: F0 7D 43 54 02 id (cmd|40h) status data... checksum F7
+request:  F0 7D 43 54 03 id cmd       payload... checksum F7
+response: F0 7D 43 54 03 id (cmd|40h) status data... checksum F7
 ```
 
 F0/F7以外は7 bit。7Dからchecksumまでの和をmod128で0にします。一度に1要求、応答後に次の要求を送ります。最大192 bytes、部分フレームは2秒の無通信で破棄。途中のリアルタイムメッセージはフレームへ含めません。id=0–127、cmd=0–63。応答のstatusは0=成功、1=形式/バージョン、2=範囲/資源/構造、3=UI編集中または音源電源OFF、4=保存失敗、5=未交渉/schema不一致です。
 
-書込前に必ずHELLOへ`[10]`を送信し、応答のfirmware=0.10.0/protocol=2/schema=10を完全一致で確認します。設定変更、保存、試聴、PANIC、テンプレート、POLY FOCUSには交渉済み状態が必要です。受信側も交渉前の変更を拒否します。読出しだけでは交渉済みになりません。USBポート再接続時は再交渉してください。
+書込前に必ずHELLOへ`[11]`を送信し、応答のfirmware=0.11.0/protocol=3/schema=11を完全一致で確認します。設定変更、保存、試聴、PANIC、テンプレート、POLY FOCUSには交渉済み状態が必要です。受信側も交渉前の変更を拒否します。読出しだけでは交渉済みになりません。USBポート再接続時は再交渉してください。
 
 整数の表記:
 
@@ -24,7 +24,7 @@ F0/F7以外は7 bit。7Dからchecksumまでの和をmod128で0にします。�
 
 | cmd | 要求payload | 成功data |
 |---|---|---|
-| 0 HELLO | `[10]` | `[0,10,0,2,10,14,16,16,4,23,F]` |
+| 0 HELLO | `[11]` | `[0,11,0,3,11,14,16,16,4,23,F]` |
 | 1 GET_TRACK | `[track]` | Track＋割当マスク |
 | 2 SET_TRACK | Track（割当マスクなし） | Track＋割当マスク |
 | 3 SAVE | `[kind,track,slot]` kind=0Patch/1Track/2Project/3System | 空 |
@@ -69,15 +69,41 @@ mode=0DIRECT/1POLY/2LEGATO、voices=1–6、level/pan/morph=0–100、morph_targ
 
 マスクのbit0–5=SAA1–6、6–8=SN L1–3、9–11=SN R1–3、12=SN L noise、13=SN R noise。resources−outputsが無音の専用クロックです。声数分の和集合を返します。POLY FOCUSは同じチップの他TrackをOFFにする明示操作で、別チップの発音は保持します。
 
-## Global（26 bytes）
+## Global（19 bytes）
 
 ```
-sn_reference mode base depth rate sync retrigger trigger_source clock_source clock_policy
-u14(tempo_minus_30)
+trigger_source clock_source clock_policy u14(tempo_minus_30)
 midi_thru mix[4] clock_sequence[8] gate_clock_input
 ```
 
-`sn_reference`=0 4MHz/1 2MHz/2 1MHz。tempoは0–210で30–240 BPM。tempoだけは2 bytesです（7 bitへ切り詰めないこと）。gate_clock_input=0/1。mix=Master/SAA/SN L/SN R、各0–100。clock_sequenceも0–100。
+tempo=0–210で30–240 BPM。mix=Master/SAA/SN L/SN R、各0–100。clock_sequenceも0–100。クロック設定は独立したGET/SET_CLOCKで扱います。
+
+## Clock（69 bytes）
+
+| cmd | 要求 | 成功data |
+|---|---|---|
+| 25 GET_CLOCK | 空 | Clock |
+| 26 SET_CLOCK | Clock | 適用後Clock |
+| 27 CLOCK_DIAGNOSTICS | 空 | Clock diagnostics |
+| 28 CLOCK_TRIGGER | 空 | 空（両スロット手動トリガー） |
+
+`f64(v)`はIEEE754 little-endian 8 bytesをそれぞれu14で送った16 bytes。各u14は0〜255を検証。符号付き32 bitは2の補数ビット列をu32へ入れます。u32の5番目は0〜15のみ。C構造体の生コピーは使用しません。
+
+Clock = `f64(base_hz), u32(period_X), u32(div256), direct, stopped, follow, ModA, ModB`。
+Mod（20 bytes）= `mode, domain, sync, retrigger, curve, u32(offset), u32(depth), u32(rate_millihz)`。
+follow=0RAW/1BASE/2FULL。domain=0MUSIC cents/1Hz/2ratio ppm/3PIO half-period cycles。その他の意味・波形番号は[SN_CLOCK.md](../SN_CLOCK.md)。
+
+Clock diagnostics（171 bytes）:
+
+```
+f64(base_calculated_hz), f64(running_calculated_hz), u32(actual_X), u32(actual_div256)
+state experimental follow stop_pending clip_mask pending_registers
+f64(last_wait_us) f64(max_wait_us) f64(active_wait_us)
+u32(updates) u32(late_updates) u32(max_fx_us) u32(timing_restarts)
+u14(desired_divider[6]) u14(sent_divider[6]) u32(target_float_bits[6]) fx_flags
+```
+
+state=0VALID/1DEGRADED/2UNAVAILABLE/3STOPPED。6トーンはL1,L2,L3,R1,R2,R3。clip_maskも同じ順のbit0〜5。targetはIEEE754 binary32ビット列で、0は非使用。sentが未設定の65535なら音程誤差を算出しません。Hzは設定からの計算で、実測値ではありません。待ち時間はµsのbinary64で長期転送を表現します。更新・遅延等のカウンタは32 bitで周回します。
 
 ## Sequence / CV / Matrix
 
@@ -107,3 +133,5 @@ Project読込・テンプレートは全体を停止します。Patch/Track構�
 ## WAVE表示と能力判定
 
 SQUARE / PULSE / ENV WAVE / TONE + NOISE等の表示は、chip/source/env/noise_rate/noise_type/layersから導出します。Patchペイロードに波形番号を追加しません。PULSEはchip=SN、source=Noise、noise_type=Periodic、noise_rate=Tone3です。Wave Labのfactory.jsonにはCモデルから導出したwave/featuresとwaveformsの変換例を収録し、WebとCの契約テストに使用します。これらは既存Patchフィールドに対するメタデータで、Fや保存形式は変わりません。
+
+Clock diagnosticsの末尾fx_flagsはbit0=直近FX更新の遅延、bit1=FX RATEが更新周期のNyquistを超過。DEGRADEDの要因として表示します。

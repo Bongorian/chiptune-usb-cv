@@ -1,5 +1,5 @@
-#include "tusb.h"
 #include "pico/unique_id.h"
+#include "tusb.h"
 #include <string.h>
 static const tusb_desc_device_t device = {.bLength = sizeof(tusb_desc_device_t),
                                           .bDescriptorType = TUSB_DESC_DEVICE,
@@ -10,7 +10,7 @@ static const tusb_desc_device_t device = {.bLength = sizeof(tusb_desc_device_t),
                                           .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
                                           .idVendor = CHIPTUNE_USB_VID,
                                           .idProduct = CHIPTUNE_USB_PID,
-                                          .bcdDevice = 0x0010,
+                                          .bcdDevice = 0x0011,
                                           .iManufacturer = 1,
                                           .iProduct = 2,
                                           .iSerialNumber = 3,
@@ -18,9 +18,7 @@ static const tusb_desc_device_t device = {.bLength = sizeof(tusb_desc_device_t),
 static const uint8_t config[] = {
     TUD_CONFIG_DESCRIPTOR(1, 2, 0, TUD_CONFIG_DESC_LEN + TUD_MIDI_DESC_LEN, 0x00, 500),
     TUD_MIDI_DESCRIPTOR(0, 0, 0x01, 0x81, 64)};
-const uint8_t *tud_descriptor_device_cb(void) {
-    return (const uint8_t *)&device;
-}
+const uint8_t *tud_descriptor_device_cb(void) { return (const uint8_t *)&device; }
 const uint8_t *tud_descriptor_configuration_cb(uint8_t index) {
     (void)index;
     return config;
