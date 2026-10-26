@@ -1,4 +1,4 @@
-26a3193a295cc68ab0689fef0fb4073f1ad08cdc2eaec7a50bb0ae2e4f03c2bf  .github/workflows/firmware.yml
+576b373e87412cf3150202458755d0377895750cc5ce516fe38f5ec32edde3a7  .github/workflows/firmware.yml
 58a35e647e684b4e8df01e3a0947bde3a7bd8e007513ef5c70ba73e201ebad92  .github/workflows/pages.yml
 00d00257b2acfdfcdf30237a403d6c8978207ff9b6be88491925879cdf78c26a  editor/app.js
 75b6f928884b4d0650b7e7858b242fdfe0ae97c58f9e17c36545eecb1af37a74  editor/core.js

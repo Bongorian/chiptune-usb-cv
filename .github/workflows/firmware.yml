@@ -40,7 +40,16 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - run: sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update && sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-dev
+      - name: Install ARM toolchain from Ubuntu archive
+        run: |
+          cat > /tmp/chiptune-ubuntu.list <<'EOF'
+          deb https://archive.ubuntu.com/ubuntu noble main universe
+          deb https://archive.ubuntu.com/ubuntu noble-updates main universe
+          deb https://security.ubuntu.com/ubuntu noble-security main universe
+          EOF
+          chiptune_apt_options=(-o Dir::Etc::sourcelist=/tmp/chiptune-ubuntu.list -o Dir::Etc::sourceparts=- -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
+          sudo apt-get "${chiptune_apt_options[@]}" update
+          sudo apt-get "${chiptune_apt_options[@]}" install -y --no-install-recommends gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-dev
       - run: bash firmware/tools/bootstrap_sdk.sh .deps/pico-sdk
       - run: cmake -S firmware -B build/firmware -G Ninja -DPICO_SDK_PATH="$PWD/.deps/pico-sdk" -DCMAKE_BUILD_TYPE=Release
       - run: cmake --build build/firmware -j4
