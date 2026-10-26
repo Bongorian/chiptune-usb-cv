@@ -34,7 +34,7 @@ Track 11–14は初期状態OFF。14は物理回路の総数で、初期配置�
 | − / ＋長押し | 数値の連続変更・加速 |
 | −と＋を約0.9秒保持 | PANIC |
 
-PLAY / SOUNDには音色選択、音量、PAN、ミュート、Track ON、モード、声数、ADSR、主要音色パラメータ、受信ch、A2試聴、保存があります。音色はFACTORYで候補を選び、LOAD PATCHで適用します。候補選択だけでは発音を変更しません。
+PLAY / SOUNDには音色選択、CHIP/WAVEと固有設定、音量、PAN、ミュート、Track ON、モード、声数、ADSR、主要音色パラメータ、受信ch、A2試聴、保存があります。音色はFACTORYで候補を選び、LOAD PATCHで適用します。候補選択だけでは発音を変更しません。
 
 Advancedには音源構造、ENV、ノイズ、レイヤー、移調、LFO、モーフィングを置きます。CLOCK、SEQUENCE/ARP、MOD、CV、SYSTEMはMenuから開きます。SYSTEMの見出しはV0.10です。未保存を示す「*」は操作後の目印であり、個々の保存対象の差分判定ではありません。
 
@@ -51,6 +51,21 @@ Advancedには音源構造、ENV、ノイズ、レイヤー、移調、LFO、モ
 Wave LabにはMIDI10、SAA 6声POLY、SAA Tone＋ENVの配置テンプレートもあります。テンプレートとProject読込は全体の演奏を停止して配置を置き換えます。
 
 ## 音色の能力と制約
+
+PLAY / SOUNDのCHIPとWAVE、およびWave Labの「発音 / WAVE」で選択します。選択中の構成から使用可能な設定を判定します。
+
+| 表示 | 音源 | 発音の定義と主要設定 |
+|---|---|---|
+| SQUARE 50% | SAA / SN | 通常トーン。各発振器のデューティ比は50%固定。SNはToneレイヤーとステレオ時の左右デチューン |
+| PULSE 約6.7% | SN | Periodic NoiseをTone 3で駆動。周期の約1/15のパルス。Tone 3とNoiseを予約し、パルス移調・スイープ・左右デチューンを設定 |
+| ENV WAVE | SAA | ハードウェアENVによる波形表現。8形状、8/16段、右反転、再トリガー、補助レイヤー |
+| TONE + NOISE | SAA | 同じ出力のToneとNoiseを混合。共有ノイズ速度、Key Track時のノイズ移調・スイープ |
+
+NOISE、SAA AM、SN METALも選択できます。通常画面ではSAAにSN固有のWhite/Periodic切替や左右デチューンを表示せず、SNにSAA ENV設定を表示しません。固定レートのNoiseでは音程・Glide・Vibrato・Detuneを表示しません。SAAのTone+Noiseに独立した連続ミックス比はありません。
+
+PULSEのパルス幅は固定で、PWMではありません。約6.7%は周期中の短い側の幅を表し、出力の極性は音声段に依存します。音程は`SN reference / (32 × Tone3 divider × 15)`として変換します。10 bit分周のため高音域では量子化誤差が増えます。レジスター設定とノート換算はテスト対象ですが、実チップの波形・極性・実周波数は[実機確認](BRINGUP.md)の対象です。
+
+[本体のWAVE選択・固有設定の描画例](assets/ui-waves-v10.png)はCのOLED描画処理から生成しています。
 
 | 音源 | 実装した発音 |
 |---|---|

@@ -2,7 +2,7 @@
 
 ## Model and ownership
 
-`model.h` is the only Patch/Track/Project/System definition. A Patch composes chip, source, hardware envelope, layers and numerical modulation. Track adds mode, voice budget and performance controls. Project owns routes and event generators. Settings contains only the saved snapshot/library; `Engine.system` is the live System. Patch/Track/Project saves cannot accidentally persist unsaved brightness or calibration.
+`model.h` is the only Patch/Track/Project/System definition. A Patch composes chip, source, hardware envelope, layers and numerical modulation. Track adds mode, voice budget and performance controls. `PatchWave` is a derived musical selector, not another stored discriminator. `patch_features` drives chip-specific OLED controls; the generated catalog exports the same wave/features and canonical conversions for Web contract tests. Project owns routes and event generators. Settings contains only the saved snapshot/library; `Engine.system` is the live System. Patch/Track/Project saves cannot accidentally persist unsaved brightness or calibration.
 
 `resources.c` reserves 14 physical circuits: SAA 1–6, SN L1–3, SN R1–3, SN L noise, SN R noise. `outputs` describes audible circuits; `resources` includes silent clocks. Allocation happens transactionally on edits, outside the audio tick. Existing tracks with unchanged structure retain their allocation; failed edits leave voices and project intact. A complete project load explicitly starts a new plan and silences playback. POLY FOCUS is the explicit same-chip consolidation action.
 

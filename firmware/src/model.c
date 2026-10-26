@@ -75,6 +75,90 @@ bool patch_valid(const Patch *p) {
         return false;
     return true;
 }
+PatchWave patch_wave(const Patch *p) {
+    if (p->chip == CHIP_SAA && p->env)
+        return p->env == ENV_OSC ? WAVE_ENV : WAVE_AM;
+    if (p->source == SOURCE_MIX)
+        return p->chip == CHIP_SAA ? WAVE_TONE_NOISE : WAVE_METAL;
+    if (p->source == SOURCE_NOISE)
+        return p->chip == CHIP_SN && p->noise_rate == 3 && !p->noise_type ? WAVE_PULSE : WAVE_NOISE;
+    return WAVE_SQUARE;
+}
+bool patch_wave_available(unsigned chip, unsigned wave) {
+    if (chip > CHIP_SN || wave >= WAVE_COUNT)
+        return false;
+    if (wave == WAVE_SQUARE || wave == WAVE_NOISE)
+        return true;
+    return chip == CHIP_SAA ? wave == WAVE_ENV || wave == WAVE_TONE_NOISE || wave == WAVE_AM
+                            : wave == WAVE_PULSE || wave == WAVE_METAL;
+}
+bool patch_set_wave(Patch *p, unsigned wave) {
+    if (!patch_wave_available(p->chip, wave) || !patch_valid(p))
+        return false;
+    if (patch_wave(p) == wave)
+        return true;
+    Patch q = *p;
+    q.env = ENV_OFF;
+    q.source = SOURCE_TONE;
+    q.layers = 1;
+    q.noise_pitch = q.noise_sweep = 0;
+    if (wave == WAVE_PULSE || wave == WAVE_METAL) {
+        q.source = wave == WAVE_PULSE ? SOURCE_NOISE : SOURCE_MIX;
+        q.noise_rate = 3;
+        q.noise_type = 0;
+        q.noise_mix = 50;
+    } else if (wave == WAVE_ENV || wave == WAVE_AM) {
+        q.env = wave == WAVE_ENV ? ENV_OSC : ENV_AM;
+        if (q.shape < 2)
+            q.shape = 5;
+    } else if (wave == WAVE_TONE_NOISE || wave == WAVE_NOISE) {
+        q.source = wave == WAVE_TONE_NOISE ? SOURCE_MIX : SOURCE_NOISE;
+        q.noise_rate = 1;
+        q.noise_type = 1;
+    }
+    if (!patch_valid(&q))
+        return false;
+    *p = q;
+    return true;
+}
+uint32_t patch_features(const Patch *p) {
+    bool noise = p->source != SOURCE_TONE ||
+                 (p->chip == CHIP_SAA && p->layers > 1 && p->layer_source != SOURCE_TONE);
+    bool tracked = noise && p->noise_rate == 3;
+    bool layer_pitch =
+        p->layers > 1 && (p->chip == CHIP_SN || p->layer_source != SOURCE_NOISE || tracked);
+    bool pitch = (p->source != SOURCE_NOISE && p->env != ENV_OSC) || (p->env && p->shape >= 2) ||
+                 tracked || layer_pitch;
+    uint32_t f = pitch ? PATCH_F_PITCH : 0;
+    if (p->output == OUTPUT_STEREO)
+        f |= PATCH_F_PAN;
+    if (p->chip == CHIP_SAA && p->env)
+        f |= PATCH_F_ENV;
+    if (p->chip == CHIP_SAA && p->env == ENV_AM && p->shape >= 2)
+        f |= PATCH_F_ENV_RATIO;
+    if (noise)
+        f |= PATCH_F_NOISE;
+    if (noise && p->chip == CHIP_SN)
+        f |= PATCH_F_NOISE_TYPE;
+    if (tracked)
+        f |= PATCH_F_NOISE_TRACK;
+    if (p->chip == CHIP_SN && p->source == SOURCE_MIX)
+        f |= PATCH_F_NOISE_MIX;
+    if ((p->chip == CHIP_SN && p->source == SOURCE_TONE) ||
+        (p->chip == CHIP_SAA && p->env == ENV_OSC))
+        f |= PATCH_F_LAYERS;
+    if (layer_pitch)
+        f |= PATCH_F_LAYER_PITCH;
+    if (p->chip == CHIP_SN && p->layers == 3)
+        f |= PATCH_F_STACK;
+    if (p->chip == CHIP_SAA && p->layers > 1)
+        f |= PATCH_F_SAA_LAYER;
+    if (p->chip == CHIP_SN && p->output == OUTPUT_STEREO && pitch)
+        f |= PATCH_F_DETUNE;
+    if (patch_wave(p) == WAVE_PULSE)
+        f |= PATCH_F_PULSE;
+    return f;
+}
 bool patch_same_structure(const Patch *a, const Patch *b) {
     if (a->chip != b->chip || a->source != b->source || a->env != b->env ||
         a->output != b->output || a->layers != b->layers)

@@ -9,7 +9,7 @@ python3 -m http.server 8766 --directory editor
 
 未接続でも14 Trackの音作りとv0.10 Track JSONの保存・読み込みができます。接続にはWeb MIDI対応ブラウザーとSysEx許可が必要です。MIDIの入力・出力を選択し、firmware 0.10.0 / protocol 2 / schema 10が一致した場合だけ本体書込を有効にします。旧ファームウェアには設定を送りません。
 
-通常画面では演奏モード、音量、PAN、音源、ADSR、ピッチ変化、グライド、ビブラート等を操作します。AdvancedではENVの形状、回路構造、層、音域、個別USB/TRSチャンネル、マクロ、Morphを編集します。機能の表示は音源能力に従い、使用回路の最大数と本体が割り当てた出力／専用クロックを表示します。ADSR図は模式図です。
+通常画面では演奏モード、音量、PAN、Chipと発音/WAVE、ADSRなどを操作します。WAVEはSQUARE 50%（SAA/SN）、PULSE 約6.7%（SN）、ENV WAVE（SAA）、TONE + NOISE（SAA）を区別します。NOISE、SAA AM、SN METALも選択できます。AdvancedではENVの形状、回路構造、層、音域、個別USB/TRSチャンネル、マクロ、Morphを編集します。固有設定は選択中の音色に従います。SNの固定ノイズではPitch/Glide/Vibrato/Detuneを隠し、PULSEでは固定のPeriodic/Tone3選択を通常画面から省きます。SAAにSN用White切替・Detune・Noise Mixは表示しません。機能の表示は音源能力に従い、使用回路の最大数と本体が割り当てた出力／専用クロックを表示します。ADSR図は模式図です。
 
 - 「本体に反映」はRAM編集。保存はPatch/Track/Project/Systemから対象を選びます。
 - 「本体から読み出す」は本体の状態を取り込み、現在のローカル編集を置き換えます。
@@ -29,3 +29,5 @@ EDITOR_BRIDGE="$PWD/build/tests/editor_bridge" EDITOR_URL=http://127.0.0.1:8766 
 ```
 
 ブラウザーテストのMIDIはCファームウェアに接続したモックです。実機への送信や書込は行いません。
+
+発音名と機能マスクはPatchから導出し、独立した波形番号として保存しません。`factory.json`のfactoryとwaveformsはCモデルから生成され、NodeテストでWebの判定・変換と照合します。保存形式10、protocol 2/schema 10は変更しません。

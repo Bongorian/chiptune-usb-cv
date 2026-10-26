@@ -2,8 +2,8 @@
   "firmware": "v0.10.0-alpha",
   "date": "2026-10-27",
   "hardware_tested": false,
-  "elf_sha256": "5f9906314a38ebd80840de456dc510d8b5dfdb8af2667a983e8a0cadadc0ab01",
-  "source_manifest_sha256": "b2ef9391cee6828b650478d1e094189d8fa8da451c6770aff7a839c493320b3e",
+  "elf_sha256": "05e61facf475864f5e0b4d087975bf22bc19dbc9ba1dfa8897a79548d22a8a22",
+  "source_manifest_sha256": "94fab8169b9f9e6ef32a57d197201903ba96e81c9936c409ef850e73a9a6f142",
   "host_sanitized": {
     "suites": 8,
     "passed": 8,
@@ -17,8 +17,8 @@
     "passed": 8
   },
   "node_protocol_tests": {
-    "tests": 12,
-    "passed": 12,
+    "tests": 15,
+    "passed": 15,
     "backend": "actual portable C firmware"
   },
   "browser_integration": {
@@ -37,7 +37,11 @@
       "independent patch save",
       "asynchronous LIVE slider preservation",
       "old protocol write lock",
-      "390px mobile overflow"
+      "390px mobile overflow",
+      "SAA/SN-specific native control visibility",
+      "SQUARE/PULSE/ENV/Tone+Noise definitions",
+      "Pulse Tone3/noise reservations",
+      "other-track unsent edits survive POLY focus"
     ]
   },
   "arm_build": {
@@ -63,5 +67,13 @@
     "CV calibration accuracy and gate latency",
     "brownout/flash retention",
     "device worst-case 1ms timing and interrupt stack headroom"
-  ]
+  ],
+  "wave_contract": {
+    "c_and_web_factories": 23,
+    "c_and_web_wave_conversions": 9,
+    "periodic_pulse_duty_model": "1/15 fixed; actual hardware waveform unverified",
+    "pulse_note_45_expected_Hz": 110,
+    "pulse_note_45_rendered_divider": 38,
+    "pulse_note_45_model_Hz": 109.64912280701755
+  }
 }

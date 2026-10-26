@@ -106,8 +106,115 @@ export function sameStructure(a, b) {
       (a.chip === 0 || a.noise_type === b.noise_type))
   );
 }
+export const Wave = Object.freeze({
+  SQUARE: 0,
+  PULSE: 1,
+  ENV: 2,
+  TONE_NOISE: 3,
+  NOISE: 4,
+  METAL: 5,
+  AM: 6,
+});
+export const waveNames = [
+  "SQUARE 50%",
+  "PULSE ~6.7%",
+  "ENV WAVE",
+  "TONE + NOISE",
+  "NOISE",
+  "SN METAL",
+  "SAA AM",
+];
+export const Feature = Object.freeze({
+  PITCH: 1,
+  PAN: 2,
+  ENV: 4,
+  ENV_RATIO: 8,
+  NOISE: 16,
+  NOISE_TYPE: 32,
+  NOISE_TRACK: 64,
+  NOISE_MIX: 128,
+  LAYERS: 256,
+  LAYER_PITCH: 512,
+  STACK: 1024,
+  SAA_LAYER: 2048,
+  DETUNE: 4096,
+  PULSE: 8192,
+});
+export function waveform(p) {
+  if (p.chip === 0 && p.env) return p.env === 1 ? Wave.ENV : Wave.AM;
+  if (p.source === 2) return p.chip === 0 ? Wave.TONE_NOISE : Wave.METAL;
+  if (p.source === 1)
+    return p.chip === 1 && p.noise_rate === 3 && !p.noise_type
+      ? Wave.PULSE
+      : Wave.NOISE;
+  return Wave.SQUARE;
+}
+export function availableWaves(chip) {
+  if (chip === 0)
+    return [Wave.SQUARE, Wave.ENV, Wave.TONE_NOISE, Wave.NOISE, Wave.AM];
+  if (chip === 1) return [Wave.SQUARE, Wave.PULSE, Wave.NOISE, Wave.METAL];
+  return [];
+}
+export function selectWave(p, wave) {
+  if (!availableWaves(p.chip).includes(wave))
+    throw Error("このチップでは使えない発音です");
+  validatePatch(p);
+  if (waveform(p) === wave) return p;
+  const q = {
+    ...p,
+    env: 0,
+    source: 0,
+    layers: 1,
+    noise_pitch: 0,
+    noise_sweep: 0,
+  };
+  if (wave === Wave.PULSE || wave === Wave.METAL) {
+    q.source = wave === Wave.PULSE ? 1 : 2;
+    q.noise_rate = 3;
+    q.noise_type = 0;
+    q.noise_mix = 50;
+  } else if (wave === Wave.ENV || wave === Wave.AM) {
+    q.env = wave === Wave.ENV ? 1 : 2;
+    if (q.shape < 2) q.shape = 5;
+  } else if (wave === Wave.TONE_NOISE || wave === Wave.NOISE) {
+    q.source = wave === Wave.TONE_NOISE ? 2 : 1;
+    q.noise_rate = 1;
+    q.noise_type = 1;
+  }
+  validatePatch(q);
+  Object.assign(p, q);
+  return p;
+}
+export function featureMask(p) {
+  const noise =
+    p.source !== 0 || (p.chip === 0 && p.layers > 1 && p.layer_source !== 0);
+  const tracked = noise && p.noise_rate === 3;
+  const layerPitch =
+    p.layers > 1 && (p.chip === 1 || p.layer_source !== 1 || tracked);
+  const pitch =
+    (p.source !== 1 && p.env !== 1) ||
+    (p.env !== 0 && p.shape >= 2) ||
+    tracked ||
+    layerPitch;
+  let f = pitch ? Feature.PITCH : 0;
+  if (p.output === 0) f |= Feature.PAN;
+  if (p.chip === 0 && p.env) f |= Feature.ENV;
+  if (p.chip === 0 && p.env === 2 && p.shape >= 2) f |= Feature.ENV_RATIO;
+  if (noise) f |= Feature.NOISE;
+  if (noise && p.chip === 1) f |= Feature.NOISE_TYPE;
+  if (tracked) f |= Feature.NOISE_TRACK;
+  if (p.chip === 1 && p.source === 2) f |= Feature.NOISE_MIX;
+  if ((p.chip === 1 && p.source === 0) || (p.chip === 0 && p.env === 1))
+    f |= Feature.LAYERS;
+  if (layerPitch) f |= Feature.LAYER_PITCH;
+  if (p.chip === 1 && p.layers === 3) f |= Feature.STACK;
+  if (p.chip === 0 && p.layers > 1) f |= Feature.SAA_LAYER;
+  if (p.chip === 1 && p.output === 0 && pitch) f |= Feature.DETUNE;
+  if (waveform(p) === Wave.PULSE) f |= Feature.PULSE;
+  return f;
+}
 export function description(p) {
-  return `${chips[p.chip]} · ${p.env === 1 ? "ENV oscillator" : p.env === 2 ? "AM × " : ""}${p.env === 1 ? "" : sources[p.source]}${p.layers > 1 ? ` + ${p.layers - 1} layer` : ""}${p.output ? ` · ${outputs[p.output]}` : ""}`;
+  return `${chips[p.chip]} · ${waveNames[waveform(p)]}${p.env === 2 ? ` · ${sources[p.source]}` : ""}${p.layers > 1 ? ` + ${p.layers - 1} layer` : ""}${p.output ? ` · ${outputs[p.output]}` : ""}`;
 }
 export function resourceInfo(p, mode = 0, voices = 1) {
   const n = mode === 1 ? voices : 1;
@@ -134,6 +241,7 @@ export function resourceInfo(p, mode = 0, voices = 1) {
   };
 }
 export function supported(p, name) {
+  const f = featureMask(p);
   if (
     [
       "chip",
@@ -144,44 +252,73 @@ export function supported(p, name) {
       "release",
       "sustain",
       "level",
-      "pitch_decay",
-      "pitch_amount",
-      "glide",
-      "transpose",
-      "fine",
-      "vibrato",
       "tremolo",
       "lfo_rate",
       "lfo_shape",
     ].includes(name)
   )
     return true;
+  if (
+    [
+      "pitch_decay",
+      "pitch_amount",
+      "glide",
+      "transpose",
+      "fine",
+      "vibrato",
+    ].includes(name)
+  )
+    return !!(f & Feature.PITCH);
   if (name === "env") return p.chip === 0;
-  if (
-    ["shape", "env_steps", "env_invert", "retrigger", "env_ratio"].includes(
-      name,
-    )
-  )
-    return p.chip === 0 && p.env !== 0 && (name !== "env_ratio" || p.env === 2);
-  if (name === "layers") return p.source === 0;
-  if (
-    name === "layer_source" ||
-    name === "layer_level" ||
-    name === "layer_decay"
-  )
-    return p.chip === 0 && p.layers > 1;
-  if (name === "layer_interval") return p.layers > 1;
-  if (name === "stack_interval") return p.chip === 1 && p.layers === 3;
-  if (name === "noise_type") return p.chip === 1 && p.source !== 0;
-  if (name === "noise_mix") return p.chip === 1 && p.source === 2;
-  if (name === "noise_rate")
-    return (
-      p.source !== 0 || (p.chip === 0 && p.layers > 1 && p.layer_source !== 0)
-    );
-  if (name === "noise_pitch" || name === "noise_sweep")
-    return supported(p, "noise_rate") && p.noise_rate === 3;
-  if (name === "detune") return p.chip === 1 && p.output === 0;
-  return false;
+  const native = {
+    shape: Feature.ENV,
+    env_steps: Feature.ENV,
+    env_invert: Feature.ENV,
+    retrigger: Feature.ENV,
+    env_ratio: Feature.ENV_RATIO,
+    layers: Feature.LAYERS,
+    layer_source: Feature.SAA_LAYER,
+    layer_level: Feature.SAA_LAYER,
+    layer_decay: Feature.SAA_LAYER,
+    layer_interval: Feature.LAYER_PITCH,
+    stack_interval: Feature.STACK,
+    noise_type: Feature.NOISE_TYPE,
+    noise_mix: Feature.NOISE_MIX,
+    noise_rate: Feature.NOISE,
+    noise_pitch: Feature.NOISE_TRACK,
+    noise_sweep: Feature.NOISE_TRACK,
+    detune: Feature.DETUNE,
+  };
+  return !!(f & (native[name] || 0));
+}
+export function musicalParameters(p) {
+  const names = ["shape", "env_steps", "env_invert", "retrigger", "env_ratio"];
+  if (waveform(p) !== Wave.PULSE) names.push("noise_type", "noise_rate");
+  names.push(
+    "noise_mix",
+    "noise_pitch",
+    "noise_sweep",
+    "layers",
+    "layer_source",
+    "layer_interval",
+    "stack_interval",
+    "layer_level",
+    "layer_decay",
+    "attack",
+    "decay",
+    "sustain",
+    "release",
+    "level",
+    "pitch_amount",
+    "pitch_decay",
+    "glide",
+    "vibrato",
+    "tremolo",
+    "lfo_rate",
+    "lfo_shape",
+    "detune",
+  );
+  return names.filter((n) => supported(p, n));
 }
 export function word(n) {
   if (!Number.isInteger(n) || n < 0 || n > 16383) throw Error("14-bit range");
@@ -556,8 +693,9 @@ export function decodeGlobal(d) {
 export function supportedMod(t, dest) {
   const p = t.patch;
   if (dest === 2) return p.output === 0;
+  if (dest === 3 || dest === 4) return supported(p, "pitch_amount");
   if (dest === 6) return p.chip === 0 && p.layers > 1;
-  if (dest === 7) return p.chip === 0 && p.env === 2;
+  if (dest === 7) return supported(p, "env_ratio");
   if (dest === 8) return supported(p, "noise_pitch");
   if (dest === 11) return !!t.morph_target;
   return true;

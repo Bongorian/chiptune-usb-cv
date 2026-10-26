@@ -65,6 +65,28 @@ int main(void) {
         assert(project_valid(&engine.project));
         ui_render(&ui, &status, i * 10);
     }
+    setup();
+    isolated(20, PLAY_DIRECT, 1);
+    ui_init(&ui, &settings, &engine, save, NULL, NULL);
+    ui_open(&ui, UI_QUICK);
+    ui.field = 10; /* WAVE follows CHIP in the direct sound menu. */
+    click(1);
+    click(2);
+    click(1);
+    assert(!ui.edit && patch_wave(&engine.project.track[0].patch) == WAVE_ENV);
+    assert(ui_count(&ui) > 25);
+    setup();
+    isolated(22, PLAY_DIRECT, 1);
+    ui_init(&ui, &settings, &engine, save, NULL, NULL);
+    ui_open(&ui, UI_QUICK);
+    unsigned noise_count = ui_count(&ui);
+    ui.field = 10;
+    click(1);
+    click(0);
+    click(1);
+    assert(patch_wave(&engine.project.track[0].patch) == WAVE_PULSE);
+    assert(ui_count(&ui) > noise_count); /* Pitched pulse enables actual pitch controls. */
+    assert(engine.plan.resources[0][0] == 0x3900);
     bool down[3] = {true, false, true};
     ui_buttons(&ui, down, 100000);
     ui_buttons(&ui, down, 100901);

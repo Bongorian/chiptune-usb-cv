@@ -103,3 +103,7 @@ status 2のdata:
 reason=1invalid/2capacity/3sharedNoise/4clockBusy/5morph。other=127は特定の競合元を指していないことを表します。availableはその割当試行での空き回路数で、実際に追加できる声数ではありません。
 
 Project読込・テンプレートは全体を停止します。Patch/Track構造変更は対象だけを停止し、競合で別Trackを強制停止しません。音色保存だけでProject・Systemは変わりません。保存成功の応答は検証済みバンクへのコミット完了後です。キャリブレーション値は本体UIから設定し、System保存で永続化します。
+
+## WAVE表示と能力判定
+
+SQUARE / PULSE / ENV WAVE / TONE + NOISE等の表示は、chip/source/env/noise_rate/noise_type/layersから導出します。Patchペイロードに波形番号を追加しません。PULSEはchip=SN、source=Noise、noise_type=Periodic、noise_rate=Tone3です。Wave Labのfactory.jsonにはCモデルから導出したwave/featuresとwaveformsの変換例を収録し、WebとCの契約テストに使用します。これらは既存Patchフィールドに対するメタデータで、Fや保存形式は変わりません。
