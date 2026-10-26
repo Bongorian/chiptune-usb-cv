@@ -1,0 +1,14 @@
+Chiptune USB/CV v0.10.0-alpha — dedicated RP2040/SAA1099/SN76489AN board
+
+Use chiptune-v0.10.0-alpha.uf2.
+Settings version 10 / SysEx protocol 2 / schema 10. Old settings, USER sounds,
+calibration and brightness are ignored, not migrated. Boot never erases/writes
+settings. Explicit save may overwrite an old bank: back up old data first.
+
+See the source repository firmware/README.md for operation and build commands,
+firmware/BOOT_RECOVERY.md for recovery, firmware/BRINGUP.md for the unverified
+hardware checklist, and firmware/ARCHITECTURE.md for performance limitations.
+Included Verification/Boot/Runtime/PIO/Test/Performance reports describe software
+checks only. Hardware sound, physical bus timing, power-cut retention and the
+1 ms device WCET are NOT verified. Development USB VID/PID is not an assigned
+production identity. LICENSES and THIRD_PARTY_NOTICES cover bundled runtimes.

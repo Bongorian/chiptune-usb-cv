@@ -1,0 +1,193 @@
+{
+  "firmware": "v0.10.0-alpha",
+  "elf_sha256": "5f9906314a38ebd80840de456dc510d8b5dfdb8af2667a983e8a0cadadc0ab01",
+  "arm_release_code_executed": true,
+  "logical_voices": 14,
+  "physical_circuits": 14,
+  "vibrato_tremolo_pitch_envelope_glide_morph_enabled": true,
+  "frames": [
+    {
+      "elapsed_ms": 1,
+      "application_and_sdk_instructions": 26307,
+      "stack_bytes_observed": 224,
+      "stubbed_runtime_calls": {
+        "__wrap___aeabi_uidivmod": 16,
+        "__wrap___aeabi_i2f": 370,
+        "__wrap___aeabi_fmul": 574,
+        "__wrap_memset": 5,
+        "__wrap_memcpy": 14,
+        "__wrap___aeabi_idivmod": 318,
+        "__wrap___aeabi_fcmpeq": 64,
+        "__wrap___aeabi_fdiv": 68,
+        "__wrap___aeabi_fcmplt": 80,
+        "__wrap___aeabi_ui2f": 62,
+        "__wrap___aeabi_fsub": 60,
+        "__wrap___aeabi_fadd": 204,
+        "__wrap___aeabi_fcmpgt": 84,
+        "__wrap___aeabi_fcmpun": 38,
+        "__wrap___aeabi_fcmpge": 138,
+        "__wrap___aeabi_f2iz": 12,
+        "__wrap___aeabi_fcmple": 18,
+        "__wrap___aeabi_f2uiz": 18
+      }
+    },
+    {
+      "elapsed_ms": 1,
+      "application_and_sdk_instructions": 25947,
+      "stack_bytes_observed": 224,
+      "stubbed_runtime_calls": {
+        "__wrap___aeabi_uidivmod": 16,
+        "__wrap___aeabi_i2f": 370,
+        "__wrap___aeabi_fmul": 574,
+        "__wrap_memset": 5,
+        "__wrap_memcpy": 14,
+        "__wrap___aeabi_idivmod": 318,
+        "__wrap___aeabi_fcmpeq": 64,
+        "__wrap___aeabi_fdiv": 68,
+        "__wrap___aeabi_fcmplt": 80,
+        "__wrap___aeabi_ui2f": 62,
+        "__wrap___aeabi_fsub": 60,
+        "__wrap___aeabi_fadd": 204,
+        "__wrap___aeabi_fcmpgt": 84,
+        "__wrap___aeabi_fcmpun": 38,
+        "__wrap___aeabi_fcmpge": 138,
+        "__wrap___aeabi_f2iz": 12,
+        "__wrap___aeabi_fcmple": 18,
+        "__wrap___aeabi_f2uiz": 18
+      }
+    },
+    {
+      "elapsed_ms": 10,
+      "application_and_sdk_instructions": 25971,
+      "stack_bytes_observed": 224,
+      "stubbed_runtime_calls": {
+        "__wrap___aeabi_uidivmod": 16,
+        "__wrap___aeabi_i2f": 370,
+        "__wrap___aeabi_fmul": 574,
+        "__wrap_memset": 5,
+        "__wrap_memcpy": 14,
+        "__wrap___aeabi_idivmod": 318,
+        "__wrap___aeabi_fcmpeq": 64,
+        "__wrap___aeabi_fdiv": 68,
+        "__wrap___aeabi_fcmplt": 80,
+        "__wrap___aeabi_ui2f": 62,
+        "__wrap___aeabi_fsub": 60,
+        "__wrap___aeabi_fadd": 204,
+        "__wrap___aeabi_fcmpgt": 84,
+        "__wrap___aeabi_fcmpun": 38,
+        "__wrap___aeabi_fcmpge": 138,
+        "__wrap___aeabi_f2iz": 12,
+        "__wrap___aeabi_fcmple": 18,
+        "__wrap___aeabi_f2uiz": 18
+      }
+    },
+    {
+      "elapsed_ms": 100,
+      "application_and_sdk_instructions": 25971,
+      "stack_bytes_observed": 224,
+      "stubbed_runtime_calls": {
+        "__wrap___aeabi_uidivmod": 16,
+        "__wrap___aeabi_i2f": 370,
+        "__wrap___aeabi_fmul": 574,
+        "__wrap_memset": 5,
+        "__wrap_memcpy": 14,
+        "__wrap___aeabi_idivmod": 318,
+        "__wrap___aeabi_fcmpeq": 64,
+        "__wrap___aeabi_fdiv": 68,
+        "__wrap___aeabi_fcmplt": 80,
+        "__wrap___aeabi_ui2f": 62,
+        "__wrap___aeabi_fsub": 60,
+        "__wrap___aeabi_fadd": 204,
+        "__wrap___aeabi_fcmpgt": 84,
+        "__wrap___aeabi_fcmpun": 38,
+        "__wrap___aeabi_fcmpge": 138,
+        "__wrap___aeabi_f2iz": 12,
+        "__wrap___aeabi_fcmple": 18,
+        "__wrap___aeabi_f2uiz": 18
+      }
+    },
+    {
+      "elapsed_ms": 1000,
+      "application_and_sdk_instructions": 26601,
+      "stack_bytes_observed": 224,
+      "stubbed_runtime_calls": {
+        "__wrap___aeabi_uidivmod": 16,
+        "__wrap___aeabi_ui2f": 76,
+        "__wrap___aeabi_fmul": 588,
+        "__wrap___aeabi_fsub": 74,
+        "__wrap___aeabi_i2f": 370,
+        "__wrap_memset": 5,
+        "__wrap_memcpy": 14,
+        "__wrap___aeabi_idivmod": 318,
+        "__wrap___aeabi_fcmpeq": 64,
+        "__wrap___aeabi_fdiv": 68,
+        "__wrap___aeabi_fcmplt": 80,
+        "__wrap___aeabi_fadd": 204,
+        "__wrap___aeabi_fcmpgt": 84,
+        "__wrap___aeabi_fcmpun": 38,
+        "__wrap___aeabi_fcmpge": 138,
+        "__wrap___aeabi_f2iz": 12,
+        "__wrap___aeabi_fcmple": 18,
+        "__wrap___aeabi_f2uiz": 18
+      }
+    },
+    {
+      "elapsed_ms": 1,
+      "application_and_sdk_instructions": 25959,
+      "stack_bytes_observed": 224,
+      "stubbed_runtime_calls": {
+        "__wrap___aeabi_uidivmod": 16,
+        "__wrap___aeabi_i2f": 370,
+        "__wrap___aeabi_fmul": 574,
+        "__wrap_memset": 5,
+        "__wrap_memcpy": 14,
+        "__wrap___aeabi_idivmod": 318,
+        "__wrap___aeabi_fcmpeq": 64,
+        "__wrap___aeabi_fdiv": 68,
+        "__wrap___aeabi_fcmplt": 80,
+        "__wrap___aeabi_ui2f": 62,
+        "__wrap___aeabi_fsub": 60,
+        "__wrap___aeabi_fadd": 204,
+        "__wrap___aeabi_fcmpgt": 84,
+        "__wrap___aeabi_fcmpun": 38,
+        "__wrap___aeabi_fcmpge": 138,
+        "__wrap___aeabi_f2iz": 12,
+        "__wrap___aeabi_fcmple": 18,
+        "__wrap___aeabi_f2uiz": 18
+      }
+    }
+  ],
+  "other_operations": [
+    {
+      "function": "settings_valid",
+      "instructions": 93956,
+      "stack_bytes_observed": 1896
+    },
+    {
+      "function": "ui_buttons",
+      "instructions": 52,
+      "stack_bytes_observed": 24
+    },
+    {
+      "function": "ui_buttons",
+      "instructions": 74,
+      "stack_bytes_observed": 24
+    },
+    {
+      "function": "ui_buttons",
+      "instructions": 167,
+      "stack_bytes_observed": 72
+    },
+    {
+      "function": "ui_render",
+      "instructions": 31117,
+      "stack_bytes_observed": 552
+    }
+  ],
+  "rp2040_wcet_certified": false,
+  "limitations": [
+    "Instruction counts exclude ROM arithmetic/memory and SIO divider implementation.",
+    "No XIP/ROM/peripheral/interrupt latency or physical audio is emulated.",
+    "Measure tick_max_us and overruns on hardware; instruction count is not a cycle estimate."
+  ]
+}

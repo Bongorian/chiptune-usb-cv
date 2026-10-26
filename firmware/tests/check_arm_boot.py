@@ -83,54 +83,13 @@ class Image:
             uc.reg_write(UC_ARM_REG_R1, 0)
             uc.reg_write(UC_ARM_REG_PC, uc.reg_read(UC_ARM_REG_LR))
 
-        # Skip ONLY platform setup/delays. All application storage, migration,
+        # Skip ONLY platform setup/delays. All application storage,
         # engine and UI code below executes from the actual linked ELF.
         def stub(uc, _address, _size, _data):
             ret(uc)
 
-        # The SDK redirects memcpy/memset and single-precision arithmetic to
-        # RP2040 ROM tables filled by CRT startup (we enter directly at main).
-        def memory(copy):
-            def hook(uc, _address, _size, _data):
-                dest, source, count = (uc.reg_read(r) for r in
-                                       (UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2))
-                data = bytes(uc.mem_read(source, count)) if copy else bytes([source & 255]) * count
-                if count:
-                    uc.mem_write(dest, data)
-                ret(uc, dest)
-            return hook
-
-        self.hook(uc, '__wrap_memcpy', memory(True))
-        self.hook(uc, '__wrap_memset', memory(False))
-
-        def divide(signed):
-            def hook(uc, _address, _size, _data):
-                a, b = (uc.reg_read(r) for r in (UC_ARM_REG_R0, UC_ARM_REG_R1))
-                if signed:
-                    a, b = (x if x < 0x80000000 else x - 0x100000000 for x in (a, b))
-                assert b != 0, 'Unexpected divide by zero during startup'
-                quotient = abs(a) // abs(b)
-                if (a < 0) != (b < 0):
-                    quotient = -quotient
-                ret(uc, quotient & 0xffffffff)
-                uc.reg_write(UC_ARM_REG_R1, (a - quotient * b) & 0xffffffff)
-            return hook
-
-        # These wrappers use the SIO hardware divider rather than ROM.
-        self.hook(uc, '__wrap___aeabi_uidivmod', divide(False))
-        self.hook(uc, '__wrap___aeabi_idivmod', divide(True))
-
-        def float_compare(operation):
-            def hook(uc, _address, _size, _data):
-                a, b = (struct.unpack('<f', struct.pack('<I', uc.reg_read(r)))[0]
-                        for r in (UC_ARM_REG_R0, UC_ARM_REG_R1))
-                ret(uc, int(operation(a, b)))
-            return hook
-
-        for suffix, operation in [('eq', lambda a, b: a == b), ('lt', lambda a, b: a < b),
-                                   ('le', lambda a, b: a <= b), ('gt', lambda a, b: a > b),
-                                   ('ge', lambda a, b: a >= b)]:
-            self.hook(uc, '__wrap___aeabi_fcmp' + suffix, float_compare(operation))
+        from arm_support import runtime_hooks
+        self.runtime_counts = runtime_hooks(self, uc)
 
         stubs = ('gpio_init', 'gpio_set_function', 'gpio_set_pulls',
                  'gpio_set_irq_enabled_with_callback', 'gpio_set_irq_enabled',
@@ -187,6 +146,7 @@ class Image:
         assert struct.unpack('<I', uc.mem_read(self.symbols['store_sequence'][0], 4))[0] == expected_sequence
         assert struct.unpack('<i', uc.mem_read(self.symbols['store_bank'][0], 4))[0] == expected_bank
         settings_address, settings_size = self.symbols['settings']
+        self.last_machine=uc
         return bytes(uc.mem_read(settings_address, settings_size)), trace
 
 
@@ -203,50 +163,35 @@ def verify(path):
         assert image.flash_guard(name, CAPACITY, BANK) == 'rejected', name
     erased = b'\xff' * (2 * BANK)
     current, trace = image.boot(erased)
-    header = struct.pack('<5I', 0x43545031, 6, 12, len(current), 0)
+    header = struct.pack('<5I', 0x43545031, 10, 12, len(current), 0)
     record = bytearray(header + current)
     struct.pack_into('<I', record, 16, zlib.crc32(record[4:]))
     area = record + bytearray(erased[len(record):])
     image.boot(bytes(area), expected_sequence=12, expected_bank=0)
     area[100] ^= 0x40
     image.boot(bytes(area))
-    v5 = (Path(__file__).parent / 'fixtures/settings-v5.bin').read_bytes()
-    image.boot(v5 + erased[len(v5):], expected_sequence=93, expected_bank=0)
-    image.boot(bytes(record) + erased[len(record):], defaults=True)
-    return {'firmware': 'v0.8.1-alpha', 'elf_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+    unknown=bytearray(record)
+    struct.pack_into('<I',unknown,4,6)
+    struct.pack_into('<I',unknown,20,6)
+    struct.pack_into('<I',unknown,16,0)
+    struct.pack_into('<I',unknown,16,zlib.crc32(unknown[4:]))
+    image.boot(bytes(unknown)+erased[len(unknown):])
+    image.boot(bytes(record)+erased[len(record):], defaults=True, expected_sequence=12, expected_bank=0)
+    return {'firmware': 'v0.10.0-alpha', 'elf_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
             'hardware_emulated': False, 'arm_code_executed': True,
             'flash_guard_cases': guards, 'out_of_capacity_rejected': True,
-            'boot_cases': ['erased', 'valid v6', 'corrupt v6', 'legacy v5', 'OK held'],
+            'boot_cases': ['erased', 'valid v10', 'corrupt v10', 'v6 ignored', 'OK held'],
             'boot_trace': trace, 'boot_flash_writes': 0,
-            'limitations': ['SDK setup, USB task, SIO division, ROM memory and float comparisons are stubbed',
+            'limitations': ['SDK setup, USB task, SIO division, ROM memory and floating-point operations are stubbed',
                             'no physical USB/I2C/flash/audio test']}
-
-
-def compare_v08(path):
-    old = Image(path)
-    machine = old.machine()
-    binary = (Path(__file__).parents[1] / 'dist/chiptune-v0.8.0-alpha.bin').read_bytes()
-    result = {'published_bin_sha256': hashlib.sha256(binary).hexdigest(), 'cases': []}
-    for name in ('flash_range_erase', 'flash_range_program'):
-        address, size = old.symbols[name]
-        body = bytes(machine.mem_read(address, size))
-        assert binary.count(body) == 1, 'Negative control must match the published ARM function'
-        for offset in (CAPACITY - 2 * BANK, CAPACITY - BANK):
-            assert old.flash_guard(name, offset, BANK) == 'rejected'
-            result['cases'].append({'function': name, 'offset': hex(offset), 'bytes': BANK,
-                                    'result': 'rejected', 'matches_published_arm_code': True})
-    return result
 
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument('elf', type=Path)
     p.add_argument('--output', type=Path)
-    p.add_argument('--v08-elf', type=Path, help='Optional v0.8.0 rebuild for a negative control')
     args = p.parse_args()
     result = verify(args.elf)
-    if args.v08_elf:
-        result['v08_negative_control'] = compare_v08(args.v08_elf)
     if args.output:
         args.output.write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result, indent=2))

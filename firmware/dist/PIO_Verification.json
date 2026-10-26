@@ -1,0 +1,11 @@
+{
+  "assembled_pio_verified": true,
+  "static_periods": 241,
+  "transition_phases": 756,
+  "duty_percent": 50,
+  "clock_hz_range": [
+    250000,
+    4000000
+  ],
+  "physical_tested": false
+}

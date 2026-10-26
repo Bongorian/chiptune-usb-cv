@@ -1,9 +1,9 @@
 name: Firmware
 on:
   push:
-    paths: ['firmware/**', '.github/workflows/firmware.yml']
+    paths: ['firmware/**', 'editor/**', '.github/workflows/firmware.yml']
   pull_request:
-    paths: ['firmware/**', '.github/workflows/firmware.yml']
+    paths: ['firmware/**', 'editor/**', '.github/workflows/firmware.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -15,6 +15,22 @@ jobs:
       - run: cmake -S firmware -B build/tests -G Ninja -DCHIPTUNE_HOST_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
       - run: cmake --build build/tests
       - run: ctest --test-dir build/tests --output-on-failure
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Check generated schema and DSP tables
+        run: |
+          python3 firmware/tools/generate_editor.py
+          python3 firmware/tools/generate_lut.py
+          build/tests/editor_export > editor/factory.json
+          git diff --exit-code -- firmware/src/sound_fields.inc firmware/src/math_lut.inc firmware/src/saa_pitch_lut.inc editor/schema.js editor/factory.json
+      - run: EDITOR_BRIDGE="$PWD/build/tests/editor_bridge" node --test editor/tests/*.test.js
+      - name: Browser integration against C firmware
+        run: |
+          npm install --prefix /tmp/chiptune-browser playwright@1.62.1
+          /tmp/chiptune-browser/node_modules/.bin/playwright install --with-deps chromium
+          python3 -m http.server 8766 --bind 127.0.0.1 --directory editor > /tmp/chiptune-http.log 2>&1 &
+          CHROME_BIN=$(node -e 'process.stdout.write(require("/tmp/chiptune-browser/node_modules/playwright").chromium.executablePath())') PLAYWRIGHT_MODULE=/tmp/chiptune-browser/node_modules/playwright EDITOR_BRIDGE="$PWD/build/tests/editor_bridge" node editor/tests/browser.cjs
   rp2040:
     runs-on: ubuntu-24.04
     steps:
@@ -23,9 +39,12 @@ jobs:
       - run: bash firmware/tools/bootstrap_sdk.sh .deps/pico-sdk
       - run: cmake -S firmware -B build/firmware -G Ninja -DPICO_SDK_PATH="$PWD/.deps/pico-sdk" -DCMAKE_BUILD_TYPE=Release
       - run: cmake --build build/firmware -j4
+      - run: cmake -S firmware -B build/host -DCHIPTUNE_HOST_TESTS=ON -DCHIPTUNE_SANITIZE=OFF -DCMAKE_BUILD_TYPE=Release && cmake --build build/host --target performance -j4
+      - run: build/host/performance build/worst-project.bin build/worst-settings.bin > build/firmware/Performance.json
       - run: python3 firmware/tests/check_pio_clock.py build/firmware/sn_clock.pio.h
       - run: python3 -m pip install -r firmware/tests/requirements-arm.txt
       - run: python3 firmware/tests/check_arm_boot.py build/firmware/chiptune.elf --output build/firmware/Boot_Verification.json
+      - run: python3 firmware/tests/check_arm_runtime.py build/firmware/chiptune.elf build/worst-project.bin build/worst-settings.bin --output build/firmware/Runtime_Verification.json
       - run: python3 firmware/tools/verify_build.py build/firmware --output build/firmware/Verification.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -35,3 +54,5 @@ jobs:
             build/firmware/chiptune.bin
             build/firmware/Verification.json
             build/firmware/Boot_Verification.json
+            build/firmware/Runtime_Verification.json
+            build/firmware/Performance.json

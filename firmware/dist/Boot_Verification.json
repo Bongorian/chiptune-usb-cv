@@ -1,6 +1,6 @@
 {
-  "firmware": "v0.8.1-alpha",
-  "elf_sha256": "032101144c15fb51e10901aaaec6e148046c6805ddadad1ec15f2dd88c577565",
+  "firmware": "v0.10.0-alpha",
+  "elf_sha256": "5f9906314a38ebd80840de456dc510d8b5dfdb8af2667a983e8a0cadadc0ab01",
   "hardware_emulated": false,
   "arm_code_executed": true,
   "flash_guard_cases": [
@@ -50,9 +50,9 @@
   "out_of_capacity_rejected": true,
   "boot_cases": [
     "erased",
-    "valid v6",
-    "corrupt v6",
-    "legacy v5",
+    "valid v10",
+    "corrupt v10",
+    "v6 ignored",
     "OK held"
   ],
   "boot_trace": [
@@ -67,40 +67,7 @@
   ],
   "boot_flash_writes": 0,
   "limitations": [
-    "SDK setup, USB task, SIO division, ROM memory and float comparisons are stubbed",
+    "SDK setup, USB task, SIO division, ROM memory and floating-point operations are stubbed",
     "no physical USB/I2C/flash/audio test"
-  ],
-  "v08_negative_control": {
-    "published_bin_sha256": "050fcfd0ae807022d94e82030893271b41b1fac70e8a049f41ed0cf38d176448",
-    "cases": [
-      {
-        "function": "flash_range_erase",
-        "offset": "0x1f0000",
-        "bytes": 32768,
-        "result": "rejected",
-        "matches_published_arm_code": true
-      },
-      {
-        "function": "flash_range_erase",
-        "offset": "0x1f8000",
-        "bytes": 32768,
-        "result": "rejected",
-        "matches_published_arm_code": true
-      },
-      {
-        "function": "flash_range_program",
-        "offset": "0x1f0000",
-        "bytes": 32768,
-        "result": "rejected",
-        "matches_published_arm_code": true
-      },
-      {
-        "function": "flash_range_program",
-        "offset": "0x1f8000",
-        "bytes": 32768,
-        "result": "rejected",
-        "matches_published_arm_code": true
-      }
-    ]
-  }
+  ]
 }

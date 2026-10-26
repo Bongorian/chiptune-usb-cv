@@ -1,0 +1,47 @@
+Test project /Users/bongorian/Documents/ChatGPT/Gadget/chiptune-usb-cv/build/tests
+      Start  1: midi10_tests
+ 1/11 Test  #1: midi10_tests .....................   Passed    0.01 sec
+      Start  2: engine_tests
+ 2/11 Test  #2: engine_tests .....................   Passed   17.96 sec
+      Start  3: roles_tests
+ 3/11 Test  #3: roles_tests ......................   Passed    0.16 sec
+      Start  4: performance_tests
+ 4/11 Test  #4: performance_tests ................   Passed    0.06 sec
+      Start  5: studio_tests
+ 5/11 Test  #5: studio_tests .....................   Passed    0.33 sec
+      Start  6: instrument_tests
+ 6/11 Test  #6: instrument_tests .................   Passed    0.02 sec
+      Start  7: layout_tests
+ 7/11 Test  #7: layout_tests .....................   Passed    0.03 sec
+      Start  8: noise_tests
+ 8/11 Test  #8: noise_tests ......................   Passed    0.02 sec
+      Start  9: display_tests
+ 9/11 Test  #9: display_tests ....................   Passed    0.02 sec
+      Start 10: editor_tests
+10/11 Test #10: editor_tests .....................   Passed    0.29 sec
+      Start 11: boot_tests
+11/11 Test #11: boot_tests .......................   Passed    0.04 sec
+
+100% tests passed, 0 tests failed out of 11
+
+Total Test time (real) =  18.94 sec
+
+✔ all factory structures conform to schema (0.91075ms)
+✔ every structure has resource guidance (0.226333ms)
+✔ signed 14-bit endpoints retain full precision (0.140791ms)
+✔ SysEx checksum, identifiers and malformed payload rejection (0.15225ms)
+✔ motion preserves bipolar extrema and rejects out of range values (0.605042ms)
+✔ JSON format validates and isolates imported state (0.749125ms)
+✔ only relevant parameters are shown, ENV and noise are separate (0.145292ms)
+✔ schematic waveforms remain bounded for every factory (49.92575ms)
+✔ browser wire format roundtrips through real firmware (21.254833ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 130.030709
+
+PASS: firmware-backed Web MIDI handshake, read/write, clock, CV atomic update, save rejection; offline structure selection, ENV shape, SN stack, motion painting, JSON export, mobile overflow, console

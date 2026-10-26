@@ -1,187 +1,67 @@
 {
-  "firmware": "v0.8.1-alpha",
-  "host_tests_passed": true,
-  "sanitizers": [
-    "ASan",
-    "UBSan"
-  ],
-  "tests": [
-    {
-      "name": "engine_tests",
-      "status": "passed",
-      "seconds": 11.567
-    },
-    {
-      "name": "roles_tests",
-      "status": "passed",
-      "seconds": 0.0951013
-    },
-    {
-      "name": "performance_tests",
-      "status": "passed",
-      "seconds": 0.0571596
-    },
-    {
-      "name": "studio_tests",
-      "status": "passed",
-      "seconds": 0.280267
-    },
-    {
-      "name": "instrument_tests",
-      "status": "passed",
-      "seconds": 0.0143302
-    },
-    {
-      "name": "layout_tests",
-      "status": "passed",
-      "seconds": 0.0247215
-    },
-    {
-      "name": "noise_tests",
-      "status": "passed",
-      "seconds": 0.0174915
-    },
-    {
-      "name": "display_tests",
-      "status": "passed",
-      "seconds": 0.0120181
-    },
-    {
-      "name": "editor_tests",
-      "status": "passed",
-      "seconds": 0.0164737
-    },
-    {
-      "name": "boot_tests",
-      "status": "passed",
-      "seconds": 0.0234105
-    }
-  ],
-  "ui_random_actions": 12000,
-  "ui_rendered_pages": 33,
-  "models_tested": 16,
-  "settings_version": 6,
-  "settings_bytes": 18332,
-  "store_record_bytes": 18352,
-  "engine_bytes_host": 23736,
-  "ui_bytes_host": 5368,
-  "settings_migration_tested": [
-    1,
-    2,
-    3,
-    4,
-    5
-  ],
-  "regressions": [
-    "CV reroute while gate high",
-    "independent CV base and fixed gate note",
-    "MIDI Continue preserves step position",
-    "unchanged model selection preserves sound",
-    "shared noise colour packing",
-    "button debounce/hold/chord suppression",
-    "audition follows selected part"
-  ],
-  "android_on_hardware_tested": false,
-  "audio_on_hardware_tested": false,
-  "oled_on_hardware_tested": false,
-  "display_regressions": [
-    "busy loop missing every 250us idle window",
-    "complete 1024-byte framebuffer transfer",
-    "I2C failures on each startup transaction",
-    "brightness reapply on reinitialization",
-    "power loss and USB suspend/resume",
-    "timer rollover"
-  ],
-  "instrument_regressions": [
-    "explicit FREE single-instrument regression fixture on USB/TRS MIDI ch1",
-    "all 16 sounds play within hardware reservations",
-    "sound selection, short OK edit and long OK menu",
-    "edit discard protection",
-    "save rollback and reboot with the same sound",
-    "receive channel commit/cancel",
-    "current-format multi setup preservation",
-    "fixed factory sounds without changing user library",
-    "Program Change across all user sounds"
-  ],
-  "noise_regressions": [
-    "SN white/periodic mode and all rate encodings",
-    "stereo and individual L/R noise attenuation",
-    "tone3 frequency and muted carrier for plain noise",
-    "metal carrier mixing",
-    "same-note LFSR reset and no reset on each tick",
-    "SAA noise enable, amplitude, rate and envelope disable",
-    "legacy default ch10 D2 white-noise clock about 2.35kHz instead of 73Hz"
-  ],
-  "layout_reset_from_versions_tested": [
-    1,
-    2,
-    3,
-    4,
-    5
-  ],
-  "layout_revision": 2,
-  "layout_regressions": [
-    "ch1/2/3/10 simultaneous register output",
-    "independent Note Off between channels",
-    "editor focus does not stop MIDI voices",
-    "fixed chip role filters sound selection and Program Change",
-    "SN noise engine changes preserve other held parts",
-    "SAA ENV clock-only channels stay muted",
-    "mono patch retains polyphonic reservation",
-    "old musical settings migrate in RAM until explicit save",
-    "CV calibration and brightness retained",
-    "new revision survives later boots",
-    "interrupted commit retries using the old valid bank"
-  ],
-  "editor_regressions": [
-    "all 16 structures and 20 factory sounds validate",
-    "four allocation profiles",
-    "SAA ENV noise/mix register enables",
-    "SAA layer reserves three circuits per note and its transient decays",
-    "layer macros alter auxiliary amplitude without altering saved base sound",
-    "SN stack intervals, stereo voices, logical note ownership and Note Off",
-    "incompatible tone3 clock reservations rejected",
-    "SysEx request/reply packet framing and signed 14-bit endpoints",
-    "Web MIDI wire format sent through actual portable C firmware",
-    "invalid checksum, oversize, timeout, busy and invalid data rejected",
-    "atomic CV pair swap",
-    "save success snapshot and failure rollback",
-    "v5 CRC-protected binary fixture and calibration/brightness migration"
-  ],
-  "web_editor": {
-    "javascript_tests_passed": 9,
-    "browser_tests_passed": true,
-    "browser_test_uses": "headless Chrome with the portable C firmware as mocked Web MIDI ports",
-    "desktop_viewport": [
-      1440,
-      1080
-    ],
-    "mobile_viewport": [
-      390,
-      844
-    ],
-    "real_usb_or_audio_tested": false,
-    "checks": [
-      "connection and read/write roundtrip",
-      "ENV shape and SN stack selection",
-      "motion painting and JSON export",
-      "clock read/write",
-      "CV atomic update",
-      "save failure feedback",
-      "no horizontal mobile overflow or JavaScript console errors"
-    ],
-    "browser_tests_run_for_this_version": false,
-    "browser_tests_last_run_firmware": "v0.8.0-alpha"
+  "firmware": "v0.10.0-alpha",
+  "date": "2026-10-27",
+  "hardware_tested": false,
+  "elf_sha256": "5f9906314a38ebd80840de456dc510d8b5dfdb8af2667a983e8a0cadadc0ab01",
+  "source_manifest_sha256": "b2ef9391cee6828b650478d1e094189d8fa8da451c6770aff7a839c493320b3e",
+  "host_sanitized": {
+    "suites": 8,
+    "passed": 8,
+    "sanitizers": [
+      "ASan",
+      "UBSan"
+    ]
   },
-  "boot_regressions": [
-    "erased and corrupt banks fall back without assertion",
-    "valid saved settings restore unchanged",
-    "read-only v1-v5 migration with calibration retained",
-    "both historical 4KiB slots and false v6 header bounds",
-    "OK-held factory boot does not erase settings",
-    "physical SDK flash capacity independent from linker application limit",
-    "ARM boot USB service precedes settings, no flash writes",
-    "ARM SDK erase/program guards accept both banks and reject out-of-capacity writes",
-    "v0.8.0 negative control matches published ARM flash functions and rejects both banks"
+  "host_release": {
+    "suites": 8,
+    "passed": 8
+  },
+  "node_protocol_tests": {
+    "tests": 12,
+    "passed": 12,
+    "backend": "actual portable C firmware"
+  },
+  "browser_integration": {
+    "passed": true,
+    "browser": "headless Chrome, Playwright 1.62.1",
+    "midi": "mock ports backed by C; no physical devices",
+    "covers": [
+      "offline edit and JSON",
+      "offline changes preserved on connect",
+      "exact schema handshake",
+      "resource rejection with alternatives",
+      "DIRECT/POLY focus and template",
+      "SN stereo PAN",
+      "morph",
+      "sequence/global/CV",
+      "independent patch save",
+      "asynchronous LIVE slider preservation",
+      "old protocol write lock",
+      "390px mobile overflow"
+    ]
+  },
+  "arm_build": {
+    "passed": true,
+    "sdk": "2.3.1",
+    "compiler": "arm-none-eabi-gcc 14.3.0",
+    "configuration": "Release"
+  },
+  "arm_execution": {
+    "boot_passed": true,
+    "runtime_passed": true,
+    "platform_rom_sio_stubbed": true
+  },
+  "uf2_validation": true,
+  "pio_instruction_timing": true,
+  "generated_schema_lut_catalog_reproducible": true,
+  "oled_visual_review": "C-rendered PBM contact sheet; no physical panel",
+  "rp2040_wcet_certified": false,
+  "unverified": [
+    "audio pitch/level/IC variant on actual board",
+    "physical USB and OLED startup/resume",
+    "GPIO bus setup/hold and low-clock throughput",
+    "CV calibration accuracy and gate latency",
+    "brownout/flash retention",
+    "device worst-case 1ms timing and interrupt stack headroom"
   ]
 }

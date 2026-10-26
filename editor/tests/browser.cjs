@@ -1,198 +1,276 @@
-// Headless regression tests for this app only; never attaches to a user's browser profile.
+// Isolated headless browser. MIDI ports below run the portable C firmware, never a physical device.
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
 const assert = require("node:assert/strict");
+const { spawnSync } = require("node:child_process");
 (async () => {
   const browser = await chromium.launch({
-    executablePath: process.env.CHROME_BIN || "/opt/google/chrome/chrome",
+    executablePath:
+      process.env.CHROME_BIN ||
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     headless: true,
-    args: ["--no-sandbox"],
   });
-  const page = await browser.newPage({
-    viewport: { width: 1440, height: 1080 },
-  });
+  const context = await browser.newContext({
+      viewport: { width: 1440, height: 1080 },
+    }),
+    page = await context.newPage();
   const errors = [];
-  page.on("pageerror", (e) => {
-    errors.push(e.message);
-    console.error("PAGE ERROR:", e.stack);
-  });
+  page.on("pageerror", (e) => errors.push(e.message));
   page.setDefaultTimeout(10000);
-  if (process.env.EDITOR_BRIDGE) {
-    const { spawnSync } = require("node:child_process");
-    const history = [];
-    await page.exposeFunction("firmwareMessage", (bytes) => {
-      history.push(Buffer.from(bytes).toString("hex"));
-      const run = spawnSync(process.env.EDITOR_BRIDGE, [], {
-        input: history.join("\n") + "\n",
-        encoding: "utf8",
-      });
-      assert.equal(run.status, 0, run.stderr);
-      const line = run.stdout.trim().split("\n").at(-1);
-      return Array.from(Buffer.from(line, "hex"));
+  const history = [];
+  assert(process.env.EDITOR_BRIDGE);
+  await page.exposeFunction("firmwareMessage", (bytes) => {
+    history.push(Buffer.from(bytes).toString("hex"));
+    const r = spawnSync(process.env.EDITOR_BRIDGE, [], {
+      input: history.join("\n") + "\n",
+      encoding: "utf8",
     });
-    await page.addInitScript(() => {
-      const input = {
-        id: "chip-in",
-        name: "Chiptune USB/CV",
-        manufacturer: "Test firmware",
-        state: "connected",
-        open: async () => {},
-        onmidimessage: null,
-      };
-      const output = {
-        id: "chip-out",
-        name: "Chiptune USB/CV",
-        manufacturer: "Test firmware",
-        state: "connected",
-        open: async () => {},
-        send: (bytes) => {
-          window
-            .firmwareMessage(Array.from(bytes))
-            .then((data) =>
-              input.onmidimessage?.({ data: new Uint8Array(data) }),
-            );
-        },
-      };
-      Object.defineProperty(navigator, "requestMIDIAccess", {
-        value: async () => ({
-          inputs: new Map([[input.id, input]]),
-          outputs: new Map([[output.id, output]]),
-          onstatechange: null,
-        }),
-      });
-    });
-  }
-  await page.goto(process.env.EDITOR_URL || "http://127.0.0.1:8765");
-  await page.getByRole("button", { name: "SAA1099", exact: true }).waitFor();
-  await page
-    .getByRole("button", { name: "ATK BASS", exact: true })
-    .count()
-    .catch(() => 0);
-  await page.locator("#factory").selectOption("18");
-  await page
-    .getByRole("button", { name: "音色を読み込む", exact: true })
-    .click();
-  assert.equal(await page.locator("#name").inputValue(), "ATK BASS");
-  await page.getByRole("button", { name: "SAW DOWN", exact: true }).click();
-  assert(
-    await page
-      .getByRole("button", { name: "SAW DOWN", exact: true })
-      .getAttribute("class")
-      .then((c) => c.includes("active")),
-  );
-  await page.locator("#tab-sn").click();
-  await page.locator("#factory").selectOption("19");
-  await page
-    .getByRole("button", { name: "音色を読み込む", exact: true })
-    .click();
-  assert.equal(await page.locator("#name").inputValue(), "SN STACK");
-  assert(
-    (await page.locator("#resource-cost").textContent()).includes("SN 2組"),
-  );
-  await page.locator("#tab-saa").click();
-  await page.locator("#factory").selectOption("18");
-  await page
-    .getByRole("button", { name: "音色を読み込む", exact: true })
-    .click();
-  await page.locator("#steps").scrollIntoViewIfNeeded();
-  const steps = await page.locator("#steps").boundingBox();
-  await page.mouse.move(steps.x + steps.width * 0.15, steps.y + 25);
-  await page.mouse.down();
-  await page.mouse.move(steps.x + steps.width * 0.45, steps.y + 90, {
-    steps: 5,
+    assert.equal(r.status, 0, r.stderr);
+    return [...Buffer.from(r.stdout.trim().split("\n").at(-1), "hex")];
   });
-  await page.mouse.up();
+  await page.addInitScript(() => {
+    const input = {
+      id: "in",
+      name: "Chiptune v0.10",
+      state: "connected",
+      open: async () => {},
+      onmidimessage: null,
+    };
+    const output = {
+      id: "out",
+      name: "Chiptune v0.10",
+      state: "connected",
+      open: async () => {},
+      send: (bytes) =>
+        window
+          .firmwareMessage([...bytes])
+          .then((data) =>
+            input.onmidimessage?.({ data: Uint8Array.from(data) }),
+          ),
+    };
+    Object.defineProperty(navigator, "requestMIDIAccess", {
+      value: async () => ({
+        inputs: new Map([["in", input]]),
+        outputs: new Map([["out", output]]),
+      }),
+    });
+  });
+  await page.goto(process.env.EDITOR_URL || "http://127.0.0.1:8766");
+  await page.locator("#track-level").waitFor();
+  assert.equal(await page.locator("#name").inputValue(), "SAA TONE");
+  assert.equal(await page.locator("#track-mode").inputValue(), "0");
+  assert.match(
+    await page.locator("#test-frequency").textContent(),
+    /110.00 Hz/,
+  );
+  await page.locator("#track-level").evaluate((el) => {
+    el.value = 75;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  assert.match(await page.locator("#track-label").textContent(), /未反映/);
   const downloadPromise = page.waitForEvent("download");
   await page.locator("#export").click();
   const download = await downloadPromise;
-  assert(download.suggestedFilename().endsWith(".json"));
   const fs = require("node:fs");
-  const path = await download.path();
-  const data = JSON.parse(fs.readFileSync(path));
-  assert(data.motion.motion.some((v) => v !== 0));
-  if (process.env.EDITOR_BRIDGE) {
-    await page.locator("#connect").click();
-    await page.locator("#connection-state.connected").waitFor();
-    await page.locator("#read").click();
-    await page
-      .getByRole("status")
-      .filter({ hasText: "本体の音色・ステップを読み出しました" })
-      .waitFor();
-    await page.locator("#profile").selectOption("2");
-    await page.locator("#apply-profile").click();
-    await page.locator("#confirm-profile").click();
-    await page
-      .getByRole("status")
-      .filter({ hasText: "全パートをプロファイルで置き換えました" })
-      .waitFor();
-    await page.locator("#name").fill("WEB TEST");
-    await page.locator("#send").click();
-    await page
-      .getByRole("status")
-      .filter({ hasText: "本体RAMに反映しました" })
-      .waitFor();
-    await page.locator("#read").click();
-    await page
-      .getByRole("status")
-      .filter({ hasText: "本体の音色・ステップを読み出しました" })
-      .waitFor();
-    assert.equal(await page.locator("#name").inputValue(), "WEB TEST");
-    await page.locator("#read-clock").click();
-    await page
-      .getByRole("status")
-      .filter({ hasText: "共通SNクロックを読み出しました" })
-      .waitFor();
-    await page.locator("#send-clock").click();
-    await page
-      .getByRole("status")
-      .filter({ hasText: "共通クロックを反映しました" })
-      .waitFor();
-    await page.locator("#read-cv").click();
-    await page
-      .getByRole("status")
-      .filter({ hasText: "CV / Gateの割り当てを読み出しました" })
-      .waitFor();
-    await page.locator("#send-cv").click();
-    await page
-      .getByRole("status")
-      .filter({ hasText: "CV / Gateを本体へ反映しました" })
-      .waitFor();
-    await page.locator("#send-motion").click();
-    await page
-      .getByRole("status")
-      .filter({ hasText: "ステップとトランスポートを本体RAMへ反映しました" })
-      .waitFor();
-    await page.locator("#save-open").click();
-    await page.locator("#save").click();
-    await page
-      .getByRole("status")
-      .filter({ hasText: "保存に失敗しました" })
-      .waitFor();
-    await page.locator("#save-cancel").click();
-  }
-  await page.evaluate(() => scrollTo(0, 0));
+  const exported = JSON.parse(fs.readFileSync(await download.path()));
+  assert.equal(exported.schema, 10);
+  assert.equal(exported.track.level, 75);
   await page.screenshot({
-    path: process.env.SCREENSHOT_DIR
-      ? `${process.env.SCREENSHOT_DIR}/editor-desktop.png`
-      : "/tmp/chiptune-editor-desktop.png",
+    path: "/tmp/chiptune-v10-offline.png",
     fullPage: true,
   });
+  await page.locator("#connect").click();
+  await page.locator("#connection-state.connected").waitFor();
+  await page.waitForFunction(
+    () => document.querySelector("#track-level").value === "75",
+  );
+  await page.locator("#read").click();
+  await page.waitForFunction(
+    () => document.querySelector("#track-level").value === "100",
+  );
+  await page.locator("#track-level").evaluate((el) => {
+    el.value = 55;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await page.locator("#send").click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "本体RAMへ反映しました" })
+    .waitFor();
+  await page.locator("#read").click();
+  await page.waitForFunction(
+    () => document.querySelector("#track-level").value === "55",
+  );
+  await page.locator("#factory").selectOption("18");
+  await page.locator("#load-factory").click();
+  await page.locator("#send").click();
+  await page.getByRole("status").filter({ hasText: "代替案" }).waitFor();
+  await page.locator("#read").click();
+  await page.waitForFunction(
+    () => document.querySelector("#name").value === "SAA TONE",
+  );
+  await page.locator('[data-track="6"]').click();
+  await page.waitForFunction(
+    () => document.querySelector("#name").value === "SN MONO",
+  );
+  assert.equal(await page.locator("#patch-detune").inputValue(), "0");
+  await page.locator("#track-pan").evaluate((el) => {
+    el.value = 0;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await page.locator("#send").click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "本体RAMへ反映しました" })
+    .waitFor();
+  await page.locator("#poly-focus").click();
+  await page.locator("#replace-confirm").click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "選択TrackをPOLY化しました" })
+    .waitFor();
+  assert.equal(await page.locator("#track-mode").inputValue(), "1");
+  assert.equal(await page.locator("#track-voices").inputValue(), "3");
+  await page.locator("aside details>summary").click();
+  await page.locator("#template").selectOption("1");
+  await page.locator("#apply-template").click();
+  await page.locator("#replace-confirm").click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "配置をRAMへ置き換えました" })
+    .waitFor();
+  await page.locator('[data-track="0"]').click();
+  await page.waitForFunction(
+    () => document.querySelector("#track-mode").value === "1",
+  );
+  assert.equal(await page.locator("#track-voices").inputValue(), "6");
+  await page.locator("#advanced>summary").click();
+  await page.locator("#morph-target").selectOption("4");
+  await page.locator("#morph-amount").evaluate((el) => {
+    el.value = 100;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await page.locator("#send").click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "本体RAMへ反映しました" })
+    .waitFor();
+  await page.locator("#motion-panel>summary").click();
+  await page.getByLabel("NOTE step 1", { exact: true }).fill("48");
+  await page.getByLabel("NOTE step 1", { exact: true }).dispatchEvent("change");
+  await page.locator("#send-sequence").click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "SequenceをRAMへ反映" })
+    .waitFor();
+  await page.locator("#clock-panel>summary").click();
+  await page.locator("#read-global").click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "共通設定を読み出しました" })
+    .waitFor();
+  await page.locator("#send-global").click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "SNクロックと共通設定" })
+    .waitFor();
+  await page.locator("#cv-panel>summary").click();
+  await page.locator("#read-cv").click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "CV/Gateを読み出しました" })
+    .waitFor();
+  await page.locator("#send-cv").click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "CV/Gateの2系統" })
+    .waitFor();
+  await page.locator("#save-open").click();
+  await page.locator("#save-kind").selectOption("0");
+  await page.locator("#save-slot").selectOption("5");
+  assert.match(
+    await page.locator("#save-scope").textContent(),
+    /Project.*変更しません/,
+  );
+  await page.locator("#save").click();
+  await page
+    .getByRole("status")
+    .filter({ hasText: "Patchのみ保存しました" })
+    .waitFor();
+  // LIVE sends latest state without replacing a slider DOM node on every input.
+  await page.locator("#live").check();
+  await page.locator("#track-level").evaluate((el) => {
+    window.sliderBefore = el;
+    el.value = 67;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.value = 68;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    if (window.sliderBefore !== document.querySelector("#track-level"))
+      throw Error("Slider was replaced during drag");
+  });
+  await page.waitForFunction(
+    () =>
+      !document.querySelector("#track-label").textContent.includes("未反映"),
+  );
+  assert(
+    await page.evaluate(
+      () => window.sliderBefore === document.querySelector("#track-level"),
+    ),
+  );
+  await page.locator("#live").uncheck();
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.evaluate(() => scrollTo(0, 0));
   await page.screenshot({
-    path: process.env.SCREENSHOT_DIR
-      ? `${process.env.SCREENSHOT_DIR}/editor-mobile.png`
-      : "/tmp/chiptune-editor-mobile.png",
+    path: "/tmp/chiptune-v10-mobile.png",
     fullPage: true,
   });
   assert(
     await page.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
     ),
   );
   assert.deepEqual(errors, []);
+  // A v0.9-like protocol-1 responder must never receive a setting write.
+  const old = await browser.newContext(),
+    oldPage = await old.newPage();
+  let oldWrites = 0;
+  await oldPage.exposeFunction("oldMessage", (bytes) => {
+    if (bytes[6] !== 0) oldWrites++;
+    const b = [125, 67, 84, 1, bytes[5], 64, 0, 0, 9, 0, 6, 14, 16, 23, 39];
+    return [240, ...b, -b.reduce((a, v) => a + v, 0) & 127, 247];
+  });
+  await oldPage.addInitScript(() => {
+    const input = {
+      id: "in",
+      name: "Chiptune v0.9",
+      state: "connected",
+      open: async () => {},
+    };
+    const output = {
+      id: "out",
+      name: "Chiptune v0.9",
+      state: "connected",
+      open: async () => {},
+      send: (bytes) =>
+        window
+          .oldMessage([...bytes])
+          .then((data) =>
+            input.onmidimessage?.({ data: Uint8Array.from(data) }),
+          ),
+    };
+    Object.defineProperty(navigator, "requestMIDIAccess", {
+      value: async () => ({
+        inputs: new Map([["in", input]]),
+        outputs: new Map([["out", output]]),
+      }),
+    });
+  });
+  await oldPage.goto(process.env.EDITOR_URL || "http://127.0.0.1:8766");
+  await oldPage.locator("#connect").click();
+  await oldPage.locator("#message.error").waitFor();
+  assert(await oldPage.locator("#send").isDisabled());
+  assert.equal(oldWrites, 0);
   await browser.close();
   console.log(
-    "PASS: firmware-backed Web MIDI handshake, read/write, clock, CV atomic update, save rejection; offline structure selection, ENV shape, SN stack, motion painting, JSON export, mobile overflow, console",
+    "PASS browser: offline editing/export, protocol-2 real-C sync, resource rejection, DIRECT/POLY, PAN, morph, sequence/clock/CV, independent patch save, LIVE coalescing, old-version write lock, mobile layout",
   );
 })().catch((e) => {
   console.error(e);
