@@ -1,113 +1,208 @@
 import { fields } from "./schema.js";
 export { fields };
-export const models = [
-  "SAA PULSE",
-  "SAA NOISE",
-  "SAA TONE + NOISE",
-  "SAA ENV OSC",
-  "SAA ENV × TONE",
-  "SN STEREO PULSE",
-  "SN LEFT PULSE",
-  "SN RIGHT PULSE",
-  "SN STEREO NOISE",
-  "SN TONE + PERIODIC",
-  "SN LEFT NOISE",
-  "SN RIGHT NOISE",
-  "SAA ENV × NOISE",
-  "SAA ENV × MIX",
-  "SAA LAYER",
-  "SN STEREO STACK",
-];
+export const SCHEMA = 10,
+  PROTOCOL = 2;
+export const chips = ["SAA1099", "SN76489"];
+export const sources = ["Tone", "Noise", "Tone + Noise"];
+export const envelopes = ["Off", "ENV oscillator", "Amplitude modulation"];
+export const outputs = ["L/R + PAN", "Left only", "Right only"];
 export const shapes = [
-  "ZERO",
-  "MAX",
-  "DECAY ONCE",
-  "SAW DOWN",
-  "TRIANGLE ONCE",
-  "TRIANGLE",
-  "ATTACK ONCE",
-  "SAW UP",
+  "Zero",
+  "Maximum",
+  "Decay once",
+  "Saw down",
+  "Triangle once",
+  "Triangle",
+  "Rise once",
+  "Saw up",
 ];
-export const parameters = [
-  "OFF",
-  "WAVE",
-  "STEPS",
-  "R INVERT",
-  "PAN",
-  "VIBRATO",
-  "DETUNE",
-  "TONE MIX",
-  "ATTACK",
-  "DECAY",
-  "RELEASE",
-  "TREMOLO",
-  "LEVEL",
-  "PITCH",
-  "SN BASE ALL",
-  "SN DEPTH ALL",
-  "LAYER LEVEL",
-  "LAYER DECAY",
-  "ENV RATIO",
-  "LAYER PITCH",
+export const destinations = [
+  "Off",
+  "Level",
+  "Pan",
+  "Pitch",
+  "Vibrato",
+  "Tremolo",
+  "Layer level",
+  "ENV ratio",
+  "Noise pitch",
+  "SN clock base",
+  "SN clock depth",
+  "Morph",
 ];
-export const isSaa = (m) => m <= 4 || (m >= 12 && m <= 14);
-export const isEnv = (m) => [3, 4, 12, 13, 14].includes(m);
-export const isNoise = (m) => [1, 2, 8, 9, 10, 11, 12, 13].includes(m);
-export const limit = (m) =>
-  m === 15 || (m >= 8 && m <= 11) ? 1 : isEnv(m) ? 2 : isSaa(m) ? 6 : 3;
-export const roleFor = (m) =>
-  isEnv(m) ? 2 : isSaa(m) ? 1 : isNoise(m) ? 4 : 3;
-export function fromValues(values) {
-  return Object.fromEntries(fields.map((f, i) => [f.name, values[i]]));
+export function cleanName(s) {
+  return String(s)
+    .toUpperCase()
+    .replace(/[^ -Z]/g, " ")
+    .padEnd(8, " ")
+    .slice(0, 8);
 }
-export function valuesOf(sound) {
-  return fields.map((f) => sound[f.name]);
-}
-export function validateSound(sound) {
+export function validatePatch(p) {
   for (const f of fields)
-    if (
-      !Number.isInteger(sound[f.name]) ||
-      sound[f.name] < f.min ||
-      sound[f.name] > f.max
-    )
+    if (!Number.isInteger(p[f.name]) || p[f.name] < f.min || p[f.name] > f.max)
       throw Error(`${f.label}: 範囲外です`);
-  if (![8, 16].includes(sound.steps)) throw Error("ENV levels は8または16です");
-  if (
-    fields
-      .filter((f) => f.name.startsWith("macro_dest"))
-      .some((f) => sound[f.name] >= parameters.length)
+  if (![8, 16].includes(p.env_steps)) throw Error("ENV steps は8/16です");
+  if (p.chip === 0) {
+    if (p.env === 1 && p.source !== 0)
+      throw Error("ENV発振はToneを選んでください");
+    if (p.layers > 1 && (p.layers !== 2 || p.env !== 1))
+      throw Error("SAA layerにはENV oscillatorが必要です");
+  } else if (
+    p.env ||
+    (p.source !== 0 && p.layers !== 1) ||
+    (p.source === 2 && p.noise_rate !== 3)
   )
-    throw Error("Macro destination が不正です");
-  return sound;
-}
-export function word(value) {
-  if (!Number.isInteger(value) || value < 0 || value > 16383)
-    throw Error("14-bit range");
-  return [value & 127, value >> 7];
-}
-export function signed(value) {
-  return word(value + 8192);
-}
-export function readWord(bytes, index = 0) {
-  if (index + 1 >= bytes.length) throw Error("Truncated word");
-  return bytes[index] | (bytes[index + 1] << 7);
-}
-export function frame(command, id, payload = []) {
+    throw Error("SNのENV/Layer/Noise設定が不正です");
   if (
-    command < 0 ||
-    command > 127 ||
+    (p.noise_pitch || p.noise_sweep) &&
+    (p.noise_rate !== 3 ||
+      (p.source === 0 && !(p.chip === 0 && p.layers > 1 && p.layer_source)))
+  )
+    throw Error("Noise sweepにはKey Trackが必要です");
+  return p;
+}
+export function normalizePatch(p, changed) {
+  if (changed === "source" && p.source !== 0) {
+    p.layers = 1;
+    if (p.env === 1) p.env = 2;
+  }
+  if (changed === "env" && p.env !== 1 && p.chip === 0) p.layers = 1;
+  if (p.chip === 1) {
+    p.env = 0;
+    if (p.source !== 0) p.layers = 1;
+    if (p.source === 2) p.noise_rate = 3;
+  }
+  if (p.chip === 0 && p.layers > 1) {
+    p.layers = 2;
+    p.env = 1;
+    p.source = 0;
+  }
+  if (p.env === 1) p.source = 0;
+  if (changed === "source" && p.source !== 0 && p.env === 1) p.env = 2;
+  if (
+    p.noise_rate !== 3 ||
+    (p.source === 0 && !(p.chip === 0 && p.layers > 1 && p.layer_source !== 0))
+  )
+    p.noise_pitch = p.noise_sweep = 0;
+  return validatePatch(p);
+}
+export function sameStructure(a, b) {
+  if (
+    !["chip", "source", "env", "output", "layers"].every((k) => a[k] === b[k])
+  )
+    return false;
+  if (a.chip === 0 && a.layers > 1 && a.layer_source !== b.layer_source)
+    return false;
+  if (
+    a.env &&
+    !["shape", "env_steps", "env_invert"].every((k) => a[k] === b[k])
+  )
+    return false;
+  const noise =
+    a.source !== 0 || (a.chip === 0 && a.layers > 1 && a.layer_source !== 0);
+  return (
+    !noise ||
+    (a.noise_rate === b.noise_rate &&
+      (a.chip === 0 || a.noise_type === b.noise_type))
+  );
+}
+export function description(p) {
+  return `${chips[p.chip]} · ${p.env === 1 ? "ENV oscillator" : p.env === 2 ? "AM × " : ""}${p.env === 1 ? "" : sources[p.source]}${p.layers > 1 ? ` + ${p.layers - 1} layer` : ""}${p.output ? ` · ${outputs[p.output]}` : ""}`;
+}
+export function resourceInfo(p, mode = 0, voices = 1) {
+  const n = mode === 1 ? voices : 1;
+  let per =
+    p.chip === 0
+      ? (p.env ? 2 : 1) + (p.layers > 1 ? 1 : 0)
+      : p.source === 0
+        ? p.layers * (p.output === 0 ? 2 : 1)
+        : (p.output === 0 ? 2 : 1) *
+          (p.noise_rate === 3 || p.source === 2 ? 2 : 1);
+  if (
+    p.chip === 0 &&
+    (p.source !== 0 || (p.layers > 1 && p.layer_source)) &&
+    p.noise_rate === 3
+  ) {
+    if (!(p.layers > 1)) per++;
+  }
+  return {
+    cost: `${n}音 · 最大${per * n}回路`,
+    detail:
+      p.chip === 0
+        ? "SAAノイズ速度は3声単位で共有。ENVは出力3/6とクロック2/5を使用します。"
+        : "SNの外部クロックは左右の全トーン・ノイズで共有。Key Track / MetalはTone 3も使用します。",
+  };
+}
+export function supported(p, name) {
+  if (
+    [
+      "chip",
+      "source",
+      "output",
+      "attack",
+      "decay",
+      "release",
+      "sustain",
+      "level",
+      "pitch_decay",
+      "pitch_amount",
+      "glide",
+      "transpose",
+      "fine",
+      "vibrato",
+      "tremolo",
+      "lfo_rate",
+      "lfo_shape",
+    ].includes(name)
+  )
+    return true;
+  if (name === "env") return p.chip === 0;
+  if (
+    ["shape", "env_steps", "env_invert", "retrigger", "env_ratio"].includes(
+      name,
+    )
+  )
+    return p.chip === 0 && p.env !== 0 && (name !== "env_ratio" || p.env === 2);
+  if (name === "layers") return p.source === 0;
+  if (
+    name === "layer_source" ||
+    name === "layer_level" ||
+    name === "layer_decay"
+  )
+    return p.chip === 0 && p.layers > 1;
+  if (name === "layer_interval") return p.layers > 1;
+  if (name === "stack_interval") return p.chip === 1 && p.layers === 3;
+  if (name === "noise_type") return p.chip === 1 && p.source !== 0;
+  if (name === "noise_mix") return p.chip === 1 && p.source === 2;
+  if (name === "noise_rate")
+    return (
+      p.source !== 0 || (p.chip === 0 && p.layers > 1 && p.layer_source !== 0)
+    );
+  if (name === "noise_pitch" || name === "noise_sweep")
+    return supported(p, "noise_rate") && p.noise_rate === 3;
+  if (name === "detune") return p.chip === 1 && p.output === 0;
+  return false;
+}
+export function word(n) {
+  if (!Number.isInteger(n) || n < 0 || n > 16383) throw Error("14-bit range");
+  return [n & 127, n >> 7];
+}
+export const signed = (n) => word(n + 8192);
+export const readWord = (d, i = 0) => d[i] | (d[i + 1] << 7);
+export const maskBytes = (n) => [n & 127, (n >> 7) & 127, (n >> 14) & 3];
+export function frame(cmd, id, payload = []) {
+  if (
+    !Number.isInteger(cmd) ||
+    cmd < 0 ||
+    cmd > 63 ||
+    !Number.isInteger(id) ||
     id < 0 ||
     id > 127 ||
-    payload.some((v) => !Number.isInteger(v) || v < 0 || v > 127)
+    payload.some((x) => !Number.isInteger(x) || x < 0 || x > 127)
   )
-    throw Error("Invalid SysEx byte");
-  const b = [0x7d, 0x43, 0x54, 1, id, command, ...payload];
-  return new Uint8Array([
-    0xf0,
-    ...b,
-    -b.reduce((a, v) => a + v, 0) & 127,
-    0xf7,
-  ]);
+    throw Error("Invalid SysEx payload");
+  const b = [125, 67, 84, PROTOCOL, id, cmd, ...payload];
+  return Uint8Array.from([240, ...b, -b.reduce((a, v) => a + v, 0) & 127, 247]);
 }
 export function parseFrame(bytes) {
   const b = Array.from(bytes);
@@ -118,229 +213,175 @@ export function parseFrame(bytes) {
     b[1] !== 125 ||
     b[2] !== 67 ||
     b[3] !== 84 ||
-    b[4] !== 1 ||
-    b.slice(1, -1).some((v) => v < 0 || v > 127) ||
+    b[4] !== PROTOCOL ||
+    b.slice(1, -1).some((x) => x > 127) ||
     b.slice(1, -1).reduce((a, v) => a + v, 0) % 128
   )
-    throw Error("不正な応答です");
-  return { id: b[5], command: b[6], status: b[7], data: b.slice(8, -2) };
+    throw Error("対応外の応答、またはチェックサム不一致");
+  return { id: b[5], command: b[6] & 63, status: b[7], data: b.slice(8, -2) };
 }
-export function soundBytes(sound) {
-  validateSound(sound);
-  return [fields.length, ...valuesOf(sound).flatMap(signed)];
-}
-export function decodeSound(data, offset = 0) {
+export function verifyHello(h) {
   if (
-    data[offset] !== fields.length ||
-    data.length < offset + 1 + 2 * fields.length
+    h.length !== 11 ||
+    h[0] !== 0 ||
+    h[1] !== 10 ||
+    h[3] !== PROTOCOL ||
+    h[4] !== SCHEMA ||
+    h[10] !== fields.length
   )
-    throw Error("音色形式が違います。v0.8以降のファームが必要です");
-  return validateSound(
-    fromValues(fields.map((_, i) => readWord(data, offset + 1 + 2 * i) - 8192)),
+    throw Error(
+      "v0.10 / protocol 2 / schema 10 専用です。書き込みを無効化しました。",
+    );
+  return h;
+}
+export function patchBytes(p) {
+  validatePatch(p);
+  return [fields.length, ...fields.flatMap((f) => signed(p[f.name]))];
+}
+export function decodePatch(d, index = 0) {
+  if (d[index] !== fields.length || d.length < index + 1 + fields.length * 2)
+    throw Error("音色スキーマ不一致");
+  return validatePatch(
+    Object.fromEntries(
+      fields.map((f, i) => [f.name, readWord(d, index + 1 + i * 2) - 8192]),
+    ),
   );
 }
-export function cleanName(name) {
-  return name
-    .toUpperCase()
-    .replace(/[^ -Z]/g, " ")
-    .slice(0, 8)
-    .padEnd(8, " ");
-}
-export function encodePart(p) {
+export function validateTrack(t) {
+  const controls = {
+    track: [0, 13],
+    enabled: [0, 1],
+    mode: [0, 2],
+    voices: [1, 6],
+    level: [0, 100],
+    pan: [0, 100],
+    mute: [0, 1],
+    low: [0, 127],
+    high: [0, 127],
+    velocity_curve: [0, 3],
+    morph_target: [0, 16],
+    morph: [0, 100],
+  };
+  for (const [k, [lo, hi]] of Object.entries(controls))
+    if (!Number.isInteger(t[k]) || t[k] < lo || t[k] > hi)
+      throw Error(`Track ${k}: 範囲外`);
+  if (t.low > t.high) throw Error("音域の上下が逆です");
+  for (const k of ["usb", "trs"])
+    if (!Number.isInteger(t[k]) || t[k] < 0 || t[k] > 65535)
+      throw Error("MIDI route mask");
   if (
-    !Number.isInteger(p.part) ||
-    p.part < 0 ||
-    p.part > 13 ||
-    ![0, 1].includes(p.enabled) ||
-    !Number.isInteger(p.poly) ||
-    p.poly < 1 ||
-    p.poly > limit(p.sound.model) ||
-    !Number.isInteger(p.role) ||
-    p.role < 0 ||
-    p.role > 4 ||
-    !Number.isInteger(p.channel) ||
-    (p.channel > 15 && p.channel !== 127) ||
-    p.channel < 0
+    t.macro_dest?.length !== 4 ||
+    t.macro?.length !== 4 ||
+    t.macro_dest.some(
+      (x) => !Number.isInteger(x) || x < 0 || x >= destinations.length,
+    ) ||
+    t.macro.some((x) => !Number.isInteger(x) || x < -100 || x > 100)
   )
-    throw Error("パート設定が不正です");
+    throw Error("Macro設定");
+  validatePatch(t.patch);
+  return t;
+}
+export function encodeTrack(t) {
+  validateTrack(t);
   return [
-    p.part,
-    p.enabled,
-    p.poly,
-    p.role,
-    p.channel,
-    ...[...cleanName(p.name)].map((c) => c.charCodeAt(0)),
-    ...soundBytes(p.sound),
+    t.track,
+    t.enabled,
+    t.mode,
+    t.voices,
+    t.level,
+    t.pan,
+    t.mute,
+    t.low,
+    t.high,
+    t.velocity_curve,
+    t.morph_target,
+    t.morph,
+    ...[...cleanName(t.name)].map((c) => c.charCodeAt(0)),
+    ...t.macro_dest,
+    ...t.macro.flatMap(signed),
+    ...maskBytes(t.usb),
+    ...maskBytes(t.trs),
+    ...patchBytes(t.patch),
   ];
 }
-export function decodePart(data) {
-  if (data.length !== 18 + 2 * fields.length)
-    throw Error("パート応答の長さが違います");
+export function decodeTrack(d) {
+  if (d.length !== 43 + fields.length * 2)
+    throw Error(`Track response length ${d.length}`);
+  const t = {
+    track: d[0],
+    enabled: d[1],
+    mode: d[2],
+    voices: d[3],
+    level: d[4],
+    pan: d[5],
+    mute: d[6],
+    low: d[7],
+    high: d[8],
+    velocity_curve: d[9],
+    morph_target: d[10],
+    morph: d[11],
+    name: String.fromCharCode(...d.slice(12, 20)).trim(),
+    macro_dest: d.slice(20, 24),
+    macro: Array.from({ length: 4 }, (_, i) => readWord(d, 24 + i * 2) - 8192),
+    usb: readWord(d, 32) | (d[34] << 14),
+    trs: readWord(d, 35) | (d[37] << 14),
+    patch: decodePatch(d, 38),
+    outputs: readWord(d, 39 + fields.length * 2),
+    resources: readWord(d, 41 + fields.length * 2),
+  };
+  return validateTrack(t);
+}
+export function newTrack(index, factories) {
+  const f = factories[index < 6 ? 20 : index < 9 ? 21 : 22];
   return {
-    part: data[0],
-    enabled: data[1],
-    poly: data[2],
-    role: data[3],
-    channel: data[4],
-    name: String.fromCharCode(...data.slice(5, 13)).trim(),
-    sound: decodeSound(data, 13),
-    outputs: readWord(data, 14 + 2 * fields.length),
-    resources: readWord(data, 16 + 2 * fields.length),
+    track: index,
+    enabled: index < 10 ? 1 : 0,
+    mode: 0,
+    voices: 1,
+    level: 100,
+    pan: 50,
+    mute: 0,
+    low: 0,
+    high: 127,
+    velocity_curve: 0,
+    morph_target: 0,
+    morph: 0,
+    name: f.name.trim(),
+    patch: structuredClone(f.patch),
+    macro_dest: [4, 5, 2, 1],
+    macro: [0, 0, 0, 0],
+    usb: index < 10 ? 1 << index : 0,
+    trs: index < 10 ? 1 << index : 0,
   };
 }
-export function visibleFields(sound) {
-  const m = sound.model,
-    env = isEnv(m),
-    noise = isNoise(m),
-    sn = !isSaa(m);
-  return fields.filter((f) => {
-    const n = f.name;
-    if (n === "model") return false;
-    if (n === "pan" && [6, 7, 10, 11].includes(m)) return false;
-    if (["shape", "steps", "invert", "retrigger"].includes(n))
-      return env || (n === "shape" && sn && noise);
-    if (n === "noise_rate")
-      return noise || (m === 14 && sound.layer_source > 0);
-    if (n === "noise_mix") return m === 9;
-    if (n === "detune") return [5, 8, 9, 15].includes(m);
-    if (n === "env_ratio") return [4, 12, 13].includes(m);
-    if (n === "layer_source" || n === "layer_level" || n === "layer_decay")
-      return m === 14;
-    if (n === "layer_interval")
-      return (
-        m === 15 ||
-        (m === 14 && (sound.layer_source !== 1 || sound.noise_rate === 3))
-      );
-    if (n === "stack_size") return m === 15;
-    if (n === "stack_interval") return m === 15 && sound.stack_size === 3;
-    return true;
-  });
-}
-export function resourceInfo(sound, poly) {
-  const m = sound.model,
-    noise = isNoise(m),
-    voices = sound.mode ? 1 : poly;
-  if (m === 15)
-    return {
-      cost: `SN ${sound.stack_size}組 / stereo × 1音`,
-      detail: `左右で${sound.stack_size * 2}トーンを使用。3組ではトーン3連動ノイズと競合します。`,
-    };
-  if (m === 14)
-    return {
-      cost: `SAA ${3 * poly}/6回路 · ${voices}音`,
-      detail:
-        "1音につきENV出力＋ENVクロック＋レイヤー。レイヤーの減衰は全体ADSRに追加でかかります。",
-    };
-  if (isEnv(m)) {
-    const cost = [12, 13].includes(m) && sound.noise_rate === 3 ? 3 : 2;
-    return {
-      cost: `SAA ${cost * poly}/6回路 · ${voices}音`,
-      detail:
-        "ENVクロック用の回路を予約します。純ENVの最高音は形状・ステップ数で変わります。",
-    };
-  }
-  if (isSaa(m))
-    return {
-      cost: `SAA ${poly}/6出力 · ${voices}音`,
-      detail: noise
-        ? "ノイズのレートは3チャンネルのグループで共有。KEY TRACKは追加クロック回路を使う場合があります。"
-        : "1回路で左右の音量を独立制御できます。",
-    };
-  if (noise)
-    return {
-      cost: "SN stereo noise × 1音",
-      detail:
-        "KEY TRACK / METALは左右のトーン3も予約します。全SNの外部クロックは共通です。",
-    };
+export function newSequence(track) {
   return {
-    cost: `SN ${m === 5 ? poly + "組" : poly + "回路"} · ${voices}音`,
-    detail: "外部クロック操作は左右の全トーン・ノイズに影響します。",
+    track,
+    enabled: 0,
+    length: 16,
+    division: 6,
+    direction: 0,
+    arp: 0,
+    arp_octaves: 1,
+    note: Array.from({ length: 16 }, (_, i) => 45 + (i % 4) * 3),
+    gate: Array(16).fill(70),
+    velocity: Array(16).fill(100),
+    motion: Array(16).fill(0),
   };
 }
-export function envValue(shape, phase, steps = 16) {
-  const p = Math.max(0, Math.min(1, phase));
-  let v;
-  switch (shape) {
-    case 0:
-      v = 0;
-      break;
-    case 1:
-      v = 1;
-      break;
-    case 2:
-    case 3:
-      v = 1 - p;
-      break;
-    case 4:
-    case 5:
-      v = 1 - Math.abs(2 * p - 1);
-      break;
-    default:
-      v = p;
-  }
-  return Math.round(v * (steps - 1)) / (steps - 1);
-}
-export function waveform(sound, phase, right = false) {
-  const m = sound.model,
-    p = phase % 1;
-  const density = [127, 71, 37, 71][sound.noise_rate];
-  let noise = Math.sin(Math.floor(phase * density) * 127.1 + 311.7) > 0 ? 1 : 0;
-  if ([8, 9, 10, 11].includes(m) && sound.shape === 0)
-    noise = p < 1 / 15 ? 1 : 0;
-  const carrier =
-    isEnv(m) && ![3, 14].includes(m)
-      ? (phase *
-          (sound.shape === 4 || sound.shape === 5
-            ? sound.steps
-            : sound.steps / 2)) /
-        2 ** (sound.env_ratio / 12)
-      : phase;
-  const pulse = carrier % 1 < 0.5 ? 1 : 0;
-  let env = envValue(sound.shape, p, sound.steps);
-  if (right && sound.invert) env = 1 - env;
-  if (m === 3 || m === 14) return env;
-  if (m === 4) return pulse * env;
-  if (m === 12) return noise * env;
-  if (m === 13) return ((pulse + noise) / 2) * env;
-  if (m === 1 || [8, 10, 11].includes(m)) return noise;
-  if (m === 2) return (pulse + noise) / 2;
-  if (m === 9)
-    return (
-      (pulse * sound.noise_mix) / 100 + noise * (1 - sound.noise_mix / 100)
-    );
-  if (m === 15) {
-    let v = 0;
-    for (let i = 0; i < sound.stack_size; i++)
-      v +=
-        (phase *
-          2 **
-            ((i === 1
-              ? sound.layer_interval
-              : i === 2
-                ? sound.stack_interval
-                : 0) /
-              12)) %
-          1 <
-        0.5
-          ? 1
-          : 0;
-    return v / sound.stack_size;
-  }
-  return pulse;
-}
-export function validateMotion(m) {
-  for (const [k, lo, hi] of [
-    ["part", 0, 13],
-    ["length", 1, 16],
-    ["division", 1, 24],
-    ["direction", 0, 2],
-    ["sequence", 0, 1],
-    ["arp", 0, 5],
-    ["arp_octaves", 1, 4],
-    ["running", 0, 1],
-  ])
-    if (!Number.isInteger(m[k]) || m[k] < lo || m[k] > hi)
-      throw Error("Motion 設定が不正です");
+export function encodeSequence(q) {
+  const ranges = {
+    track: [0, 13],
+    enabled: [0, 1],
+    length: [1, 16],
+    division: [1, 24],
+    direction: [0, 2],
+    arp: [0, 5],
+    arp_octaves: [1, 4],
+  };
+  for (const [k, [lo, hi]] of Object.entries(ranges))
+    if (!Number.isInteger(q[k]) || q[k] < lo || q[k] > hi)
+      throw Error(`Sequence ${k}`);
   for (const [k, lo, hi] of [
     ["note", 0, 127],
     ["gate", 0, 100],
@@ -348,85 +389,176 @@ export function validateMotion(m) {
     ["motion", -100, 100],
   ])
     if (
-      !Array.isArray(m[k]) ||
-      m[k].length !== 16 ||
-      m[k].some((v) => !Number.isInteger(v) || v < lo || v > hi)
+      q[k]?.length !== 16 ||
+      q[k].some((x) => !Number.isInteger(x) || x < lo || x > hi)
     )
-      throw Error("Motion ステップが不正です");
-  return m;
-}
-export function encodeMotion(m) {
-  validateMotion(m);
+      throw Error(`Sequence ${k}`);
   return [
-    m.part,
-    m.length,
-    m.division,
-    m.direction,
-    m.sequence,
-    m.arp,
-    m.arp_octaves,
-    m.running,
-    ...m.note,
-    ...m.gate,
-    ...m.velocity,
-    ...m.motion.flatMap(signed),
+    q.track,
+    q.enabled,
+    q.length,
+    q.division,
+    q.direction,
+    q.arp,
+    q.arp_octaves,
+    ...q.note,
+    ...q.gate,
+    ...q.velocity,
+    ...q.motion.flatMap(signed),
   ];
 }
-export function decodeMotion(d) {
-  if (d.length !== 88) throw Error("Motion 応答が不正です");
-  return validateMotion({
-    part: d[0],
-    length: d[1],
-    division: d[2],
-    direction: d[3],
-    sequence: d[4],
+export function decodeSequence(d) {
+  if (d.length !== 87) throw Error("Sequence response");
+  return {
+    track: d[0],
+    enabled: d[1],
+    length: d[2],
+    division: d[3],
+    direction: d[4],
     arp: d[5],
     arp_octaves: d[6],
-    running: d[7],
-    note: d.slice(8, 24),
-    gate: d.slice(24, 40),
-    velocity: d.slice(40, 56),
+    note: d.slice(7, 23),
+    gate: d.slice(23, 39),
+    velocity: d.slice(39, 55),
     motion: Array.from(
       { length: 16 },
-      (_, i) => readWord(d, 56 + i * 2) - 8192,
+      (_, i) => readWord(d, 55 + i * 2) - 8192,
     ),
-  });
-}
-export function exportPatch(part, motion) {
-  return {
-    format: "chiptune-wave-lab",
-    version: 1,
-    part: { ...part, outputs: undefined, resources: undefined },
-    motion,
   };
 }
-export function importPatch(data) {
-  if (data?.format !== "chiptune-wave-lab" || data.version !== 1)
-    throw Error("対応しないファイル形式です");
-  encodePart(data.part);
-  if (data.motion) validateMotion(data.motion);
-  return structuredClone(data);
+export const newCv = (i) => ({
+  input: i,
+  mode: 0,
+  track: i,
+  base_note: 45,
+  scale: 0,
+  root: 0,
+  glide: 0,
+  range: 0,
+  gate: 0,
+  gate_track: i,
+  parameter: 0,
+  gate_note: 45,
+  amount: 100,
+});
+export function encodeCv(c) {
+  const max = {
+    input: 1,
+    mode: 2,
+    track: 13,
+    base_note: 127,
+    scale: 7,
+    root: 11,
+    glide: 7,
+    range: 1,
+    gate: 4,
+    gate_track: 13,
+    parameter: 11,
+    gate_note: 127,
+  };
+  for (const [k, hi] of Object.entries(max))
+    if (!Number.isInteger(c[k]) || c[k] < 0 || c[k] > hi)
+      throw Error(`CV ${k}`);
+  if (!Number.isInteger(c.amount) || Math.abs(c.amount) > 100)
+    throw Error("CV amount");
+  return [
+    c.input,
+    c.mode,
+    c.track,
+    c.base_note,
+    c.scale,
+    c.root,
+    c.glide,
+    c.range,
+    c.gate,
+    c.gate_track,
+    c.parameter,
+    c.gate_note,
+    ...signed(c.amount),
+  ];
+}
+export function decodeCv(d) {
+  if (d.length !== 14) throw Error("CV response");
+  const keys = [
+    "input",
+    "mode",
+    "track",
+    "base_note",
+    "scale",
+    "root",
+    "glide",
+    "range",
+    "gate",
+    "gate_track",
+    "parameter",
+    "gate_note",
+  ];
+  return {
+    ...Object.fromEntries(keys.map((k, i) => [k, d[i]])),
+    amount: readWord(d, 12) - 8192,
+  };
+}
+export function exportTrack(t, q) {
+  return {
+    schema: SCHEMA,
+    kind: "chiptune-track",
+    track: structuredClone(validateTrack(t)),
+    sequence: structuredClone(q),
+  };
+}
+export function importTrack(data, index) {
+  if (data.schema !== SCHEMA || data.kind !== "chiptune-track")
+    throw Error("v0.10 Track JSON専用です");
+  const t = structuredClone(data.track),
+    q = structuredClone(data.sequence);
+  t.track = q.track = index;
+  validateTrack(t);
+  encodeSequence(q);
+  return { track: t, sequence: q };
+}
+export function outputNames(mask) {
+  return (
+    Array.from({ length: 14 }, (_, v) => v)
+      .filter((v) => mask & (1 << v))
+      .map((v) =>
+        v < 6
+          ? `SAA ${v + 1}`
+          : v < 9
+            ? `SN L${v - 5}`
+            : v < 12
+              ? `SN R${v - 8}`
+              : v === 12
+                ? "SN L noise"
+                : "SN R noise",
+      )
+      .join(" / ") || "なし"
+  );
 }
 
-export function layerWaveform(sound, phase, note = 48) {
-  const hz = 440 * 2 ** ((note - 69) / 12),
-    elapsed = (phase / hz) * 1000;
-  const p = (phase * 2 ** (sound.layer_interval / 12)) % 1;
-  const noise =
-    Math.sin(
-      Math.floor(phase * [127, 71, 37, 71][sound.noise_rate]) * 127.1 + 311.7,
-    ) > 0
-      ? 1
-      : 0;
-  const pulse = p < 0.5 ? 1 : 0;
-  const value =
-    sound.layer_source === 0
-      ? pulse
-      : sound.layer_source === 1
-        ? noise
-        : (pulse + noise) / 2;
-  return (
-    ((value * sound.layer_level) / 100) *
-    (sound.layer_decay ? Math.exp(-elapsed / sound.layer_decay) : 1)
-  );
+export function encodeGlobal(v) {
+  if (
+    !Array.isArray(v) ||
+    v.length !== 25 ||
+    v.some(
+      (n, i) => !Number.isInteger(n) || n < 0 || n > (i === 10 ? 210 : 127),
+    )
+  )
+    throw Error("Global settings");
+  return [...v.slice(0, 10), ...signed(v[10] - 8192), ...v.slice(11)];
+}
+export function decodeGlobal(d) {
+  if (d.length !== 26) throw Error("Global schema mismatch");
+  const v = [...d.slice(0, 10), readWord(d, 10), ...d.slice(12)];
+  encodeGlobal(v);
+  return v;
+}
+
+export function supportedMod(t, dest) {
+  const p = t.patch;
+  if (dest === 2) return p.output === 0;
+  if (dest === 6) return p.chip === 0 && p.layers > 1;
+  if (dest === 7) return p.chip === 0 && p.env === 2;
+  if (dest === 8) return supported(p, "noise_pitch");
+  if (dest === 11) return !!t.morph_target;
+  return true;
 }

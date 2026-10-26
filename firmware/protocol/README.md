@@ -1,39 +1,105 @@
-# Wave Lab USB MIDI protocol 1
+# Wave Lab USB MIDI protocol 2 / schema 10
 
-v0.8.0-alpha以降。USB MIDI cable 0のみ。TRS入力はエディタコマンドを実行しません。通常のMIDI演奏は従来通りです。0x7Dは開発用の非商用SysEx IDです。
+v0.10.0専用。USB MIDI cable 0のみ。TRSは通常MIDI用で、エディタ要求を実行しません。旧protocol 1、旧JSON、旧保存形式との互換処理はありません。`0x7D`は開発用の非商用SysEx IDです。
 
 ```
-F0 7D 43 54 01 request-id command payload... checksum F7
+request:  F0 7D 43 54 02 id cmd       payload... checksum F7
+response: F0 7D 43 54 02 id (cmd|40h) status data... checksum F7
 ```
 
-`F0/F7`以外は7ビット。`7D`からchecksumまでの和がmod128で0。応答は同じrequest-id、command OR 0x40、payloadの先頭にstatus。status=0成功、1形式／バージョン不正、2範囲外／音源役割不一致／回路競合、3編集中または電源OFF、4保存失敗。未認識のメーカーID、不完全・長過ぎるフレームは破棄します。
+F0/F7以外は7 bit。7Dからchecksumまでの和をmod128で0にします。一度に1要求、応答後に次の要求を送ります。最大192 bytes、部分フレームは2秒の無通信で破棄。途中のリアルタイムメッセージはフレームへ含めません。id=0–127、cmd=0–63。応答のstatusは0=成功、1=形式/バージョン、2=範囲/資源/構造、3=UI編集中または音源電源OFF、4=保存失敗、5=未交渉/schema不一致です。
 
-送信側は一度に1要求とし、応答後に次を送ります。受信最大192バイト、途中のリアルタイムメッセージは無視し、部分フレームは無通信2秒で破棄します。チェックサム不一致は音色を変更しません。応答は完全なUSB MIDI SysExパケット列として送ります。TRS→USB転送中のSysExがある場合は終端を待ち、メッセージを入れ子にしません。UIの数値編集中・確認中・名前編集中は書き込みを拒否し、読み出しはできます。
+書込前に必ずHELLOへ`[10]`を送信し、応答のfirmware=0.10.0/protocol=2/schema=10を完全一致で確認します。設定変更、保存、試聴、PANIC、テンプレート、POLY FOCUSには交渉済み状態が必要です。受信側も交渉前の変更を拒否します。読出しだけでは交渉済みになりません。USBポート再接続時は再交渉してください。
 
-| Command | 要求 | 成功応答（statusの後） |
+整数の表記:
+
+- `u14(v)` = `[v & 127, v >> 7]`、下位から。
+- `s14(v)` = `u14(v + 8192)`。
+- 16 bit MIDIマスク = `[v & 127, (v >> 7) & 127, (v >> 14) & 3]`。
+- `u32(v)` = 下位7 bitずつ5 bytes。
+- 名前は印字可能ASCII 8文字、空白埋め。Cの終端NULは送信しません。
+- Track、slot、input、factory、channelはすべて0始まり。
+
+## コマンド
+
+| cmd | 要求payload | 成功data |
 |---|---|---|
-| 0 HELLO | なし | firmware major/minor/patch、保存形式、パート数、USER数、FACTORY数、音色パラメーター数 |
-| 1 GET_PART | part | part data＋出力マスク＋予約マスク |
-| 2 SET_PART | part data | 正規化したpart data＋2マスク。全検証後に反映 |
-| 3 SAVE | part、USER slot | なし。対象音色＋現在の全パート・ルート・クロックを保存。演奏停止。失敗時は保存用RAMも復元 |
-| 4 GET_CLOCK | なし | reference、mode、base、depth、rate、sync、retrigger、width、trigger source、clock steps×8 |
-| 5 SET_CLOCK | 上記17バイト | 上記17バイト。左右全SNで共有。reference変更時は演奏停止 |
-| 6 PROFILE | 0 HYBRID／1 SAA POLY／2 DUAL LAYER／3 PERCUSSION／4 MIDI 10（v0.9以降） | なし。全パート・ルートを置換し演奏停止 |
-| 7 AUDITION | part、note、mode（0 OFF／1 SINGLE／2 REPEAT／3 HOLD） | なし |
-| 8 GET_MOTION | part | motion data |
-| 9 SET_MOTION | motion data | motion data。STOPは全体停止 |
-| 10 GET_CV | input（0/1） | CV data |
-| 11 SET_CV | CV data、またはinput 0と1のCV dataを連結 | 同形式。2系統連結時は両方をまとめて検証・反映 |
-| 12 FACTORY | factory index | index、name×8、sound data。本体の現在音色は変更しない |
+| 0 HELLO | `[10]` | `[0,10,0,2,10,14,16,16,4,23,F]` |
+| 1 GET_TRACK | `[track]` | Track＋割当マスク |
+| 2 SET_TRACK | Track（割当マスクなし） | Track＋割当マスク |
+| 3 SAVE | `[kind,track,slot]` kind=0Patch/1Track/2Project/3System | 空 |
+| 4 GET_GLOBAL | 空 | Global |
+| 5 SET_GLOBAL | Global | 適用後Global |
+| 6 LOAD_PROJECT | `[slot]` | 空 |
+| 7 AUDITION | `[track,note,mode]` 0stop/1once/2repeat/3hold | 空 |
+| 8 GET_SEQUENCE | `[track]` | Sequence |
+| 9 SET_SEQUENCE | Sequence | 適用後Sequence |
+| 10 GET_CV | `[input]` 127=両方 | CV、またはCV0＋CV1 |
+| 11 SET_CV | CV、またはCV0＋CV1（異なるinput） | 適用後CV、またはCV0＋CV1 |
+| 12 GET_FACTORY | `[factory]` | `[factory,name8,Patch]` |
+| 13 GET_PATCH | `[slot]` | `[slot,name8,Patch]` |
+| 14 LOAD_PATCH | `[track,slot]` | Track＋割当マスク |
+| 15 GET_MATRIX | 空 | ModRoute×8 |
+| 16 SET_MATRIX | ModRoute×8 | 空 |
+| 17 GET_SYSTEM | 空 | `[brightness]` |
+| 18 SET_SYSTEM | `[brightness]` 10–100 | 空（RAMのみ） |
+| 19 PANIC | 空 | 空 |
+| 20 LOAD_TRACK | `[track,slot]` | Track＋割当マスク |
+| 21 DIAGNOSTICS | 空 | 診断値 |
+| 22 TEMPLATE | `[0 MIDI10 / 1 SAA6poly / 2 Tone+ENV]` | 空 |
+| 24 POLY_FOCUS | `[track]` | Track＋割当マスク |
 
-番号はすべて0始まり。`part data`はpart、enabled、poly、role、MIDI channel、ASCII name×8、sound data。channel=127ならルートは変更しません。GETでは複数のUSB受信チャンネルがある場合に127を返します。SETで0–15を指定すると、そのパートのUSB/TRS受信先を指定の1チャンネルへ置き換えます。
+Fは[parameters.json](parameters.json)のフィールド数（現在35）。この順序からCとJSを生成します。全パッチ値は型に関係なくs14で運び、受信時に型・範囲・組合せを検証します。生レジスタ書込コマンドはありません。SETは候補Projectを検証後に一括適用し、失敗時は元の構成と発音を保持します。
 
-`sound data`はパラメーター数1バイト＋各値を2バイトずつ。順序・型・範囲は[parameters.json](parameters.json)が正本です。各値は符号の有無にかかわらず`value + 8192`を下位7ビット→上位7ビットで表します。stepsは8か16のみ。マスクはオフセットを付けない14ビット値です。
+## Patch / Track
 
-`motion data`はpart、length、division、direction、sequence、arp、arp_octaves、running、note×16、gate×16、velocity×16、motion×16。motionの各値のみ上記の2バイト符号付き形式、他は1バイト。合計88バイトです。
+Patch = `[F, s14(field0), ... s14(fieldF-1)]`。
 
-`CV data`はinput、mode、part、base_note、scale、root、glide、range、gate、gate_part、parameter、gate_note、amount。amountのみ2バイト符号付き形式。合計14バイト。
+Track prefix（38 bytes）:
 
-音色・ステップ・クロック・CVの反映はRAMだけを変更します。永続化は明示的なSAVEのみ。音色JSONには1パートの音色とステップを収録し、クロック・CVは含みません。固定役割や他パートとの資源競合は本体側でも検証します。
+```
+track enabled mode voices level pan mute low high velocity_curve morph_target morph
+name[8]
+macro_dest[4]
+s14(macro[0..3])
+mask16(USB receive channels) mask16(TRS receive channels)
+```
 
-`tools/generate_editor.py`でCとJSのフィールド定義を生成し、ホストビルドの`editor_export`で`editor/factory.json`を生成します。JSのテストは`editor_bridge`へ実フレームを送ってC側との往復を検証します。ブラウザーテストのMIDIポートはこのCプログラムを背後にしたテスト用ポートで、実USB・実音の検証とは区別します。
+mode=0DIRECT/1POLY/2LEGATO、voices=1–6、level/pan/morph=0–100、morph_target=0off/1–16USER。送信はprefix＋Patch。応答はさらに`u14(audible_outputs), u14(reserved_resources)`を追加します。長さは送信`39+2F`、応答`43+2F` bytes。
+
+マスクのbit0–5=SAA1–6、6–8=SN L1–3、9–11=SN R1–3、12=SN L noise、13=SN R noise。resources−outputsが無音の専用クロックです。声数分の和集合を返します。POLY FOCUSは同じチップの他TrackをOFFにする明示操作で、別チップの発音は保持します。
+
+## Global（26 bytes）
+
+```
+sn_reference mode base depth rate sync retrigger trigger_source clock_source clock_policy
+u14(tempo_minus_30)
+midi_thru mix[4] clock_sequence[8] gate_clock_input
+```
+
+`sn_reference`=0 4MHz/1 2MHz/2 1MHz。tempoは0–210で30–240 BPM。tempoだけは2 bytesです（7 bitへ切り詰めないこと）。gate_clock_input=0/1。mix=Master/SAA/SN L/SN R、各0–100。clock_sequenceも0–100。
+
+## Sequence / CV / Matrix
+
+Sequence（87 bytes）:
+`[track,enabled,length,division,direction,arp,arp_octaves,note[16],gate[16],velocity[16],s14(motion[16])]`。
+length=1–16、division=1–24 MIDI clocks、direction=forward/reverse/random、arp=off/up/down/updown/random/chord、arp_octaves=1–4。motion=−100～100。
+
+CV（14 bytes）:
+`[input,mode,track,base_note,scale,root,glide,range,gate,gate_track,parameter,gate_note,s14(amount)]`。
+mode=0off/1pitch/2mod、range=0 5V/1 10V、gate=0off/1note/2retrigger/3step/4clockFX。2入力の変更は28 bytesの一括SETが可能です。
+
+ModRoute（5 bytes）: `[source,track,parameter,s14(amount)]`。
+source=0off/1CV1/2CV2/3CC1/4pressure/5–18各TrackのLFO/19–32各Trackのstep。pressureはTrackに届くchannel/active-note pressureの最大値。parameterはmodel.hのModParameter（0–11）です。
+
+## 診断とエラー
+
+DIAGNOSTICS（33 bytes）:
+`[active_voices,u32(steals),u32(refused),u32(register_writes),u32(coalesced),pending,max_pending,u32(tick_max_us),u32(tick_overruns)]`。
+実機の時間カウンター以外をホストの時間測定と混同しないでください。
+
+status 2のdata:
+`[track,other_or_127,reason,available,reason_length,reason_ASCII...,suggestion_length,suggestion_ASCII...]`。
+reason=1invalid/2capacity/3sharedNoise/4clockBusy/5morph。other=127は特定の競合元を指していないことを表します。availableはその割当試行での空き回路数で、実際に追加できる声数ではありません。
+
+Project読込・テンプレートは全体を停止します。Patch/Track構造変更は対象だけを停止し、競合で別Trackを強制停止しません。音色保存だけでProject・Systemは変わりません。保存成功の応答は検証済みバンクへのコミット完了後です。キャリブレーション値は本体UIから設定し、System保存で永続化します。

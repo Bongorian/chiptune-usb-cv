@@ -1,6 +1,6 @@
 {
-  "firmware": "v0.9.0-alpha",
-  "elf_sha256": "d50b3bb8dfed03aa2b13d4c530304a20524e8554ee3ecbc1c1aa9a4554828d41",
+  "firmware": "v0.10.0-alpha",
+  "elf_sha256": "5f9906314a38ebd80840de456dc510d8b5dfdb8af2667a983e8a0cadadc0ab01",
   "hardware_emulated": false,
   "arm_code_executed": true,
   "flash_guard_cases": [
@@ -50,9 +50,9 @@
   "out_of_capacity_rejected": true,
   "boot_cases": [
     "erased",
-    "valid v6",
-    "corrupt v6",
-    "legacy v5",
+    "valid v10",
+    "corrupt v10",
+    "v6 ignored",
     "OK held"
   ],
   "boot_trace": [
@@ -67,7 +67,7 @@
   ],
   "boot_flash_writes": 0,
   "limitations": [
-    "SDK setup, USB task, SIO division, ROM memory and float comparisons are stubbed",
+    "SDK setup, USB task, SIO division, ROM memory and floating-point operations are stubbed",
     "no physical USB/I2C/flash/audio test"
   ]
 }

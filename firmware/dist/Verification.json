@@ -1,24 +1,23 @@
 {
-  "firmware": "v0.9.0-alpha",
+  "firmware": "v0.10.0-alpha",
   "target": "RP2040 dedicated Chiptune USB/CV board",
   "hardware_tested": false,
   "checks_passed": true,
-  "application_bytes": 222692,
-  "bss_bytes": 156988,
+  "application_bytes": 170316,
+  "bss_bytes": 127528,
   "stack_bytes": 4096,
-  "uf2_bytes": 445440,
-  "uf2_blocks": 870,
+  "uf2_bytes": 340992,
+  "uf2_blocks": 666,
   "uf2_family_id": "0xe48bff56",
-  "application_end": "0x100365e4",
+  "application_end": "0x1002994c",
   "settings_start": "0x101f0000",
   "settings_reserved_bytes": 65536,
   "settings_region_untouched": true,
   "settings_region_untouched_by_uf2": true,
-  "legacy_boot_behavior": {
-    "layout_revision": 3,
-    "musical_settings": "migrate in RAM; explicit save only",
-    "cv_calibration": "retain",
-    "brightness": "retain"
+  "boot_behavior": {
+    "settings_version": 10,
+    "unknown_version": "ignore; defaults in RAM; no erase/write",
+    "saving": "explicit only"
   },
   "usb": {
     "vid": "0xcafe",
@@ -32,8 +31,8 @@
     ]
   },
   "sha256": {
-    "chiptune.bin": "47d628bb929de8ccab512ab19eeb1801aa4f7f746671616612fbd3bb3b174dd0",
-    "chiptune.uf2": "357a35cc9a9098367fddc2837a66e33ac2c9d485a6c18a63e58a18acd0a2d013"
+    "chiptune.bin": "b41464040a31097e3222ee5c7209fedc336aa36275e22a73265311a3e94c7df3",
+    "chiptune.uf2": "a0d0ed15632990b969f2db69bdfef79e0e57e9e14ea9fc9d9669c0bce58354d8"
   },
   "untested": [
     "physical USB enumeration/resume/current",
@@ -41,6 +40,6 @@
     "CV accuracy/gate latency",
     "OLED module display",
     "flash retention on hardware",
-    "settings migration and calibration retention on hardware"
+    "power-cut persistence on hardware"
   ]
 }

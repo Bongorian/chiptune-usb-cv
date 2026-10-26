@@ -1,17 +1,46 @@
 #include "sound_math.h"
 #include <math.h>
-/* Equal temperament, MIDI 0 = C-1, MIDI 69 = A4 = 440 Hz. Keep note naming
-   independent of DAWs that label middle C as C3 instead of C4. */
+#include <string.h>
+#include "math_lut.inc"
+float fast_ratio(float semitones) {
+    if (!isfinite(semitones))
+        return 0;
+    semitones = fmaxf(-192, fminf(192, semitones));
+    float scaled = semitones * 256;
+    int q = (int)(scaled >= 0 ? scaled + .5f : scaled - .5f), octave = q / 3072, index = q % 3072;
+    if (index < 0) {
+        index += 3072;
+        octave--;
+    }
+    union {
+        float f;
+        uint32_t u;
+    } value = {.f = pitch_ratio[index]};
+    value.u = (uint32_t)((int32_t)value.u + octave * 8388608);
+    return value.f;
+}
 float midi_note_hz(float note) {
-    static const float base[12] = {8.175798916f, 8.661957218f, 9.177023997f, 9.722718241f,
-        10.30086115f, 10.91338223f, 11.56232571f, 12.24985737f,
-        12.97827180f, 13.75f, 14.56761755f, 15.43385316f};
-    if (!isfinite(note) || note < -128 || note > 255)
-        return NAN;
-    float whole = floorf(note);
-    int octave = (int)floorf(whole / 12);
-    unsigned key = (unsigned)((int)whole - octave * 12);
-    return ldexpf(base[key], octave) * exp2f((note - whole) / 12);
+    return isfinite(note) && note >= -128 && note <= 255 ? 440 * fast_ratio(note - 69) : NAN;
+}
+float fast_sine(uint32_t phase) {
+    return (float)sine_lut[phase >> 24] * (1.0f / 32767.0f);
+}
+float fast_decay(float x) {
+    if (x <= 0)
+        return 1;
+    if (x >= 16)
+        return 0;
+    float n = x * 16;
+    unsigned i = (unsigned)n;
+    return decay_lut[i] + (decay_lut[i + 1] - decay_lut[i]) * (n - (float)i);
+}
+float fast_sqrt(float x) {
+    if (x <= 0)
+        return 0;
+    float y = x > 1 ? x : 1;
+    for (unsigned i = 0; i < 5; i++)
+        y = .5f * (y + x / y);
+    return y;
 }
 /* Nominal circuit estimate; see LEVELS_AND_PITCH.md for the assumptions and
    measurement procedure. Trims are linear amplitude, before chip quantization. */

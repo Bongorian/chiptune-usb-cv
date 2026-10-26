@@ -1,119 +1,71 @@
 {
-  "firmware": "v0.9.0-alpha",
+  "firmware": "v0.10.0-alpha",
   "date": "2026-10-27",
-  "host": "Darwin",
-  "host_tests_passed": true,
-  "sanitizers": [
-    "ASan",
-    "UBSan"
-  ],
-  "tests": [
-    {
-      "name": "midi10_tests",
-      "status": "passed",
-      "seconds": 0.01
-    },
-    {
-      "name": "engine_tests",
-      "status": "passed",
-      "seconds": 17.96
-    },
-    {
-      "name": "roles_tests",
-      "status": "passed",
-      "seconds": 0.16
-    },
-    {
-      "name": "performance_tests",
-      "status": "passed",
-      "seconds": 0.06
-    },
-    {
-      "name": "studio_tests",
-      "status": "passed",
-      "seconds": 0.33
-    },
-    {
-      "name": "instrument_tests",
-      "status": "passed",
-      "seconds": 0.02
-    },
-    {
-      "name": "layout_tests",
-      "status": "passed",
-      "seconds": 0.03
-    },
-    {
-      "name": "noise_tests",
-      "status": "passed",
-      "seconds": 0.02
-    },
-    {
-      "name": "display_tests",
-      "status": "passed",
-      "seconds": 0.02
-    },
-    {
-      "name": "editor_tests",
-      "status": "passed",
-      "seconds": 0.29
-    },
-    {
-      "name": "boot_tests",
-      "status": "passed",
-      "seconds": 0.04
-    }
-  ],
-  "settings_version": 6,
-  "layout_revision": 3,
-  "factory_sounds": 23,
-  "profiles": 5,
-  "regressions": [
-    "10 monophonic MIDI parts on both USB and TRS",
-    "parallel SN L/R divider values at A2 and A4",
-    "PAN/CC10 hard-left, center and hard-right on SAA and SN",
-    "old Note Off does not stop the replacement mono note",
-    "independent Note Off between channels",
-    "all ten channels active simultaneously",
-    "tone3 noise-clock conflict rejects atomically",
-    "equal-temperament table for all 128 MIDI notes",
-    "A2/C3/C4/A4/A5 pitch anchors and fractional pitch",
-    "SAA in-range pitch error under 4 cents",
-    "nominal output gain within SN 2 dB quantization",
-    "v0.8 user sound library, CV calibration and brightness preserved",
-    "unedited default sound selection does not ask to discard"
-  ],
-  "legacy_tests": "Original engine, MIDI, CV, roles, UI, noise, storage, display and protocol regressions retained; old allocation tests explicitly select HYBRID.",
-  "web_editor": {
-    "javascript_tests_passed": 9,
-    "browser_tests_passed": true,
-    "browser_tests_run_for_this_version": true,
-    "browser_test_uses": "headless Chrome with portable C firmware as mock Web MIDI ports",
-    "viewports": [
-      [
-        1440,
-        1080
-      ],
-      [
-        390,
-        844
-      ]
-    ],
-    "checks": [
-      "MIDI10 initial values and A2 110 Hz display",
-      "structure and factory selection",
-      "real C protocol roundtrip",
-      "clock and CV update",
-      "save failure feedback",
-      "motion painting and JSON export",
-      "no mobile horizontal overflow or console errors"
+  "branch": "firmware/v0.10-redesign",
+  "base": "10949e4",
+  "remote_published": false,
+  "device_flashed": false,
+  "hardware_tested": false,
+  "elf_sha256": "5f9906314a38ebd80840de456dc510d8b5dfdb8af2667a983e8a0cadadc0ab01",
+  "source_manifest_sha256": "b2ef9391cee6828b650478d1e094189d8fa8da451c6770aff7a839c493320b3e",
+  "host_sanitized": {
+    "suites": 8,
+    "passed": 8,
+    "sanitizers": [
+      "ASan",
+      "UBSan"
     ]
   },
-  "arm_boot_code_executed": true,
-  "uf2_and_usb_descriptors_verified": true,
-  "pio_clock_verified": true,
-  "audio_on_hardware_tested": false,
-  "oled_on_hardware_tested": false,
-  "real_usb_tested": false,
-  "level_matching": "Nominal circuit estimate, not measured. See LEVELS_AND_PITCH.md."
+  "host_release": {
+    "suites": 8,
+    "passed": 8
+  },
+  "node_protocol_tests": {
+    "tests": 12,
+    "passed": 12,
+    "backend": "actual portable C firmware"
+  },
+  "browser_integration": {
+    "passed": true,
+    "browser": "headless Chrome, Playwright 1.62.1",
+    "midi": "mock ports backed by C; no physical devices",
+    "covers": [
+      "offline edit and JSON",
+      "offline changes preserved on connect",
+      "exact schema handshake",
+      "resource rejection with alternatives",
+      "DIRECT/POLY focus and template",
+      "SN stereo PAN",
+      "morph",
+      "sequence/global/CV",
+      "independent patch save",
+      "asynchronous LIVE slider preservation",
+      "old protocol write lock",
+      "390px mobile overflow"
+    ]
+  },
+  "arm_build": {
+    "passed": true,
+    "sdk": "2.3.1",
+    "compiler": "arm-none-eabi-gcc 14.3.0",
+    "configuration": "Release"
+  },
+  "arm_execution": {
+    "boot_passed": true,
+    "runtime_passed": true,
+    "platform_rom_sio_stubbed": true
+  },
+  "uf2_validation": true,
+  "pio_instruction_timing": true,
+  "generated_schema_lut_catalog_reproducible": true,
+  "oled_visual_review": "C-rendered PBM contact sheet; no physical panel",
+  "rp2040_wcet_certified": false,
+  "unverified": [
+    "audio pitch/level/IC variant on actual board",
+    "physical USB and OLED startup/resume",
+    "GPIO bus setup/hold and low-clock throughput",
+    "CV calibration accuracy and gate latency",
+    "brownout/flash retention",
+    "device worst-case 1ms timing and interrupt stack headroom"
+  ]
 }

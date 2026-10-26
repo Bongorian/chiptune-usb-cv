@@ -4,15 +4,15 @@ SAA1099 × 1、SN76489AN × 2、RP2040を搭載した小型チップチューン
 USB MIDI、TRS MIDI、2系統のCV／ゲート入力と、OLED・3ボタンによる操作を想定しています。
 回路図、配線済みPCB、JLCPCB向け製造データ、設計資料を収録しています。
 
-**v0.9.0はMIDI 1ch＝1音の「MIDI 10」が初期配置です。** ch1–6=SAA、ch7–9=左右SNの同音程トーン、ch10=左右SNノイズ。PAN/CC10でL/Rへ振れます。初期音色を単純化し、試聴はA2/110 Hz、音量は公称回路モデルで補正しました。[チャンネル表・特殊発音のch](firmware/README.md)／[音量と周波数の根拠](firmware/LEVELS_AND_PITCH.md)。v0.8のUSER音色・CV校正・明るさを保持し、セットアップ配置はRAM内で更新します。明示的な保存まで設定領域を書き換えません。
+**v0.10.0-alphaは単一エンジンと構成可能な音色へ全面更新しました。** 初期MIDI10はch1–6=SAA単音、ch7–9=左右SNの同ノート、ch10=左右SNノイズ。PAN/CC10、DIRECT/POLY、ENV・ノイズ・レイヤー・モーフ、独立保存と新Wave Labに対応します。[操作資料](firmware/README.md)／[設計と検証範囲](firmware/ARCHITECTURE.md)。保存形式10・protocol 2への破壊的変更で、旧音色・CV校正・明るさは移行しません。起動時はフラッシュを書き換えません。
 
-**開発状況:** PCBの配線と設計ルール検査は完了しています。ファームウェアv0.9.0-alphaはUF2のビルドとPCテストを通過しています。v0.9の実機評価は未完了です。
+**開発状況:** 自動テスト、ARMビルド、UF2構造検証は完了しています。実機の発音・電気特性・1ms最悪時間は未確認です。このブランチのUF2とエディタはローカル成果物で、実機書込・リモート公開は行っていません。
 
 ![PCB配線図](outputs/review/routing-traces-all.png)
 
 [**Wave Lab — 音色・波形エディタを開く**](https://bongorian.github.io/chiptune-usb-cv/)
 
-v0.8ではSAAのENV×ノイズ／複合音色、SNのステレオSTACK、回路配置プロファイルとUSB MIDIによる双方向編集に対応しています。[音色の作り方](firmware/SOUND_DESIGN.md)を参照してください。
+このブランチのWave Labは`editor/`をローカルHTTPで開いて使用します。上記公開サイトはこの作業では更新していません。[音作り](firmware/SOUND_DESIGN.md)と[エディタの使い方](editor/README.md)を参照してください。
 
 ## 仕様
 
@@ -80,7 +80,7 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 
 ## ファームウェア
 
-[ファームウェアの操作資料](firmware/README.md)と[配布UF2](firmware/dist/chiptune-v0.9.0-alpha.uf2)を収録しています。
+[ファームウェアの操作資料](firmware/README.md)と[配布UF2](firmware/dist/chiptune-v0.10.0-alpha.uf2)を収録しています。
 本体の3ボタンで、SAAのENV発振・独立ADSR、SNのステレオ音色・実クロック変調、MIDI/CV/Gateの割り当て、パターン編集と保存を操作できます。
 [Androidからの更新手順](firmware/ANDROID_UPDATE.md)、[実機確認項目](firmware/BRINGUP.md)、[検証記録](firmware/dist/Verification.json)も参照してください。
 −と＋を押しながらUSBを接続するか、SYSTEM > USB UPDATEからROMブートローダーへ入れます。
@@ -89,10 +89,10 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 
 - 基板検査: DRC 0、未接続0、回路図との一致問題0、ERC 0。
 - 設計照合: 152フットプリントの配置・端子接続と、音源バスの768ケースを検査済み。
-- ファームウェア: v0.9.0-alpha。音色を選んでMIDIで弾く3ボタンUI、ENV発振と独立ADSR、音源資源の予約、A〜Nのパート、MIDI/CV/Gateルート、4マクロと8変調枠、16ステップ、アルペジオ、8シーン・16音色保存、USB更新モードを実装。ARMビルドとASan／UBSan付きPCテストを通過。実機評価は未完了。
+- ファームウェア: v0.10.0-alpha。Track/Patch/Voice/物理回路を分離した単一エンジン。DIRECT/POLY、SAA ENV/AMとSNレイヤー、独立Patch/Track/Project/System保存、Wave Lab protocol 2。ホスト・ARM・Web試験とUF2検証は[検証記録](firmware/dist/Test_Verification.json)を参照。実機評価は未完了。
 - 実機検証: 電源電流・突入電流、音声出力、CV校正、取り付け公差の評価は未完了。
 
-[OLEDの描画例](firmware/assets/ui-v05.png)は、実装したCの描画処理から生成しています。
+[OLEDの描画例](firmware/assets/ui-v10.png)は、実装したCの描画処理から生成しています。
 
 ## 検証コマンド
 

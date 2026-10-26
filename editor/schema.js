@@ -5,7 +5,7 @@ export const fields = [
     "type": "u16",
     "min": 0,
     "max": 8000,
-    "label": "Attack \u00b7 ms",
+    "label": "Attack",
     "group": "envelope"
   },
   {
@@ -13,7 +13,7 @@ export const fields = [
     "type": "u16",
     "min": 0,
     "max": 8000,
-    "label": "Decay \u00b7 ms",
+    "label": "Decay",
     "group": "envelope"
   },
   {
@@ -21,15 +21,79 @@ export const fields = [
     "type": "u16",
     "min": 0,
     "max": 8000,
-    "label": "Release \u00b7 ms",
+    "label": "Release",
     "group": "envelope"
   },
   {
-    "name": "model",
+    "name": "pitch_decay",
+    "type": "u16",
+    "min": 0,
+    "max": 8000,
+    "label": "Pitch Decay",
+    "group": "pitch"
+  },
+  {
+    "name": "glide",
+    "type": "u16",
+    "min": 0,
+    "max": 8000,
+    "label": "Glide",
+    "group": "pitch"
+  },
+  {
+    "name": "layer_decay",
+    "type": "u16",
+    "min": 0,
+    "max": 8000,
+    "label": "Layer Decay",
+    "group": "layer"
+  },
+  {
+    "name": "chip",
     "type": "u8",
     "min": 0,
-    "max": 15,
-    "label": "Structure",
+    "max": 1,
+    "label": "Chip",
+    "group": "structure"
+  },
+  {
+    "name": "source",
+    "type": "u8",
+    "min": 0,
+    "max": 2,
+    "label": "Source",
+    "group": "structure"
+  },
+  {
+    "name": "env",
+    "type": "u8",
+    "min": 0,
+    "max": 2,
+    "label": "Env",
+    "group": "structure"
+  },
+  {
+    "name": "output",
+    "type": "u8",
+    "min": 0,
+    "max": 2,
+    "label": "Output",
+    "group": "structure"
+  },
+  {
+    "name": "layers",
+    "type": "u8",
+    "min": 1,
+    "max": 3,
+    "label": "Layers",
+    "group": "structure"
+  },
+  {
+    "name": "layer_source",
+    "type": "u8",
+    "min": 0,
+    "max": 2,
+    "label": "Layer Source",
     "group": "structure"
   },
   {
@@ -37,55 +101,55 @@ export const fields = [
     "type": "u8",
     "min": 0,
     "max": 7,
-    "label": "Hardware ENV shape",
-    "group": "character"
+    "label": "Shape",
+    "group": "structure"
   },
   {
-    "name": "steps",
+    "name": "env_steps",
     "type": "u8",
     "min": 8,
     "max": 16,
-    "label": "ENV levels",
-    "group": "character"
+    "label": "Env Steps",
+    "group": "structure"
   },
   {
-    "name": "invert",
+    "name": "env_invert",
     "type": "u8",
     "min": 0,
     "max": 1,
-    "label": "Right ENV inverse",
-    "group": "character"
+    "label": "Env Invert",
+    "group": "structure"
   },
   {
     "name": "retrigger",
     "type": "u8",
     "min": 0,
     "max": 1,
-    "label": "Key reset",
-    "group": "character"
+    "label": "Retrigger",
+    "group": "structure"
   },
   {
     "name": "noise_rate",
     "type": "u8",
     "min": 0,
     "max": 3,
-    "label": "Noise rate",
-    "group": "character"
+    "label": "Noise Rate",
+    "group": "structure"
   },
   {
-    "name": "noise_mix",
+    "name": "noise_type",
     "type": "u8",
     "min": 0,
-    "max": 100,
-    "label": "Tone mix \u00b7 %",
-    "group": "character"
+    "max": 1,
+    "label": "Noise Type",
+    "group": "structure"
   },
   {
     "name": "sustain",
     "type": "u8",
     "min": 0,
     "max": 100,
-    "label": "Sustain \u00b7 %",
+    "label": "Sustain",
     "group": "envelope"
   },
   {
@@ -93,175 +157,103 @@ export const fields = [
     "type": "u8",
     "min": 0,
     "max": 100,
-    "label": "Level \u00b7 %",
+    "label": "Level",
     "group": "envelope"
   },
   {
-    "name": "pan",
+    "name": "noise_mix",
     "type": "u8",
     "min": 0,
     "max": 100,
-    "label": "Pan \u00b7 L \u2192 R",
-    "group": "envelope"
-  },
-  {
-    "name": "detune",
-    "type": "u8",
-    "min": 0,
-    "max": 50,
-    "label": "Stereo detune \u00b7 cents",
-    "group": "character"
+    "label": "Noise Mix",
+    "group": "modulation"
   },
   {
     "name": "vibrato",
     "type": "u8",
     "min": 0,
     "max": 100,
-    "label": "Vibrato \u00b7 cents",
-    "group": "character"
+    "label": "Vibrato",
+    "group": "pitch"
   },
   {
     "name": "tremolo",
     "type": "u8",
     "min": 0,
     "max": 100,
-    "label": "Tremolo \u00b7 %",
-    "group": "character"
+    "label": "Tremolo",
+    "group": "modulation"
+  },
+  {
+    "name": "detune",
+    "type": "u8",
+    "min": 0,
+    "max": 50,
+    "label": "Detune",
+    "group": "pitch"
   },
   {
     "name": "lfo_rate",
     "type": "u8",
     "min": 0,
     "max": 7,
-    "label": "LFO rate",
-    "group": "character"
+    "label": "Lfo Rate",
+    "group": "modulation"
   },
   {
-    "name": "glide",
+    "name": "lfo_shape",
     "type": "u8",
     "min": 0,
-    "max": 7,
-    "label": "Glide",
-    "group": "character"
+    "max": 3,
+    "label": "Lfo Shape",
+    "group": "modulation"
   },
   {
-    "name": "mode",
+    "name": "layer_level",
     "type": "u8",
     "min": 0,
-    "max": 2,
-    "label": "Voice mode",
-    "group": "character"
+    "max": 100,
+    "label": "Layer Level",
+    "group": "layer"
   },
   {
     "name": "transpose",
     "type": "i8",
     "min": -48,
     "max": 48,
-    "label": "Transpose \u00b7 st",
-    "group": "motion"
+    "label": "Transpose",
+    "group": "pitch"
   },
   {
     "name": "fine",
     "type": "i8",
     "min": -50,
     "max": 50,
-    "label": "Fine \u00b7 cents",
-    "group": "motion"
+    "label": "Fine",
+    "group": "pitch"
   },
   {
-    "name": "sweep",
+    "name": "pitch_amount",
     "type": "i8",
     "min": -48,
     "max": 48,
-    "label": "Attack pitch sweep \u00b7 st",
-    "group": "motion"
-  },
-  {
-    "name": "macro_dest[0]",
-    "type": "u8",
-    "min": 0,
-    "max": 19,
-    "label": "Macro 1 destination",
-    "group": "macro"
-  },
-  {
-    "name": "macro_dest[1]",
-    "type": "u8",
-    "min": 0,
-    "max": 19,
-    "label": "Macro 2 destination",
-    "group": "macro"
-  },
-  {
-    "name": "macro_dest[2]",
-    "type": "u8",
-    "min": 0,
-    "max": 19,
-    "label": "Macro 3 destination",
-    "group": "macro"
-  },
-  {
-    "name": "macro_dest[3]",
-    "type": "u8",
-    "min": 0,
-    "max": 19,
-    "label": "Macro 4 destination",
-    "group": "macro"
-  },
-  {
-    "name": "macro[0]",
-    "type": "i8",
-    "min": -100,
-    "max": 100,
-    "label": "Macro 1 amount",
-    "group": "macro"
-  },
-  {
-    "name": "macro[1]",
-    "type": "i8",
-    "min": -100,
-    "max": 100,
-    "label": "Macro 2 amount",
-    "group": "macro"
-  },
-  {
-    "name": "macro[2]",
-    "type": "i8",
-    "min": -100,
-    "max": 100,
-    "label": "Macro 3 amount",
-    "group": "macro"
-  },
-  {
-    "name": "macro[3]",
-    "type": "i8",
-    "min": -100,
-    "max": 100,
-    "label": "Macro 4 amount",
-    "group": "macro"
-  },
-  {
-    "name": "layer_decay",
-    "type": "u16",
-    "min": 0,
-    "max": 8000,
-    "label": "Layer extra decay \u00b7 ms",
-    "group": "layer"
-  },
-  {
-    "name": "layer_interval",
-    "type": "i8",
-    "min": -48,
-    "max": 48,
-    "label": "Second / layer interval \u00b7 st",
-    "group": "layer"
+    "label": "Pitch Amount",
+    "group": "pitch"
   },
   {
     "name": "env_ratio",
     "type": "i8",
     "min": -48,
     "max": 48,
-    "label": "ENV clock offset \u00b7 st",
+    "label": "Env Ratio",
+    "group": "modulation"
+  },
+  {
+    "name": "layer_interval",
+    "type": "i8",
+    "min": -48,
+    "max": 48,
+    "label": "Layer Interval",
     "group": "layer"
   },
   {
@@ -269,31 +261,23 @@ export const fields = [
     "type": "i8",
     "min": -48,
     "max": 48,
-    "label": "Third interval \u00b7 st",
+    "label": "Stack Interval",
     "group": "layer"
   },
   {
-    "name": "layer_level",
-    "type": "u8",
-    "min": 0,
-    "max": 100,
-    "label": "Layer level \u00b7 %",
-    "group": "layer"
+    "name": "noise_pitch",
+    "type": "i8",
+    "min": -48,
+    "max": 48,
+    "label": "Noise Pitch",
+    "group": "modulation"
   },
   {
-    "name": "layer_source",
-    "type": "u8",
-    "min": 0,
-    "max": 2,
-    "label": "Layer source",
-    "group": "layer"
-  },
-  {
-    "name": "stack_size",
-    "type": "u8",
-    "min": 2,
-    "max": 3,
-    "label": "Stack tone pairs",
-    "group": "layer"
+    "name": "noise_sweep",
+    "type": "i8",
+    "min": -48,
+    "max": 48,
+    "label": "Noise Sweep",
+    "group": "modulation"
   }
 ];

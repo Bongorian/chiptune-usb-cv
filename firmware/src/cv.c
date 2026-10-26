@@ -1,14 +1,11 @@
 #include "cv.h"
 #include <math.h>
-float cv_volts(const Settings *s, unsigned input, int16_t raw) {
+float cv_volts(const System *s, unsigned input, int16_t raw) {
     if (input >= 2 || !isfinite(s->cv_codes_per_volt[input]) || s->cv_codes_per_volt[input] <= 0)
         return NAN;
     return (raw - s->cv_zero[input]) / s->cv_codes_per_volt[input];
 }
-float cv_pitch(const Settings *s, unsigned input, int16_t raw, uint8_t base_note) {
-    return base_note + 12 * cv_volts(s, input, raw);
-}
-bool cv_calibration(Settings *s, unsigned input, const int16_t samples[64], bool one,
+bool cv_calibration(System *s, unsigned input, const int16_t samples[64], bool one,
                     bool zero_set[2]) {
     if (input >= 2)
         return false;

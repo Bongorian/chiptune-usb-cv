@@ -3,7 +3,6 @@
 #include "midi.h"
 #include "store.h"
 #include "ui.h"
-#include "studio.h"
 #include "oled.h"
 #include "service.h"
 #include "power.h"
@@ -84,9 +83,9 @@ static void sn_clock_control(void) {
         next_sn_wait_us = wait;
         sn_clock_configure(&clock_fx, &config);
     }
-    if (memcmp(seen_clock_sequence, engine.preset.clock_sequence, sizeof(seen_clock_sequence))) {
-        sn_clock_sequence(&clock_fx, engine.preset.clock_sequence);
-        memcpy(seen_clock_sequence, engine.preset.clock_sequence, sizeof(seen_clock_sequence));
+    if (memcmp(seen_clock_sequence, engine.project.clock_sequence, sizeof(seen_clock_sequence))) {
+        sn_clock_sequence(&clock_fx, engine.project.clock_sequence);
+        memcpy(seen_clock_sequence, engine.project.clock_sequence, sizeof(seen_clock_sequence));
     }
     if (clocks != seen_midi_clocks)
         sn_clock_midi(&clock_fx, clocks);
@@ -161,9 +160,24 @@ static void saa_write(void *ctx, uint8_t reg, uint8_t value) {
     bus_cycle(cs[0], true, chiptune_saa_gpio_word(reg), 2);
     bus_cycle(cs[0], false, chiptune_saa_gpio_word(value), 2);
 }
-static void sn_write(void *ctx, uint8_t chip, uint8_t value) {
+/* SN /WE stays low while the main loop continues servicing USB, MIDI and UI.
+   The register bus calls sn_end only after the conservative clock-dependent hold time. */
+static void sn_begin(void *ctx, uint8_t chip, uint8_t value) {
     (void)ctx;
-    bus_cycle(cs[chip + 1], false, chiptune_sn_gpio_word(value), sn_wait_us);
+    if (!rail_on)
+        return;
+    gpio_put(PIN_SAA_A0, 0);
+    gpio_put_masked(0xffu, chiptune_sn_gpio_word(value));
+    gpio_put(cs[chip + 1], 0);
+    busy_wait_us_32(1);
+    gpio_put(PIN_WR_N, 0);
+}
+static void sn_end(void *ctx) {
+    (void)ctx;
+    gpio_put(PIN_WR_N, 1);
+    gpio_put(cs[1], 1);
+    gpio_put(cs[2], 1);
+    busy_wait_us_32(2);
 }
 static void clock_start(unsigned pin, unsigned wrap) {
     pwm_config c = pwm_get_default_config();
@@ -225,10 +239,7 @@ static void sound_on(void) {
     sn_clock_start();
     rail_on = true;
     status.power = true;
-    static Preset current;
-    current = engine.preset;
-    engine_init(&engine, &current, (SoundSink){saa_write, sn_write, NULL});
-    engine.library = &settings;
+    engine_reset_audio(&engine, (SoundSink){saa_write, sn_begin, sn_end, NULL});
     /* Discard stale UART data at rail transition. */
     uint32_t irq = save_and_disable_interrupts();
     uart_tail = uart_head;
@@ -275,7 +286,7 @@ static void midi_received(void *ctx, const uint8_t *data, uint8_t len, uint8_t c
             editor_byte(&editor, data[i], to_ms_since_boot(get_absolute_time()));
     if (rail_on)
         engine_message(&engine, (uint8_t)source, data, len);
-    if (source == 1 && engine.preset.route[1].forward && tud_mounted() && !usb_suspended) {
+    if (source == 1 && engine.project.midi_thru && tud_mounted() && !usb_suspended) {
         unsigned next = (usb_head + 1) % USB_RING;
         if (next == usb_tail || forward_panic) {
             forward_panic = true;
@@ -306,7 +317,7 @@ static void midi_tasks(uint32_t now) {
     static uint32_t previous_overflows;
     if (uart_overflows != previous_overflows) {
         previous_overflows = uart_overflows;
-        if (engine.preset.route[1].forward)
+        if (engine.project.midi_thru)
             forward_panic = true;
         engine_panic(&engine, 1);
         midi_init(&parsers[1], midi_received, &source_id[1]);
@@ -331,7 +342,7 @@ static void midi_tasks(uint32_t now) {
     for (int s = 0; s < 2; s++)
         if (midi_sensing_expired(&parsers[s], now)) {
             engine_panic(&engine, s);
-            if (s == 1 && engine.preset.route[1].forward)
+            if (s == 1 && engine.project.midi_thru)
                 forward_panic = true;
         }
     if (forward_panic && tud_mounted() && !usb_suspended) {
@@ -415,32 +426,13 @@ static void cv_adc_task(uint32_t now_us) {
         status.adc_ok = false;
     adc_input = -1;
 }
-static float cv_note(unsigned input) {
-    return cv_pitch(&settings, input, status.cv_raw[input], engine.preset.cv[input].base_note);
-}
 static void cv_event(unsigned input, bool gate) {
-    if (engine.preset.studio.enabled) {
-        uint32_t now = to_ms_since_boot(get_absolute_time());
-        studio_cv(&engine, input, cv_volts(&settings, input, status.cv_raw[input]), gate,
-                  status.adc_ok && cv_sequence[input] && now - cv_time[input] < 100);
-        return;
-    }
-    if (engine.preset.cv_role[input] == CV_PITCH)
-        engine_cv(&engine, input, cv_note(input), gate);
-    else
-        engine_cv_control(&engine, input, cv_volts(&settings, input, status.cv_raw[input]), gate);
+    uint32_t now = to_ms_since_boot(get_absolute_time());
+    engine_cv(&engine, input, cv_volts(&engine.system, input, status.cv_raw[input]), gate,
+              status.adc_ok && cv_sequence[input] && now - cv_time[input] < 100);
 }
 static void gate_tasks(uint32_t now) {
-    static uint32_t previous_overflow;
-    static bool ready[2], previous_power;
-    static uint32_t seen[2];
-    static bool last_gate[2];
-    static uint32_t poll_due;
-    static bool poll_started;
-    if (rail_on != previous_power) {
-        ready[0] = ready[1] = false;
-        previous_power = rail_on;
-    }
+    static uint32_t previous_overflow, poll_due;
     if (previous_overflow != gate_overflows) {
         previous_overflow = gate_overflows;
         engine_panic(&engine, -1);
@@ -448,45 +440,21 @@ static void gate_tasks(uint32_t now) {
         gate_tail = gate_head;
         restore_interrupts(irq);
     }
-    while (gate_tail != gate_head) {
-        uint8_t ev = gate_events[gate_tail];
+    for (unsigned budget = 0; budget < 16 && gate_tail != gate_head; budget++) {
+        uint8_t event = gate_events[gate_tail];
         __dmb();
         gate_tail = (uint8_t)((gate_tail + 1) % GATE_RING);
-        unsigned input = ev >> 1;
-        last_gate[input] = ev & 1;
-        if (rail_on &&
-            (engine.preset.studio.enabled || (cv_sequence[input] && now - cv_time[input] < 100)))
-            cv_event(input, last_gate[input]);
+        if (rail_on)
+            cv_event(event >> 1, (event & 1) != 0);
     }
-    /* Queued gate edges above stay immediate. Poll CV/UI edits at 1kHz rather than
-       repeating two floating-point pitch quantizers on every main-loop spin. */
-    if (poll_started && (int32_t)(now - poll_due) < 0)
+    if ((int32_t)(now - poll_due) < 0)
         return;
-    poll_started = true;
     poll_due = now + 1;
-    for (unsigned input = 0; input < 2; input++) {
-        bool gate = !gpio_get(input ? PIN_GATE2_N : PIN_GATE1_N);
-        status.gates[input] = gate;
-        bool fresh = status.adc_ok && cv_sequence[input] && now - cv_time[input] < 100;
-        if (rail_on) {
-            if (engine.preset.studio.enabled) {
-                studio_cv(&engine, input, cv_volts(&settings, input, status.cv_raw[input]), gate,
-                          fresh);
-            } else if (!fresh)
-                engine_cv_clear(&engine, input);
-            else if (!ready[input] || gate != last_gate[input])
-                cv_event(input, gate);
-            else if (seen[input] != cv_sequence[input]) {
-                if (engine.preset.cv_role[input] == CV_PITCH)
-                    engine_cv_pitch(&engine, input, cv_note(input));
-                else
-                    engine_cv_control(&engine, input,
-                                      cv_volts(&settings, input, status.cv_raw[input]), gate);
-            }
-        }
-        ready[input] = fresh;
-        last_gate[input] = gate;
-        seen[input] = cv_sequence[input];
+    for (unsigned i = 0; i < 2; i++) {
+        bool gate = !gpio_get(i ? PIN_GATE2_N : PIN_GATE1_N);
+        status.gates[i] = gate;
+        if (rail_on)
+            cv_event(i, gate);
     }
 }
 
@@ -495,13 +463,13 @@ static bool calibrate(void *ctx, unsigned input, bool one) {
     if (input >= 2 || cv_count[input] < 64 || !status.adc_ok ||
         cv_sequence[input] == cv_last_cal[input])
         return false;
-    if (!cv_calibration(&settings, input, cv_samples[input], one, cal_zero_set))
+    if (!cv_calibration(&engine.system, input, cv_samples[input], one, cal_zero_set))
         return false;
     cv_last_cal[input] = cv_sequence[input];
     engine_panic(&engine, -1);
     return true;
 }
-/* Explicit user save only. Boot and settings migration never erase/program flash. */
+/* Explicit user save only. Boot and unknown settings versions never erase/program flash. */
 static bool commit_settings(void) {
     if (!settings_valid(&settings))
         return false;
@@ -536,6 +504,13 @@ static bool save_settings(void *ctx) {
         !settings_valid(&settings))
         return false;
     engine_panic(&engine, -1);
+    uint32_t mute_deadline = time_us_32() + 10000;
+    while (bus_pending(&engine.bus) && (int32_t)(time_us_32() - mute_deadline) < 0) {
+        bus_service(&engine.bus, time_us_32(), sn_wait_us);
+        tud_task();
+    }
+    if (bus_pending(&engine.bus))
+        return false;
     bool ok = commit_settings();
     /* Flash erase stalls MIDI: flush partial messages and notes. No autosave during a performance.
      */
@@ -619,8 +594,8 @@ int main(void) {
     store_bank = store_restore((const uint8_t *)(XIP_BASE + STORE_FLASH_OFFSET), boot_defaults,
                                &settings, &store_sequence);
     tud_task();
-    engine_init(&engine, &settings.preset[settings.selected],
-                (SoundSink){saa_write, sn_write, NULL});
+    engine_init(&engine, &settings.project[settings.selected],
+                (SoundSink){saa_write, sn_begin, sn_end, NULL});
     for (int s = 0; s < 2; s++)
         midi_init(&parsers[s], midi_received, &source_id[s]);
     ui_init(&ui, &settings, &engine, save_settings, calibrate, NULL);
@@ -694,14 +669,16 @@ int main(void) {
         }
         unsigned free_packets = (usb_tail + USB_RING - usb_head - 1) % USB_RING;
         /* Do not nest an editor response inside a forwarded TRS SysEx message. */
-        if (editor.length && (!engine.preset.route[1].forward || !parsers[1].sysex) &&
+        if (editor.length && (!engine.project.midi_thru || !parsers[1].sysex) &&
             free_packets >= (editor.length + 2) / 3) {
             while (editor_packet(&editor, usb_tx[usb_head]))
                 usb_head = (usb_head + 1) % USB_RING;
         }
         gate_tasks(now);
-        if (rail_on)
+        if (rail_on) {
             sn_clock_control();
+            bus_service(&engine.bus, time_us_32(), sn_wait_us);
+        }
         if (now_us - tick >= 1000) {
             uint32_t elapsed = (now_us - tick) / 1000;
             tick += elapsed * 1000;
@@ -709,6 +686,9 @@ int main(void) {
             if (rail_on)
                 engine_tick(&engine, elapsed);
             uint32_t duration = time_us_32() - start;
+            engine.tick_max_us = duration > engine.tick_max_us ? duration : engine.tick_max_us;
+            if (duration > 1000 || elapsed > 1)
+                engine.tick_overruns++;
             if (duration > status.tick_us)
                 status.tick_us = duration;
             if (duration > 1000 || elapsed > 1)
@@ -732,7 +712,8 @@ int main(void) {
         service_us = time_us_32();
         if (service_ready(service_us, tick, oled_serviced, 250, 4000)) {
             oled_serviced = service_us;
-            oled_task(&oled, to_ms_since_boot(get_absolute_time()), rail_on, settings.brightness);
+            oled_task(&oled, to_ms_since_boot(get_absolute_time()), rail_on,
+                      engine.system.brightness);
         }
         gpio_put(PIN_STATUS_LED, rail_on && (engine_active(&engine) > 0 || (now % 2000) < 50));
         tight_loop_contents();
