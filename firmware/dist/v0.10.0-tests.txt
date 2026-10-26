@@ -1,4 +1,4 @@
-Test project /Users/bongorian/Documents/ChatGPT/Gadget/chiptune-usb-cv/build/v10-tests
+Test project build/v10-tests
     Start 1: synth_tests
 1/8 Test #1: synth_tests ......................   Passed    0.33 sec
     Start 2: storage_tests
@@ -21,7 +21,7 @@ Test project /Users/bongorian/Documents/ChatGPT/Gadget/chiptune-usb-cv/build/v10
 Total Test time (real) =   2.57 sec
 
 Release host:
-Test project /Users/bongorian/Documents/ChatGPT/Gadget/chiptune-usb-cv/build/v10-release-host
+Test project build/v10-release-host
     Start 1: synth_tests
 1/8 Test #1: synth_tests ......................   Passed    0.21 sec
     Start 2: storage_tests

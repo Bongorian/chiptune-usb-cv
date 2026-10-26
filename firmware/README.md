@@ -1,6 +1,6 @@
 # Chiptune USB/CV v0.10.0-alpha
 
-SAA1099 × 1、SN76489AN × 2、RP2040の専用基板用です。単一の発音エンジン、構成可能な音色、DIRECT/POLY、独立保存とWave Labを備えます。実機への書き込み・リモート公開はこの作業では行っていません。
+SAA1099 × 1、SN76489AN × 2、RP2040の専用基板用です。単一の発音エンジン、構成可能な音色、DIRECT/POLY、独立保存とWave Labを備えます。実機検証の対象と手順は[BRINGUP.md](BRINGUP.md)に記載しています。
 
 [UF2](dist/chiptune-v0.10.0-alpha.uf2) / [検証結果](dist/Verification.json) / [実機確認](BRINGUP.md) / [音量・音程の根拠](LEVELS_AND_PITCH.md)
 
@@ -93,7 +93,7 @@ CV/Gateは2系統。1V/oct、8種類のスケール、0V基準ノート、ヒス
 
 ## Wave Lab
 
-[エディタの説明](../editor/README.md)。このブランチの`editor/`をローカルHTTPで開いてください。公開サイトはこの作業では更新していません。
+[エディタの説明](../editor/README.md)。[公開版Wave Lab](https://bongorian.github.io/chiptune-usb-cv/)または`editor/`を配信するローカルHTTPサーバーを使用します。
 
 ```sh
 python3 -m http.server 8766 --directory editor

@@ -1,6 +1,6 @@
 # Wave Lab v0.10
 
-v0.10の構成可能なPatch/Trackを編集するWeb MIDIエディタです。`editor/`はビルド不要の静的ファイルです。この開発ブランチを公開サイトへ配信する操作は行っていません。
+v0.10の構成可能なPatch/Trackを編集するWeb MIDIエディタです。`editor/`はビルド不要の静的ファイルです。[公開版](https://bongorian.github.io/chiptune-usb-cv/)またはローカルHTTPサーバーで実行できます。
 
 ```sh
 python3 -m http.server 8766 --directory editor

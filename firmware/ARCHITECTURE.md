@@ -28,9 +28,9 @@ Pitch ratio, SAA pitch registers, sine and exponential decay use generated LUTs.
 - `Performance.json` is host timing over 10,000 ticks each at 10 and 14 logical voices with envelopes, glide, LFO, morph and eight modulation routes. It is not RP2040 timing or an exhaustive maximum over all project states.
 - `Runtime_Verification.json` excludes ROM/SIO implementation latency, XIP stalls, interrupts, GPIO timing and peripheral effects. Counts are useful for regression and locating expensive operations, not a cycle estimate or WCET certificate. `Verification.json` records ELF/BIN/UF2 checks and RAM usage for the exact build.
 
-The earlier 14-voice probe had 320 stubbed float divisions per held tick; reciprocal conversion and conditional noise-Hz evaluation reduced that baseline to 60. The final stress case also exercises attack and eight MIDI modulation sources; its current counts are in the packaged report. This is optimization evidence, not proof of the 1 ms deadline.
+The packaged runtime report records the instruction counts and stubbed runtime calls for the current stress configuration. It does not establish the hardware deadline.
 
-**On-device worst-case timing is an open hardware validation item.** The firmware records `tick_max_us` and `tick_overruns` (both exposed by SysEx diagnostics); overruns include a missed update interval. Measure 14 independent voices, both inputs at MIDI saturation, CV/Gates, OLED editing, all clock modes, and 250 kHz SN writes. If the measured tick exceeds 1 ms, reduce update work/voice cost before declaring a production real-time guarantee. Do not infer hardware headroom from host microseconds.
+**On-device worst-case timing is an open hardware validation item.** The firmware records `tick_max_us` and `tick_overruns` (both exposed by SysEx diagnostics); overruns include a missed update interval. Measure 14 independent voices, both inputs at MIDI saturation, CV/Gates, OLED editing, all clock modes, and 250 kHz SN writes. If the measured tick exceeds 1 ms, reduce update work/voice cost before declaring a production real-time guarantee. Host timing does not establish RP2040 timing margin.
 
 ## Removed design
 

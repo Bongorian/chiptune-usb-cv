@@ -1,18 +1,20 @@
 # Chiptune USB/CV
 
-SAA1099 × 1、SN76489AN × 2、RP2040を搭載した小型チップチューン音源のハードウェアプロジェクトです。
+SAA1099 × 1、SN76489AN × 2、RP2040を搭載したPSG音源のハードウェア・ファームウェアプロジェクトです。
 USB MIDI、TRS MIDI、2系統のCV／ゲート入力と、OLED・3ボタンによる操作を想定しています。
 回路図、配線済みPCB、JLCPCB向け製造データ、設計資料を収録しています。
 
-**v0.10.0-alphaは単一エンジンと構成可能な音色へ全面更新しました。** 初期MIDI10はch1–6=SAA単音、ch7–9=左右SNの同ノート、ch10=左右SNノイズ。PAN/CC10、DIRECT/POLY、ENV・ノイズ・レイヤー・モーフ、独立保存と新Wave Labに対応します。[操作資料](firmware/README.md)／[設計と検証範囲](firmware/ARCHITECTURE.md)。保存形式10・protocol 2への破壊的変更で、旧音色・CV校正・明るさは移行しません。起動時はフラッシュを書き換えません。
+ファームウェアはv0.10.0-alphaです。初期配置はMIDI 10（ch1–6: SAA、ch7–9: 左右SNトーン、ch10: 左右SNノイズ）。DIRECT/POLY演奏、PAN/CC10、音色編集、Patch/Track/Project/System保存に対応します。[操作資料](firmware/README.md)と[音源構成](firmware/SOUND_DESIGN.md)を参照してください。
 
-**開発状況:** 自動テスト、ARMビルド、UF2構造検証は完了しています。実機の発音・電気特性・1ms最悪時間は未確認です。このブランチのUF2とエディタはローカル成果物で、実機書込・リモート公開は行っていません。
+保存形式はversion 10、Web MIDI通信はprotocol 2/schema 10です。旧形式の音色・CV校正・明るさは移行しません。起動時のフラッシュ消去・書き込みは行いません。
+
+自動テスト・ARMビルド・UF2検証の結果は[検証記録](firmware/dist/Test_Verification.json)に記録しています。実機の音声出力、電気特性、1 ms更新の最悪実行時間は未検証です。[検証範囲](firmware/ARCHITECTURE.md)と[実機確認項目](firmware/BRINGUP.md)を参照してください。
 
 ![PCB配線図](outputs/review/routing-traces-all.png)
 
 [**Wave Lab — 音色・波形エディタを開く**](https://bongorian.github.io/chiptune-usb-cv/)
 
-このブランチのWave Labは`editor/`をローカルHTTPで開いて使用します。上記公開サイトはこの作業では更新していません。[音作り](firmware/SOUND_DESIGN.md)と[エディタの使い方](editor/README.md)を参照してください。
+Wave Labのソースは`editor/`にあります。公開版のほか、ローカルHTTPサーバーでも実行できます。[音作り](firmware/SOUND_DESIGN.md)と[エディタの使い方](editor/README.md)を参照してください。
 
 ## 仕様
 
@@ -81,7 +83,7 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 ## ファームウェア
 
 [ファームウェアの操作資料](firmware/README.md)と[配布UF2](firmware/dist/chiptune-v0.10.0-alpha.uf2)を収録しています。
-本体の3ボタンで、SAAのENV発振・独立ADSR、SNのステレオ音色・実クロック変調、MIDI/CV/Gateの割り当て、パターン編集と保存を操作できます。
+本体の3ボタンで、SAAのENV発振・ソフトADSR、SNのステレオ音色・実クロック変調、MIDI/CV/Gateの割り当て、パターン編集と保存を操作できます。
 [Androidからの更新手順](firmware/ANDROID_UPDATE.md)、[実機確認項目](firmware/BRINGUP.md)、[検証記録](firmware/dist/Verification.json)も参照してください。
 −と＋を押しながらUSBを接続するか、SYSTEM > USB UPDATEからROMブートローダーへ入れます。
 

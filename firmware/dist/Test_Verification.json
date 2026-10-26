@@ -1,10 +1,6 @@
 {
   "firmware": "v0.10.0-alpha",
   "date": "2026-10-27",
-  "branch": "firmware/v0.10-redesign",
-  "base": "10949e4",
-  "remote_published": false,
-  "device_flashed": false,
   "hardware_tested": false,
   "elf_sha256": "5f9906314a38ebd80840de456dc510d8b5dfdb8af2667a983e8a0cadadc0ab01",
   "source_manifest_sha256": "b2ef9391cee6828b650478d1e094189d8fa8da451c6770aff7a839c493320b3e",

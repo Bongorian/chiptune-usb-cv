@@ -1,6 +1,6 @@
 Chiptune USB/CV v0.10.0-alpha — dedicated RP2040/SAA1099/SN76489AN board
 
-Use chiptune-v0.10.0-alpha.uf2. No physical device was flashed by this work.
+Use chiptune-v0.10.0-alpha.uf2.
 Settings version 10 / SysEx protocol 2 / schema 10. Old settings, USER sounds,
 calibration and brightness are ignored, not migrated. Boot never erases/writes
 settings. Explicit save may overwrite an old bank: back up old data first.
