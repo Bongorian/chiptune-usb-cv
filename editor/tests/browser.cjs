@@ -346,7 +346,25 @@ const { spawnSync } = require("node:child_process");
       }),
     });
   });
+  let legacyShellServed = false;
+  // A cached v0.10 HTML shell may not contain the new optional hint element.
+  await oldPage.route(
+    new URL(process.env.EDITOR_URL || "http://127.0.0.1:8766").href,
+    async (route) => {
+      legacyShellServed = true;
+      const response = await route.fetch();
+      await route.fulfill({
+        response,
+        body: (await response.text()).replace(
+          /<p id="wave-hint" class="hint"><\/p>/,
+          "",
+        ),
+      });
+    },
+  );
   await oldPage.goto(process.env.EDITOR_URL || "http://127.0.0.1:8766");
+  assert(legacyShellServed);
+  await oldPage.locator("#wave-hint").waitFor();
   await oldPage.locator("#connect").click();
   await oldPage.locator("#message.error").waitFor();
   assert(await oldPage.locator("#send").isDisabled());

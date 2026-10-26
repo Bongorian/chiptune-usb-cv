@@ -605,7 +605,14 @@ function renderPatch() {
     "SNのTone 3と連動Noiseを出力します。両成分は同じTone 3周波数に従い、Noise Mixで音量比を調整します。",
     "SAAのTone / NoiseをハードウェアENVで振幅変調します。ENV RATIOはENVクロックとノートの半音差です。",
   ];
-  $("wave-hint").textContent = tips[waveform(p)];
+  let hint = $("wave-hint");
+  if (!hint) {
+    hint = document.createElement("p");
+    hint.id = "wave-hint";
+    hint.className = "hint";
+    normal.after(hint);
+  }
+  hint.textContent = tips[waveform(p)];
   const advanced = $("advanced-controls");
   advanced.replaceChildren();
   for (const f of fields) patchControl(advanced, f.name, true);

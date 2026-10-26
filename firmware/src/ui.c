@@ -142,6 +142,8 @@ enum {
 static const char *const mode_names[] = {"DIRECT", "POLY", "LEGATO"};
 static const char *const chips[] = {"SAA1099", "SN76489"};
 static const char *const sources[] = {"TONE", "NOISE", "TONE+NOISE"};
+static const char *const sn_sources[] = {"TONE", "NOISE", "TONE3+NOISE"};
+static const char *const noise_types[] = {"PERIODIC", "WHITE"};
 static const char *const envelopes[] = {"OFF", "OSCILLATOR", "AM"};
 static const uint8_t wave_choice[2][5] = {
     {WAVE_SQUARE, WAVE_ENV, WAVE_TONE_NOISE, WAVE_NOISE, WAVE_AM},
@@ -262,7 +264,7 @@ static unsigned build(Ui *u, Item a[48]) {
         if ((features & PATCH_F_NOISE) && !(features & PATCH_F_PULSE)) {
             C("NOISE RATE", &p->noise_rate, 0, 3, rates);
             if (features & PATCH_F_NOISE_TYPE)
-                C("WHITE NOISE", &p->noise_type, 0, 1, yesno);
+                C("NOISE TYPE", &p->noise_type, 0, 1, noise_types);
         }
         if (features & PATCH_F_NOISE_TRACK) {
             I(features & PATCH_F_PULSE ? "PULSE TUNE" : "NOISE PITCH", &p->noise_pitch, -48, 48);
@@ -295,7 +297,7 @@ static unsigned build(Ui *u, Item a[48]) {
         break;
     case UI_ADVANCED:
         C("CHIP", &p->chip, 0, 1, chips);
-        C("SOURCE", &p->source, 0, 2, sources);
+        C("SOURCE", &p->source, 0, 2, p->chip == CHIP_SAA ? sources : sn_sources);
         C("OUTPUT", &p->output, 0, 2, outputs);
         if (p->chip == CHIP_SAA) {
             C("HARDWARE ENV", &p->env, 0, 2, envelopes);
@@ -312,7 +314,7 @@ static unsigned build(Ui *u, Item a[48]) {
             (p->chip == CHIP_SAA && p->layers > 1 && p->layer_source != SOURCE_TONE)) {
             C("NOISE RATE", &p->noise_rate, 0, 3, rates);
             if (p->chip == CHIP_SN)
-                U("WHITE NOISE", &p->noise_type, 0, 1);
+                C("NOISE TYPE", &p->noise_type, 0, 1, noise_types);
             if (p->noise_rate == 3) {
                 I("NOISE PITCH", &p->noise_pitch, -48, 48);
                 I("NOISE SWEEP", &p->noise_sweep, -48, 48);

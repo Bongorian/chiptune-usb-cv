@@ -228,7 +228,7 @@ void render_tick(Engine *e, uint32_t dt) {
                                           &nc);
                             }
                         }
-                        if (p->env == ENV_OSC && clamp)
+                        if (p->env == ENV_OSC && p->shape >= 2 && clamp)
                             gain = 0;
                         if (p->layers > 1) {
                             unsigned aux = n - 2;

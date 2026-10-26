@@ -234,6 +234,23 @@ static void waveforms(void) {
     assert(!engine_apply(&engine, &p));
     assert(engine_track_notes(&engine, 6) == 1 && !memcmp(&plan, &engine.plan, sizeof(plan)));
     assert(patch_wave(&engine.project.track[6].patch) == WAVE_SQUARE);
+    setup();
+    isolated(20, PLAY_DIRECT, 1);
+    p = engine.project;
+    assert(patch_set_wave(&p.track[0].patch, WAVE_ENV));
+    p.track[0].patch.shape = 1; /* Constant maximum does not depend on clock pitch. */
+    assert(engine_apply(&engine, &p));
+    message(0, 0x90, 127, 127);
+    for (unsigned n = 0; n < 6; n++)
+        if (engine.plan.outputs[0][0] & (1u << n))
+            assert(engine.bus.saa[n]);
+    assert(!(patch_features(&p.track[0].patch) & PATCH_F_PITCH));
+    p.track[0].patch.shape = 5; /* Periodic ENV still mutes outside its clock range. */
+    assert(engine_apply(&engine, &p));
+    message(0, 0x90, 127, 127);
+    for (unsigned n = 0; n < 6; n++)
+        if (engine.plan.outputs[0][0] & (1u << n))
+            assert(!engine.bus.saa[n]);
     Patch env;
     patch_default(&env, CHIP_SAA);
     assert(patch_set_wave(&env, WAVE_AM));
