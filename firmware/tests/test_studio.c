@@ -544,6 +544,7 @@ static void test_audition_follows_part(void) {
     setup();
     ui_init(&ui, &settings, &e, save, cal, NULL);
     ui.test_mode = 2;
+    ui.test_note = 48;
     studio_test(&e, 0, 48, 2);
     open_page(UI_PLAY, 0);
     click(1);

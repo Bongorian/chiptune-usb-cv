@@ -63,6 +63,12 @@ const assert = require("node:assert/strict");
   }
   await page.goto(process.env.EDITOR_URL || "http://127.0.0.1:8765");
   await page.getByRole("button", { name: "SAA1099", exact: true }).waitFor();
+  assert.equal(await page.locator("#name").inputValue(), "SAA TONE");
+  assert.equal(await page.locator("#poly").inputValue(), "1");
+  assert.equal(await page.locator("#profile").inputValue(), "4");
+  assert.equal(await page.locator("#test-note").inputValue(), "45");
+  assert.match(await page.locator("#test-frequency").textContent(), /110.00 Hz/);
+  await page.screenshot({path: "/tmp/chiptune-v09-default.png", fullPage: true});
   await page
     .getByRole("button", { name: "ATK BASS", exact: true })
     .count()
@@ -93,6 +99,7 @@ const assert = require("node:assert/strict");
   await page
     .getByRole("button", { name: "音色を読み込む", exact: true })
     .click();
+  await page.locator("#advanced-motion > summary").click();
   await page.locator("#steps").scrollIntoViewIfNeeded();
   const steps = await page.locator("#steps").boundingBox();
   await page.mouse.move(steps.x + steps.width * 0.15, steps.y + 25);
@@ -136,6 +143,7 @@ const assert = require("node:assert/strict");
       .filter({ hasText: "本体の音色・ステップを読み出しました" })
       .waitFor();
     assert.equal(await page.locator("#name").inputValue(), "WEB TEST");
+    await page.locator("#advanced-clock > summary").click();
     await page.locator("#read-clock").click();
     await page
       .getByRole("status")
@@ -146,6 +154,7 @@ const assert = require("node:assert/strict");
       .getByRole("status")
       .filter({ hasText: "共通クロックを反映しました" })
       .waitFor();
+    await page.locator("#advanced-cv > summary").click();
     await page.locator("#read-cv").click();
     await page
       .getByRole("status")

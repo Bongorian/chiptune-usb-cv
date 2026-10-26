@@ -1,5 +1,7 @@
 {
-  "firmware": "v0.8.1-alpha",
+  "firmware": "v0.9.0-alpha",
+  "date": "2026-10-27",
+  "host": "Darwin",
   "host_tests_passed": true,
   "sanitizers": [
     "ASan",
@@ -7,181 +9,111 @@
   ],
   "tests": [
     {
+      "name": "midi10_tests",
+      "status": "passed",
+      "seconds": 0.01
+    },
+    {
       "name": "engine_tests",
       "status": "passed",
-      "seconds": 11.567
+      "seconds": 17.96
     },
     {
       "name": "roles_tests",
       "status": "passed",
-      "seconds": 0.0951013
+      "seconds": 0.16
     },
     {
       "name": "performance_tests",
       "status": "passed",
-      "seconds": 0.0571596
+      "seconds": 0.06
     },
     {
       "name": "studio_tests",
       "status": "passed",
-      "seconds": 0.280267
+      "seconds": 0.33
     },
     {
       "name": "instrument_tests",
       "status": "passed",
-      "seconds": 0.0143302
+      "seconds": 0.02
     },
     {
       "name": "layout_tests",
       "status": "passed",
-      "seconds": 0.0247215
+      "seconds": 0.03
     },
     {
       "name": "noise_tests",
       "status": "passed",
-      "seconds": 0.0174915
+      "seconds": 0.02
     },
     {
       "name": "display_tests",
       "status": "passed",
-      "seconds": 0.0120181
+      "seconds": 0.02
     },
     {
       "name": "editor_tests",
       "status": "passed",
-      "seconds": 0.0164737
+      "seconds": 0.29
     },
     {
       "name": "boot_tests",
       "status": "passed",
-      "seconds": 0.0234105
+      "seconds": 0.04
     }
   ],
-  "ui_random_actions": 12000,
-  "ui_rendered_pages": 33,
-  "models_tested": 16,
   "settings_version": 6,
-  "settings_bytes": 18332,
-  "store_record_bytes": 18352,
-  "engine_bytes_host": 23736,
-  "ui_bytes_host": 5368,
-  "settings_migration_tested": [
-    1,
-    2,
-    3,
-    4,
-    5
-  ],
+  "layout_revision": 3,
+  "factory_sounds": 23,
+  "profiles": 5,
   "regressions": [
-    "CV reroute while gate high",
-    "independent CV base and fixed gate note",
-    "MIDI Continue preserves step position",
-    "unchanged model selection preserves sound",
-    "shared noise colour packing",
-    "button debounce/hold/chord suppression",
-    "audition follows selected part"
-  ],
-  "android_on_hardware_tested": false,
-  "audio_on_hardware_tested": false,
-  "oled_on_hardware_tested": false,
-  "display_regressions": [
-    "busy loop missing every 250us idle window",
-    "complete 1024-byte framebuffer transfer",
-    "I2C failures on each startup transaction",
-    "brightness reapply on reinitialization",
-    "power loss and USB suspend/resume",
-    "timer rollover"
-  ],
-  "instrument_regressions": [
-    "explicit FREE single-instrument regression fixture on USB/TRS MIDI ch1",
-    "all 16 sounds play within hardware reservations",
-    "sound selection, short OK edit and long OK menu",
-    "edit discard protection",
-    "save rollback and reboot with the same sound",
-    "receive channel commit/cancel",
-    "current-format multi setup preservation",
-    "fixed factory sounds without changing user library",
-    "Program Change across all user sounds"
-  ],
-  "noise_regressions": [
-    "SN white/periodic mode and all rate encodings",
-    "stereo and individual L/R noise attenuation",
-    "tone3 frequency and muted carrier for plain noise",
-    "metal carrier mixing",
-    "same-note LFSR reset and no reset on each tick",
-    "SAA noise enable, amplitude, rate and envelope disable",
-    "legacy default ch10 D2 white-noise clock about 2.35kHz instead of 73Hz"
-  ],
-  "layout_reset_from_versions_tested": [
-    1,
-    2,
-    3,
-    4,
-    5
-  ],
-  "layout_revision": 2,
-  "layout_regressions": [
-    "ch1/2/3/10 simultaneous register output",
+    "10 monophonic MIDI parts on both USB and TRS",
+    "parallel SN L/R divider values at A2 and A4",
+    "PAN/CC10 hard-left, center and hard-right on SAA and SN",
+    "old Note Off does not stop the replacement mono note",
     "independent Note Off between channels",
-    "editor focus does not stop MIDI voices",
-    "fixed chip role filters sound selection and Program Change",
-    "SN noise engine changes preserve other held parts",
-    "SAA ENV clock-only channels stay muted",
-    "mono patch retains polyphonic reservation",
-    "old musical settings migrate in RAM until explicit save",
-    "CV calibration and brightness retained",
-    "new revision survives later boots",
-    "interrupted commit retries using the old valid bank"
+    "all ten channels active simultaneously",
+    "tone3 noise-clock conflict rejects atomically",
+    "equal-temperament table for all 128 MIDI notes",
+    "A2/C3/C4/A4/A5 pitch anchors and fractional pitch",
+    "SAA in-range pitch error under 4 cents",
+    "nominal output gain within SN 2 dB quantization",
+    "v0.8 user sound library, CV calibration and brightness preserved",
+    "unedited default sound selection does not ask to discard"
   ],
-  "editor_regressions": [
-    "all 16 structures and 20 factory sounds validate",
-    "four allocation profiles",
-    "SAA ENV noise/mix register enables",
-    "SAA layer reserves three circuits per note and its transient decays",
-    "layer macros alter auxiliary amplitude without altering saved base sound",
-    "SN stack intervals, stereo voices, logical note ownership and Note Off",
-    "incompatible tone3 clock reservations rejected",
-    "SysEx request/reply packet framing and signed 14-bit endpoints",
-    "Web MIDI wire format sent through actual portable C firmware",
-    "invalid checksum, oversize, timeout, busy and invalid data rejected",
-    "atomic CV pair swap",
-    "save success snapshot and failure rollback",
-    "v5 CRC-protected binary fixture and calibration/brightness migration"
-  ],
+  "legacy_tests": "Original engine, MIDI, CV, roles, UI, noise, storage, display and protocol regressions retained; old allocation tests explicitly select HYBRID.",
   "web_editor": {
     "javascript_tests_passed": 9,
     "browser_tests_passed": true,
-    "browser_test_uses": "headless Chrome with the portable C firmware as mocked Web MIDI ports",
-    "desktop_viewport": [
-      1440,
-      1080
+    "browser_tests_run_for_this_version": true,
+    "browser_test_uses": "headless Chrome with portable C firmware as mock Web MIDI ports",
+    "viewports": [
+      [
+        1440,
+        1080
+      ],
+      [
+        390,
+        844
+      ]
     ],
-    "mobile_viewport": [
-      390,
-      844
-    ],
-    "real_usb_or_audio_tested": false,
     "checks": [
-      "connection and read/write roundtrip",
-      "ENV shape and SN stack selection",
-      "motion painting and JSON export",
-      "clock read/write",
-      "CV atomic update",
+      "MIDI10 initial values and A2 110 Hz display",
+      "structure and factory selection",
+      "real C protocol roundtrip",
+      "clock and CV update",
       "save failure feedback",
-      "no horizontal mobile overflow or JavaScript console errors"
-    ],
-    "browser_tests_run_for_this_version": false,
-    "browser_tests_last_run_firmware": "v0.8.0-alpha"
+      "motion painting and JSON export",
+      "no mobile horizontal overflow or console errors"
+    ]
   },
-  "boot_regressions": [
-    "erased and corrupt banks fall back without assertion",
-    "valid saved settings restore unchanged",
-    "read-only v1-v5 migration with calibration retained",
-    "both historical 4KiB slots and false v6 header bounds",
-    "OK-held factory boot does not erase settings",
-    "physical SDK flash capacity independent from linker application limit",
-    "ARM boot USB service precedes settings, no flash writes",
-    "ARM SDK erase/program guards accept both banks and reject out-of-capacity writes",
-    "v0.8.0 negative control matches published ARM flash functions and rejects both banks"
-  ]
+  "arm_boot_code_executed": true,
+  "uf2_and_usb_descriptors_verified": true,
+  "pio_clock_verified": true,
+  "audio_on_hardware_tested": false,
+  "oled_on_hardware_tested": false,
+  "real_usb_tested": false,
+  "level_matching": "Nominal circuit estimate, not measured. See LEVELS_AND_PITCH.md."
 }

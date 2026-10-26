@@ -3,12 +3,13 @@
 #include <stdint.h>
 #include "sn_clock.h"
 #include "studio_types.h"
+#include "sound_math.h"
 #define VOICES 14
 #define PATCHES 16
 #define PRESETS 8
 #define SOURCES 2
 #define SETTINGS_VERSION 6
-#define LAYOUT_REVISION 2
+#define LAYOUT_REVISION 3
 #define CV_SCALES 8
 #define CV_ROLES 7
 #define ARP_MODES 8

@@ -18,7 +18,7 @@ F0 7D 43 54 01 request-id command payload... checksum F7
 | 3 SAVE | part、USER slot | なし。対象音色＋現在の全パート・ルート・クロックを保存。演奏停止。失敗時は保存用RAMも復元 |
 | 4 GET_CLOCK | なし | reference、mode、base、depth、rate、sync、retrigger、width、trigger source、clock steps×8 |
 | 5 SET_CLOCK | 上記17バイト | 上記17バイト。左右全SNで共有。reference変更時は演奏停止 |
-| 6 PROFILE | 0 HYBRID／1 SAA POLY／2 DUAL LAYER／3 PERCUSSION | なし。全パート・ルートを置換し演奏停止 |
+| 6 PROFILE | 0 HYBRID／1 SAA POLY／2 DUAL LAYER／3 PERCUSSION／4 MIDI 10（v0.9以降） | なし。全パート・ルートを置換し演奏停止 |
 | 7 AUDITION | part、note、mode（0 OFF／1 SINGLE／2 REPEAT／3 HOLD） | なし |
 | 8 GET_MOTION | part | motion data |
 | 9 SET_MOTION | motion data | motion data。STOPは全体停止 |

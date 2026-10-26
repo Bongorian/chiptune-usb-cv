@@ -213,7 +213,7 @@ def verify(path):
     v5 = (Path(__file__).parent / 'fixtures/settings-v5.bin').read_bytes()
     image.boot(v5 + erased[len(v5):], expected_sequence=93, expected_bank=0)
     image.boot(bytes(record) + erased[len(record):], defaults=True)
-    return {'firmware': 'v0.8.1-alpha', 'elf_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+    return {'firmware': 'v0.9.0-alpha', 'elf_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
             'hardware_emulated': False, 'arm_code_executed': True,
             'flash_guard_cases': guards, 'out_of_capacity_rejected': True,
             'boot_cases': ['erased', 'valid v6', 'corrupt v6', 'legacy v5', 'OK held'],

@@ -4,9 +4,9 @@ SAA1099 × 1、SN76489AN × 2、RP2040を搭載した小型チップチューン
 USB MIDI、TRS MIDI、2系統のCV／ゲート入力と、OLED・3ボタンによる操作を想定しています。
 回路図、配線済みPCB、JLCPCB向け製造データ、設計資料を収録しています。
 
-**v0.8.1は起動停止の修正版です。** v0.8.0でOLEDとUSB MIDIが起動しない場合は、[復旧手順](firmware/BOOT_RECOVERY.md)から更新してください。起動時のフラッシュ書き込みを廃止し、旧設定の移行はRAM内で行います。CV校正と明るさを保持し、明示的な保存まで元の設定領域を残します。初期配置はch1=SAA通常、ch2=SAA ENV、ch3=SNステレオ、ch10=SNノイズです。
+**v0.9.0はMIDI 1ch＝1音の「MIDI 10」が初期配置です。** ch1–6=SAA、ch7–9=左右SNの同音程トーン、ch10=左右SNノイズ。PAN/CC10でL/Rへ振れます。初期音色を単純化し、試聴はA2/110 Hz、音量は公称回路モデルで補正しました。[チャンネル表・特殊発音のch](firmware/README.md)／[音量と周波数の根拠](firmware/LEVELS_AND_PITCH.md)。v0.8のUSER音色・CV校正・明るさを保持し、セットアップ配置はRAM内で更新します。明示的な保存まで設定領域を書き換えません。
 
-**開発状況:** PCBの配線と設計ルール検査は完了しています。ファームウェアv0.8.1-alphaはUF2のビルドとPCテストを通過しています。v0.8の実機評価は未完了です。
+**開発状況:** PCBの配線と設計ルール検査は完了しています。ファームウェアv0.9.0-alphaはUF2のビルドとPCテストを通過しています。v0.9の実機評価は未完了です。
 
 ![PCB配線図](outputs/review/routing-traces-all.png)
 
@@ -80,7 +80,7 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 
 ## ファームウェア
 
-[ファームウェアの操作資料](firmware/README.md)と[配布UF2](firmware/dist/chiptune-v0.8.1-alpha.uf2)を収録しています。
+[ファームウェアの操作資料](firmware/README.md)と[配布UF2](firmware/dist/chiptune-v0.9.0-alpha.uf2)を収録しています。
 本体の3ボタンで、SAAのENV発振・独立ADSR、SNのステレオ音色・実クロック変調、MIDI/CV/Gateの割り当て、パターン編集と保存を操作できます。
 [Androidからの更新手順](firmware/ANDROID_UPDATE.md)、[実機確認項目](firmware/BRINGUP.md)、[検証記録](firmware/dist/Verification.json)も参照してください。
 −と＋を押しながらUSBを接続するか、SYSTEM > USB UPDATEからROMブートローダーへ入れます。
@@ -89,7 +89,7 @@ Gerber ZIP、BOM、CPLをそれぞれ対応する欄へ指定します。
 
 - 基板検査: DRC 0、未接続0、回路図との一致問題0、ERC 0。
 - 設計照合: 152フットプリントの配置・端子接続と、音源バスの768ケースを検査済み。
-- ファームウェア: v0.8.1-alpha。音色を選んでMIDIで弾く3ボタンUI、ENV発振と独立ADSR、音源資源の予約、A〜Nのパート、MIDI/CV/Gateルート、4マクロと8変調枠、16ステップ、アルペジオ、8シーン・16音色保存、USB更新モードを実装。ARMビルドとASan／UBSan付きPCテストを通過。実機評価は未完了。
+- ファームウェア: v0.9.0-alpha。音色を選んでMIDIで弾く3ボタンUI、ENV発振と独立ADSR、音源資源の予約、A〜Nのパート、MIDI/CV/Gateルート、4マクロと8変調枠、16ステップ、アルペジオ、8シーン・16音色保存、USB更新モードを実装。ARMビルドとASan／UBSan付きPCテストを通過。実機評価は未完了。
 - 実機検証: 電源電流・突入電流、音声出力、CV校正、取り付け公差の評価は未完了。
 
 [OLEDの描画例](firmware/assets/ui-v05.png)は、実装したCの描画処理から生成しています。

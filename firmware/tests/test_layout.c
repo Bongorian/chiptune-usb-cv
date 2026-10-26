@@ -33,6 +33,8 @@ static void message(unsigned src, unsigned kind, unsigned channel, unsigned note
 }
 static void test_channels_and_resources(void) {
     setup();
+    studio_profile(&engine.preset.studio, 0);
+    studio_reset(&engine);
     const uint16_t outputs[] = {0x0009, 0x0024, 0x06c0, 0x3000};
     const uint16_t resources[] = {0x0009, 0x0036, 0x06c0, 0x3000};
     for (unsigned p = 0; p < 4; p++) {
@@ -70,6 +72,8 @@ static void test_channels_and_resources(void) {
 }
 static void test_focus_and_sound_roles(void) {
     setup();
+    studio_profile(&engine.preset.studio, 0);
+    studio_reset(&engine);
     message(0, 0x90, 0, 48);
     message(0, 0x90, 1, 52);
     ui_open(&ui, UI_MENU);
@@ -94,6 +98,8 @@ static void test_focus_and_sound_roles(void) {
         }
     }
     setup();
+    studio_profile(&engine.preset.studio, 0);
+    studio_reset(&engine);
     StSound original = engine.preset.studio.part[0].sound;
     unsigned refused = engine.refused;
     message(0, 0xc0, 0, 7); /* SN sound on fixed SAA channel must be ignored atomically. */

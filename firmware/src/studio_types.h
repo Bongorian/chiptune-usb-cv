@@ -5,7 +5,7 @@
 #define ST_STEPS 16
 #define ST_MODS 8
 #define ST_SOUNDS 16
-#define ST_FACTORIES 20
+#define ST_FACTORIES 23
 #define ST_HELD 16
 typedef enum {
     ST_SAA_TONE,

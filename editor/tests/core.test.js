@@ -49,7 +49,7 @@ const motion = () => ({
   motion: Array.from({ length: 16 }, (_, i) => (i % 2 ? -100 : 100)),
 });
 test("all factory structures conform to schema", () => {
-  assert.equal(factory.length, 20);
+  assert.equal(factory.length, 23);
   for (const f of factory)
     assert.doesNotThrow(() => validateSound(fromValues(f.values)));
   assert.equal(models.length, 16);

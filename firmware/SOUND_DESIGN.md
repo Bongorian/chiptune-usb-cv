@@ -1,4 +1,4 @@
-# 音色の構造と回路の予約 — v0.8
+# 音色の構造と回路の予約 — v0.9
 
 音色は「発音構造＋音量包絡＋変調」です。MIDIチャンネルは音色を演奏するパートへの入力で、物理ICや波形そのものではありません。本体の3ボタンだけでも作成・保存できます。Webエディタは同じ音色データを編集します。
 
@@ -28,18 +28,24 @@ SAA LAYERの補助音は全体ソフトADSRに従い、さらに `exp(-経過ms 
 
 ハードウェアENVは内蔵8形状・8／16段階です。波形RAMへの自由描画や任意のPCM再生ではありません。ENVの形状・ステップ数によって周期が変わるため、純ENVの音程計算も連動します。8MHz時の16段三角波は最高約488Hz、上昇／下降波は約977Hz、8段はその倍です。純ENV／LAYERの範囲外のENV出力は消音します。通常トーンのデューティ比は固定です。
 
+## 初期配置 MIDI 10
+
+v0.9の初期値は、各MIDI chを単音とするMIDI 10です。ch1–6=SAAの各1音、ch7–9=左右SNの同番号トーン、ch10=左右SNのノイズ。SNは同音程をL/Rへ送り、PAN中央で両側同音量、CC10で左右へ振ります。初期音色はF21 SAA TONE、F22 SN MONO、F23 SN NOISE。初期試聴はnote 45=A2=110 Hzです。
+
+以下のHYBRIDなどは、特殊発音やポリフォニック演奏へ切り替える追加配置です。[初期配置と特殊MIDI chの一覧](README.md)／[音量補正と周波数表](LEVELS_AND_PITCH.md)。
+
 ## 回路配置プロファイル
 
 本体では `OK長押し > PARTS / SETUP > PROFILE > APPLY PROFILE`。全パート・ルートを置き換える確認が出ます。適用時は演奏を停止します。保存するまでRAM内の変更です。
 
 | プロファイル | SAAの配置 | MIDI入力 |
 |---|---|---|
-| HYBRID（初期値） | 通常2声＋ENV2声 | ch1通常、ch2 ENV |
+| HYBRID | 通常2声＋ENV2声 | ch1通常、ch2 ENV |
 | SAA POLY | 通常6声 | ch1、ch2はOFF |
 | DUAL LAYER | 複合音色2声 | ch1、ch2はOFF |
 | PERCUSSION | 通常2声＋ENV1声＋ノイズ2声 | ch1通常、ch2 ENV、ch11 SAAノイズ |
 
-すべてのプロファイルでch3はSNステレオ2声、ch10はSNステレオノイズ1声です。その他のチャンネルは未割り当て。CV/Gateは初期OFFです。DUAL LAYERではch1の音色はATK BASSをPOLYで使用します。
+上記4つの追加プロファイルではch3はSNステレオ2声、ch10はSNステレオノイズ1声です。その他のチャンネルは未割り当て。CV/Gateは初期OFFです。DUAL LAYERではch1の音色はATK BASSをPOLYで使用します。
 
 SN STACKの2組構成はch3で使えます。3組構成はトーン3連動ノイズと両立しないため、ch10を固定レートにするかOFFにします。既存ch10の予約を自動解除しません。
 
@@ -55,7 +61,7 @@ SN STACKの2組構成はch3で使えます。3組構成はトーン3連動ノイ
 
 ## 本体UIとWeb
 
-短いOKでSOUND、STRUCTUREで発音方式・波形・レイヤーを選びます。AMP ENVELOPEはノート全体のソフトADSR、ハードウェアENVのWAVE／STEPSとは独立です。レイヤーのレベル・追加減衰・音程差、ENV RATIOもマクロ／CV／変調マトリクスの対象です。新しい工場音色はF17–F20、USER保存は16枠です。
+短いOKでSOUND、STRUCTUREで発音方式・波形・レイヤーを選びます。AMP ENVELOPEはノート全体のソフトADSR、ハードウェアENVのWAVE／STEPSとは独立です。レイヤーのレベル・追加減衰・音程差、ENV RATIOもマクロ／CV／変調マトリクスの対象です。ENV/STACKの追加音色はF17–F20、基本音色はF21–F23、USER保存は16枠です。
 
 [Wave Lab](https://bongorian.github.io/chiptune-usb-cv/)はHTTPS上のWeb MIDIエディタです。v0.8以降の本体へUSB接続し、SysExを許可して、入出力両ポートを選択します。対応ブラウザーではAndroidからも同じ画面を使えます。Web MIDI非対応ブラウザーでもオフラインの編集・JSON保存はできます。
 

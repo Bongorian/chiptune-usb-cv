@@ -203,8 +203,8 @@ void editor_task(Editor *ed, Engine *e, Settings *s, bool blocked, bool (*save)(
             break;
         }
         put(ed, 0);
-        put(ed, 8);
-        put(ed, 1);
+        put(ed, 9);
+        put(ed, 0);
         put(ed, SETTINGS_VERSION);
         put(ed, ST_PARTS);
         put(ed, ST_SOUNDS);
@@ -319,7 +319,7 @@ void editor_task(Editor *ed, Engine *e, Settings *s, bool blocked, bool (*save)(
         break;
     }
     case 6:
-        if (n != 1 || d[0] > 3) {
+        if (n != 1 || d[0] > 4) {
             status = 2;
             break;
         }

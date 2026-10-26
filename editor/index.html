@@ -64,6 +64,8 @@
               value="2"
           /></label>
         </div>
+        <details>
+          <summary>音源の役割・有効化</summary>
         <div class="pair">
           <label
             >役割<select id="role">
@@ -80,15 +82,17 @@
             </select></label
           >
         </div>
+        </details>
         <div class="divider"></div>
         <div class="eyebrow">回路配置</div>
         <p class="small muted">
           プロファイルは全パートとルートを置き換えます。フラッシュ保存は別操作です。
         </p>
         <select id="profile" aria-label="回路配置プロファイル">
+          <option value="4" selected>MIDI 10 · 1ch＝1音（初期配置）</option>
           <option value="0">HYBRID · 通常2＋ENV2</option>
           <option value="1">SAA POLY · 通常6声</option>
-          <option value="2" selected>DUAL LAYER · 複合2声</option>
+          <option value="2">DUAL LAYER · 複合2声</option>
           <option value="3">PERCUSSION · SAAノイズ独立</option></select
         ><button id="apply-profile" class="full">プロファイルを適用</button>
         <div id="profile-confirm" hidden>
@@ -107,6 +111,12 @@
         <div id="message" role="status" aria-live="polite">
           オフラインで編集中。接続して読み出すまで本体は変更しません。
         </div>
+        <details class="card" open>
+          <summary>初期配置のMIDIチャンネル</summary>
+          <p>CH1–6: SAAの各1音（ステレオ） ／ CH7–9: SNの各1音 ／ CH10: SNノイズ</p>
+          <p class="small muted">SNはL/Rに同じ音を送ります。PAN中央で両側同音量、CC10で左右へ振れます。各chは単音です。試聴はNOTE 45（A2 / 110 Hz）。MIDIの受信音程は移調しません。</p>
+          <p class="small muted">特殊音色は回路配置を切り替えます。HYBRIDではCH2＝SAA ENV/AM、CH3＝SN、CH10＝ノイズ。DUAL LAYERではCH1＝SAA LAYER。プロファイル変更は全パートを置き換えます。</p>
+        </details>
         <section class="card voice-card">
           <div class="section-head">
             <div>
@@ -194,7 +204,8 @@
             </details>
           </section>
         </div>
-        <section class="card">
+        <details class="card" id="advanced-motion">
+          <summary>追加機能：16ステップ</summary>
           <div class="section-head">
             <div>
               <span class="step-tag">05</span>
@@ -247,8 +258,9 @@
             aria-label="Macro 1のステップ値。ドラッグして編集"
           ></canvas>
           <div id="note-steps" class="note-grid"></div>
-        </section>
-        <section class="card">
+        </details>
+        <details class="card" id="advanced-clock">
+          <summary>追加機能：SN共通クロック</summary>
           <div class="section-head">
             <div>
               <span class="step-tag">06</span>
@@ -261,8 +273,9 @@
           </p>
           <div id="clock-controls" class="control-grid"></div>
           <button id="send-clock" disabled>共通クロックを反映</button>
-        </section>
-        <section class="card">
+        </details>
+        <details class="card" id="advanced-cv">
+          <summary>追加機能：CV / Gate</summary>
           <div class="section-head">
             <div>
               <span class="step-tag">07</span>
@@ -272,13 +285,13 @@
           </div>
           <div id="cv-controls" class="two-column"></div>
           <button id="send-cv" disabled>CV / Gateを反映</button>
-        </section>
+        </details>
         <footer>
           <p>音は本体のLINE OUTから出力します。</p>
           <a
             id="firmware-link"
-            href="https://github.com/Bongorian/chiptune-usb-cv/raw/refs/heads/main/firmware/dist/chiptune-v0.8.1-alpha.uf2"
-            >v0.8 UF2をダウンロード ↗</a
+            href="https://github.com/Bongorian/chiptune-usb-cv/raw/refs/heads/main/firmware/dist/chiptune-v0.9.0-alpha.uf2"
+            >v0.9 UF2をダウンロード ↗</a
           >
         </footer>
       </main>
@@ -286,7 +299,7 @@
     <div class="bottom-bar">
       <div class="resource">
         <span class="eyebrow">回路使用量</span
-        ><strong id="resource-cost">SAA 6/6回路 · 2音</strong
+        ><strong id="resource-cost">SAA 1/6回路 · 1音</strong
         ><span id="resource-detail"></span><span id="resource-actual"></span>
       </div>
       <div class="actions">
@@ -296,7 +309,8 @@
             type="number"
             min="0"
             max="127"
-            value="48" /></label
+            value="45" /></label
+        ><span id="test-frequency" class="small muted">A2 · 110.00 Hz</span
         ><button id="audition" disabled>▶ 試聴</button
         ><button id="stop" disabled>■ 停止</button
         ><button id="send" class="primary" disabled>本体に反映</button

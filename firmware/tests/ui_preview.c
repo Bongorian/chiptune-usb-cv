@@ -29,12 +29,13 @@ int main(int argc, char **argv) {
                        .cv_raw = {1455, 2909},
                        .gates = {true, false},
                        .clock_hz = 2000000};
-    const uint8_t notes[][3] = {{0x90, 48, 100}, {0x91, 52, 90}, {0x92, 48, 100}, {0x99, 38, 100}};
-    const char *homes[] = {"home", "home-ch2", "home-ch3", "home-ch10"};
+    const uint8_t notes[][3] = {{0x90, 45, 100}, {0x95, 52, 90}, {0x96, 45, 100}, {0x99, 38, 100}};
+    const char *homes[] = {"home", "home-ch6", "home-ch7", "home-ch10"};
     for (unsigned i = 0; i < 4; i++) {
         engine_message(&engine, 0, notes[i], 3);
         engine_tick(&engine, 10);
-        ui.part = (uint8_t)i;
+        const uint8_t parts[] = {0, 5, 6, 9};
+        ui.part = parts[i];
         ui_render(&ui, &status, 1000);
         if (output(argv[1], homes[i]))
             return 3;

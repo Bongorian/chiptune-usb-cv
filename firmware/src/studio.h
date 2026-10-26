@@ -37,4 +37,4 @@ void studio_control(Engine *engine, unsigned source, unsigned channel, unsigned 
 bool studio_is_saa(unsigned model);
 bool studio_is_env(unsigned model);
 bool studio_is_noise(unsigned model);
-void studio_profile(StScene *s, unsigned profile); /* 0 hybrid, 1 SAA poly, 2 dual layer, 3 drums */
+void studio_profile(StScene *s, unsigned profile); /* 0 hybrid, 1 poly, 2 layer, 3 drums, 4 MIDI10 */

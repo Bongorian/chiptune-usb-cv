@@ -332,12 +332,30 @@ void settings_reset_layout(Settings *s) {
     memcpy(zero, s->cv_zero, sizeof(zero));
     memcpy(scale, s->cv_codes_per_volt, sizeof(scale));
     uint8_t brightness = s->brightness;
+    /* Preserve the existing v0.8 sound library during the channel-layout update. */
+    static StSound sounds[ST_SOUNDS];
+    static char names[ST_SOUNDS][9];
+    bool keep_sounds = s->layout_revision == 2;
+    uint16_t used = s->sound_used;
+    if (keep_sounds) {
+        memcpy(sounds, s->sounds, sizeof(sounds));
+        memcpy(names, s->sound_name, sizeof(names));
+    }
     settings_default(s);
+    if (keep_sounds) {
+        memcpy(s->sounds, sounds, sizeof(sounds));
+        memcpy(s->sound_name, names, sizeof(names));
+        s->sound_used = used;
+    }
     memcpy(s->cv_zero, zero, sizeof(zero));
     memcpy(s->cv_codes_per_volt, scale, sizeof(scale));
     s->brightness = brightness;
-    for (unsigned i = 0; i < PRESETS; i++)
+    for (unsigned i = 0; i < PRESETS; i++) {
         studio_channel_layout(&s->preset[i].studio);
+        s->preset[i].mix[1] = s->preset[i].mix[2] = s->preset[i].mix[3] = 100;
+        s->preset[i].sn_clock = (SnClockConfig){SN_CLOCK_OFF, 0, 24, 4, 0, 1};
+        s->preset[i].sn_reference = 1;
+    }
     s->layout_revision = LAYOUT_REVISION;
 }
 bool settings_valid(const Settings *s) {
@@ -364,16 +382,16 @@ bool settings_valid(const Settings *s) {
     return true;
 }
 void saa_frequency(float hz, uint8_t *oct, uint8_t *reg, bool *clamped) {
-    float min = 8000000.0f / (512.0f * 511), max = 8000000.0f * 128 / (512 * 256);
+    float min = (float)SAA_CLOCK_HZ / (512.0f * 511), max = (float)SAA_CLOCK_HZ * 128 / (512 * 256);
     *clamped = !isfinite(hz) || hz < min || hz > max;
     hz = isfinite(hz) ? limit(hz, min, max) : min;
     float best = INFINITY;
     *oct = 0;
     *reg = 0;
     for (int o = 0; o < 8; o++) {
-        int f = (int)lroundf(511.0f - 8000000.0f * (1u << o) / (512 * hz));
+        int f = (int)lroundf(511.0f - (float)SAA_CLOCK_HZ * (float)(1u << o) / (512 * hz));
         f = f < 0 ? 0 : f > 255 ? 255 : f;
-        float actual = 8000000.0f * (1u << o) / (float)(512 * (511 - f));
+        float actual = (float)SAA_CLOCK_HZ * (float)(1u << o) / (float)(512 * (511 - f));
         float error = fabsf(actual - hz);
         if (error < best) {
             best = error;
@@ -725,7 +743,7 @@ static void start_pair(Engine *e, int left, int source, int ch, int note, int ve
 }
 static void allocate(Engine *e, int source, int ch, int note, int vel, int program, uint16_t token,
                      int target) {
-    float sounding_note = (float)note + (int)e->preset.performance[source][ch].transpose - 24;
+    float sounding_note = (float)note + (float)e->preset.performance[source][ch].transpose - 24;
     if (target == TARGET_SN_PAIR || target == TARGET_FULL) {
         int pair = find_pair(e, program);
         int saa_voice =
@@ -1128,7 +1146,7 @@ void engine_tick(Engine *e, uint32_t dt) {
         float pitch =
             x->pitch + (ch ? ch->bend / 8192.0f * (ch->bend_range + ch->bend_cents / 100.0f) : 0);
         if (ch)
-            pitch += (int)e->preset.performance[x->source][x->channel].transpose - 24;
+            pitch += (float)e->preset.performance[x->source][x->channel].transpose - 24;
         float sweep = 1 - limit((float)x->elapsed / p->decay, 0, 1);
         pitch += p->sweep * sweep;
         int phase_voice = x->pair && chip_for(v) == 2 ? x->pair - 1 : v;
@@ -1150,11 +1168,12 @@ void engine_tick(Engine *e, uint32_t dt) {
             width = amount * 30;
         if (x->pair && v >= 6)
             pitch += ((v >= 9 && v < 12) || v == 13 ? 1.0f : -1.0f) * width / 200.0f;
-        float hz = 440 * exp2f((pitch - 69) / 12), gain = x->level * x->velocity / 127.0f;
+        float hz = midi_note_hz(pitch), gain = x->level * x->velocity / 127.0f;
         float master = e->preset.mix[0] / 100.0f;
         if (modulation(e, CV_MASTER, &amount))
             master *= amount;
         gain *= master * e->preset.mix[chip_for(v) + 1] / 100.0f;
+        gain *= sound_output_gain((unsigned)chip_for(v));
         static const float trem_hz[] = {0.5f, 1, 2, 4, 8, 16, 32, 64};
         float trem_depth = control->tremolo / 100.0f;
         if (modulation(e, CV_TREMOLO, &amount))

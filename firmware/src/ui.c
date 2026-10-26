@@ -58,7 +58,7 @@ enum {
     A_FACTORY,
     A_PROFILE
 };
-static const char *const profile_names[] = {"HYBRID", "SAA POLY", "DUAL LAYER", "PERCUSSION"};
+static const char *const profile_names[] = {"HYBRID", "SAA POLY", "DUAL LAYER", "PERCUSSION", "MIDI 10"};
 static const char *const layer_sources[] = {"TONE", "NOISE", "TONE+NOISE"};
 static const char *const yesno[] = {"OFF", "ON"};
 static const char *const shape_names[] = {"ZERO",  "MAX",      "DECAY 1",  "SAW DOWN",
@@ -442,7 +442,7 @@ static unsigned build(Ui *u, Item a[32]) {
         L("SAVE / LOAD SETUP", UI_SCENE);
         L("CHIP MIX", UI_MIX);
         L("MOTION / SEQUENCE", UI_MOTION);
-        V("PROFILE", &u->profile, U8, 0, 3, 1, profile_names);
+        V("PROFILE", &u->profile, U8, 0, 4, 1, profile_names);
         A("APPLY PROFILE", A_PROFILE);
         break;
     case UI_SAVE_SOUND:
@@ -540,7 +540,8 @@ void ui_init(Ui *u, Settings *settings, Engine *e, bool (*save)(void *),
     u->calibrate = calibrate;
     u->ctx = ctx;
     u->slot = settings->selected;
-    u->test_note = 48;
+    u->test_note = 45;
+    u->profile = 4;
     e->library = settings;
     if (settings->layout_revision != LAYOUT_REVISION) {
         settings_reset_layout(settings);
@@ -779,7 +780,7 @@ static void perform(Ui *u, unsigned action, uint32_t now) {
 }
 static void action(Ui *u, unsigned a, uint32_t now) {
     if (a == A_VERSION) {
-        toast(u, "V0.8.1 ALPHA", now);
+        toast(u, "V0.9.0 ALPHA", now);
         return;
     }
     if (u->page == UI_ROUTE && (a == UI_CV || a == UI_GATE)) {
@@ -1162,7 +1163,9 @@ static void format(Ui *u, const Item *i, int v, char out[24]) {
     if (u->page == UI_MOD)
         part_value |= i->ptr == &e->preset.studio.mod[u->mod_slot].part;
     if (part_value) {
-        snprintf(out, 24, "%c%s", 'A' + v, e->preset.studio.part[v].enabled ? "" : " OFF");
+        snprintf(out, 24, "CH%u %s%s", receive_channel(e, (unsigned)v) + 1,
+                 studio_is_saa(e->preset.studio.part[v].sound.model) ? "SAA" : "SN",
+                 e->preset.studio.part[v].enabled ? "" : " OFF");
         return;
     }
     if (!strcmp(i->label, "FIXED NOTE") || !strcmp(i->label, "TEST NOTE") ||
@@ -1170,7 +1173,10 @@ static void format(Ui *u, const Item *i, int v, char out[24]) {
         !strcmp(i->label, "HIGH NOTE") || (u->page == UI_GRID && u->grid_lane == 0)) {
         char tmp[12];
         note_name(tmp, v);
-        snprintf(out, 24, "%s", tmp);
+        if (!strcmp(i->label, "TEST NOTE"))
+            snprintf(out, 24, "%s %.1fHZ", tmp, (double)midi_note_hz((float)v));
+        else
+            snprintf(out, 24, "%s", tmp);
         return;
     }
     if (i->ptr == &e->preset.tempo) {
@@ -1372,7 +1378,13 @@ void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
         header(u, title);
         u->dirty = setup_dirty;
         text(u, 2, 15, part->name, 2, true);
-        if (part->role && u->active_sound < ST_SOUNDS)
+        if (part->poly == 1 && part->sound.model == ST_SN_TWIN)
+            snprintf(title, sizeof(title), "SN L/R / MONO");
+        else if (part->poly == 1 && part->sound.model == ST_SN_NOISE)
+            snprintf(title, sizeof(title), "SN NOISE L/R");
+        else if (part->poly == 1 && part->sound.model == ST_SAA_TONE)
+            snprintf(title, sizeof(title), "SAA L/R / MONO");
+        else if (part->role && u->active_sound < ST_SOUNDS)
             snprintf(title, sizeof(title), "U%02u %s", u->active_sound + 1,
                      st_model_names[part->sound.model]);
         else
@@ -1427,16 +1439,19 @@ void ui_render(Ui *u, const UiStatus *status, uint32_t now) {
                 unsigned p = studio_owner(e, v);
                 int x = 28 + (int)i * (row ? 21 : 16), y = 14 + (int)row * 13;
                 box(u, x, y, row ? 18 : 13, 10, true);
-                char label[2] = {(char)(p < ST_PARTS
-                                            ? ((e->studio.outputs[p] & (1u << v)) ? 'A' + p : 'K')
-                                            : '-'),
-                                 0};
-                text(u, x + (row ? 6 : 4), y + 2, label, 1, false);
+                char label[3];
+                if (p >= ST_PARTS)
+                    snprintf(label, sizeof(label), "-");
+                else if (!(e->studio.outputs[p] & (1u << v)))
+                    snprintf(label, sizeof(label), "K");
+                else
+                    snprintf(label, sizeof(label), "%u", (receive_channel(e, p) + 1) % 100);
+                text(u, x + (label[1] ? 1 : row ? 6 : 4), y + 2, label, 1, false);
                 if (e->voice[v].active)
                     pixel(u, x, y + 10, true);
             }
         }
-        footer(u, "K:CLOCK DOT:ACTIVE");
+        footer(u, "# MIDI K:CLOCK");
     } else if (u->page == UI_MONITOR) {
         header(u, "INPUT MONITOR");
         snprintf(title, sizeof(title), "USB %s ADC %s", status->usb ? "ON" : "OFF",

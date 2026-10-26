@@ -94,7 +94,7 @@ static void test_structures(void) {
         studio_sound_default(&s, m);
         assert(studio_sound_valid(&s));
     }
-    for (unsigned p = 0; p < 4; p++) {
+    for (unsigned p = 0; p < 5; p++) {
         StScene s;
         studio_profile(&s, p);
         assert(studio_valid(&s));
@@ -145,13 +145,15 @@ static void test_structures(void) {
     StScene next = engine.preset.studio;
     next.part[0].sound.stack_size = 3;
     next.part[3].enabled = 1;
+    studio_sound_default(&next.part[3].sound, ST_SN_NOISE);
+    next.part[3].role = ST_ROLE_SN_NOISE;
     next.part[3].sound.noise_rate = 3;
     assert(!studio_valid(&next));
 }
 static void test_protocol(void) {
     setup();
     assert(!request(0, NULL, 0, false));
-    assert(editor.tx[9] == 8);
+    assert(editor.tx[9] == 9);
     drain();
     uint8_t p = 0;
     assert(!request(1, &p, 1, false));
@@ -176,7 +178,7 @@ static void test_protocol(void) {
     drain();
     assert(request(3, (uint8_t[]){0, 0}, 2, false) == 4);
     drain();
-    assert(settings.preset[0].studio.part[0].name[0] == 'C');
+    assert(!memcmp(settings.preset[0].studio.part[0].name, "SAA TONE", 8));
     save_ok = true;
     assert(!request(3, (uint8_t[]){0, 0}, 2, false));
     drain();

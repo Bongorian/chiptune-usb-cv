@@ -169,7 +169,7 @@ void studio_default(StScene *s) {
     s->mod[0] = (StMod){3, 0, ST_VIBRATO, 50};
     s->mod[1] = (StMod){4, 0, ST_VIBRATO, 50};
 }
-void studio_channel_layout(StScene *s) {
+static void hybrid_layout(StScene *s) {
     studio_default(s);
     s->enabled = 1;
     memcpy(s->name, "CHIP SET", 9);
@@ -197,16 +197,39 @@ void studio_channel_layout(StScene *s) {
     for (unsigned i = 0; i < 2; i++)
         s->cv[i].mode = s->cv[i].gate = 0;
 }
+/* One MIDI channel per note; SN pairs carry the same pitch to L/R. */
+void studio_channel_layout(StScene *s) {
+    studio_default(s);
+    s->enabled = 1;
+    memcpy(s->name, "MIDI 10 ", 9);
+    memset(s->route, 0, sizeof(s->route));
+    memset(s->mod, 0, sizeof(s->mod));
+    for (unsigned p = 0; p < ST_PARTS; p++) {
+        StPart *a = &s->part[p];
+        a->enabled = p < 10;
+        a->poly = 1;
+        a->arp = a->sequence = 0;
+        a->role = p < 6 ? ST_ROLE_SAA_TONE : p < 9 ? ST_ROLE_SN_TONE : ST_ROLE_SN_NOISE;
+        studio_factory(p < 6 ? 20 : p < 9 ? 21 : 22, &a->sound, a->name);
+        if (p < 10)
+            for (unsigned src = 0; src < 2; src++)
+                s->route[src][p] = (uint16_t)(1u << p);
+    }
+    for (unsigned i = 0; i < 2; i++)
+        s->cv[i].mode = s->cv[i].gate = 0;
+}
 void studio_factory(unsigned index, StSound *s, char name[9]) {
     static const char names[ST_FACTORIES][9] = {
         "ENV BASS", "ENV LEAD", "STEP SAW", "CHIPLEAD", "SAA PLUK", "AM BELL ", "SOFT PAD",
         "TWINLEAD", "SN BASS ", "DETUNE  ", "DRY SN  ", "METAL   ", "SN SNARE", "HI HAT  ",
-        "SAA NOIS", "LASER   ", "ENV HISS", "ENV GRIT", "ATK BASS", "SN STACK"};
+        "SAA NOIS", "LASER   ", "ENV HISS", "ENV GRIT", "ATK BASS", "SN STACK",
+        "SAA TONE", "SN MONO ", "SN NOISE"};
     static const uint8_t models[ST_FACTORIES] = {
         ST_SAA_ENV, ST_SAA_ENV,       ST_SAA_ENV,     ST_SAA_TONE,  ST_SAA_TONE,
         ST_SAA_AM,  ST_SAA_TONE,      ST_SN_TWIN,     ST_SN_TWIN,   ST_SN_TWIN,
         ST_SN_TWIN, ST_SN_METAL,      ST_SN_NOISE,    ST_SN_NOISE,  ST_SAA_NOISE,
-        ST_SN_TWIN, ST_SAA_ENV_NOISE, ST_SAA_ENV_MIX, ST_SAA_LAYER, ST_SN_STACK};
+        ST_SN_TWIN, ST_SAA_ENV_NOISE, ST_SAA_ENV_MIX, ST_SAA_LAYER, ST_SN_STACK,
+        ST_SAA_TONE, ST_SN_TWIN, ST_SN_NOISE};
     index %= ST_FACTORIES;
     studio_sound_default(s, models[index]);
     memcpy(name, names[index], 9);
@@ -312,6 +335,17 @@ void studio_factory(unsigned index, StSound *s, char name[9]) {
         s->decay = 300;
         s->sustain = 65;
         s->mode = 1;
+        break;
+    case 20:
+    case 21:
+        s->mode = 1;
+        s->sustain = 100;
+        s->release = 90;
+        break;
+    case 22:
+        s->mode = 1;
+        s->noise_rate = 1;
+        s->decay = 140;
         break;
     case 19:
         s->layer_interval = 7;
@@ -1328,7 +1362,7 @@ static float source_value(Engine *e, const StMod *m) {
     if (m->source >= 5 && m->source < 5 + ST_PARTS)
         return lfo(e, m->source - 5);
     if (m->source >= 5 + ST_PARTS && m->source < 5 + ST_PARTS * 2)
-        return ((int)e->studio.lane_value[m->source - 5 - ST_PARTS] - 100) / 100.0f;
+        return ((float)e->studio.lane_value[m->source - 5 - ST_PARTS] - 100) / 100.0f;
     return 0;
 }
 static void attenuation(Engine *e, unsigned c, unsigned channel, float gain) {
@@ -1434,7 +1468,7 @@ void studio_tick(Engine *e, uint32_t dt) {
             parameter(&sound[p], sound[p].macro_dest[m], sound[p].macro[m] / 100.0f, &pitch_mod[p],
                       &r->clock_base, &r->clock_depth);
         if (scene->part[p].sequence && r->running)
-            parameter(&sound[p], sound[p].macro_dest[0], ((int)r->lane_value[p] - 100) / 100.0f,
+            parameter(&sound[p], sound[p].macro_dest[0], ((float)r->lane_value[p] - 100) / 100.0f,
                       &pitch_mod[p], &r->clock_base, &r->clock_depth);
     }
     for (unsigned i = 0; i < 2; i++) {
@@ -1500,11 +1534,12 @@ void studio_tick(Engine *e, uint32_t dt) {
             unsigned n = (v - 6) % 3;
             pitch += n == 1 ? s.layer_interval : n == 2 ? s.stack_interval : 0;
         }
-        float hz = 440 * exp2f((pitch - 69) / 12),
+        float hz = midi_note_hz(pitch),
               gain = x->level * x->velocity / 127.0f * s.level / 100.0f;
         if (s.model == ST_SN_STACK)
             gain /= s.stack_size;
         gain *= e->preset.mix[0] / 100.0f * e->preset.mix[chip(v) + 1] / 100.0f;
+        gain *= sound_output_gain(chip(v));
         if (c)
             gain *= c->volume / 127.0f * c->expression / 127.0f;
         gain *= 1 - s.tremolo / 100.0f * (.5f + .5f * lfo(e, p));
@@ -1547,9 +1582,9 @@ void studio_tick(Engine *e, uint32_t dt) {
                     float layer_gain =
                         (clamped || layer_clamped ? 0 : gain) * s.layer_level / 100.0f * decay;
                     unsigned l =
-                        (unsigned)bound(roundf(15 * layer_gain * fminf(1, 2 * (1 - pan))), 0, 15);
+                        saa_amplitude(layer_gain * fminf(1, 2 * (1 - pan)));
                     unsigned rr =
-                        (unsigned)bound(roundf(15 * layer_gain * fminf(1, 2 * pan)), 0, 15);
+                        saa_amplitude(layer_gain * fminf(1, 2 * pan));
                     amplitude[aux] = (uint8_t)((rr << 4) | l);
                 }
                 unsigned env = 0x80u | (s.shape << 1) | (s.steps == 8 ? 0x10u : 0u) | s.invert;
@@ -1567,8 +1602,8 @@ void studio_tick(Engine *e, uint32_t dt) {
                         frequency(e, (v / 3) * 3, hz, oct, &clamped);
                 }
             }
-            unsigned left = (unsigned)bound(roundf(15 * gain * fminf(1, 2 * (1 - pan))), 0, 15),
-                     right = (unsigned)bound(roundf(15 * gain * fminf(1, 2 * pan)), 0, 15);
+            unsigned left = saa_amplitude(gain * fminf(1, 2 * (1 - pan))),
+                     right = saa_amplitude(gain * fminf(1, 2 * pan));
             amplitude[v] = (uint8_t)((right << 4) | left);
         } else {
             unsigned ch = chip(v) - 1, channel = v >= 12 ? 3 : (v - 6) % 3;
@@ -1619,7 +1654,11 @@ void studio_tick(Engine *e, uint32_t dt) {
 }
 
 void studio_profile(StScene *s, unsigned profile) {
-    studio_channel_layout(s);
+    if (profile == 4) {
+        studio_channel_layout(s);
+        return;
+    }
+    hybrid_layout(s);
     if (profile == 1) {
         s->part[0].poly = 6;
         s->part[1].enabled = 0;

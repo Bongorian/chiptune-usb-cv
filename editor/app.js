@@ -52,14 +52,16 @@ const descriptions = [
   "ENVの楽音波形に、短いノイズ／トーンを重ねます。",
   "複数のステレオトーンペアを重ねて1つの音色にします。",
 ];
-function freshPart(part = 0, index = 18) {
+function freshPart(part = 0, index) {
+  const simple = index === undefined;
+  index ??= part < 6 ? 20 : part < 9 ? 21 : 22;
   const sound = fromValues(factory[index].values);
   return {
     part,
-    enabled: 1,
-    poly: Math.min(2, limit(sound.model)),
+    enabled: simple && part >= 10 ? 0 : 1,
+    poly: simple ? 1 : Math.min(2, limit(sound.model)),
     role: roleFor(sound.model),
-    channel: part === 3 ? 9 : Math.min(part, 15),
+    channel: simple ? part : part === 3 ? 9 : Math.min(part, 15),
     name: factory[index].name.trim(),
     sound,
   };
@@ -287,6 +289,7 @@ function mark() {
   delete part.outputs;
   delete part.resources;
   renderMeta();
+  renderPitch();
   drawWave();
   drawEnvelope();
 }
@@ -431,6 +434,21 @@ function renderControls() {
       $("shape-buttons").append(b);
     }
 }
+function describeOutputs(outputs, resources) {
+  const labels = Array.from({ length: 14 }, (_, v) =>
+    v < 6 ? `SAA ${v + 1}` : v < 9 ? `SN L${v - 5}` : v < 12 ? `SN R${v - 8}` : v === 12 ? "SN Lノイズ" : "SN Rノイズ");
+  const selected = (mask) => labels.filter((_, v) => mask & (1 << v)).join(" / ");
+  const clocks = resources & ~outputs;
+  return `本体の出力: ${selected(outputs) || "なし"}${clocks ? ` · クロック専用: ${selected(clocks)}` : ""}`;
+}
+function renderPitch() {
+  const note = Number($("test-note").value);
+  const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  $("test-frequency").textContent = Number.isInteger(note) && note >= 0 && note <= 127
+    ? `${names[note % 12]}${Math.floor(note / 12) - 1} · ${(440 * 2 ** ((note - 69) / 12)).toFixed(2)} Hz`
+    : "NOTE 0–127";
+}
+$("test-note").oninput = () => { renderPitch(); drawWave(); };
 function renderMeta() {
   const m = part.sound.model,
     r = resourceInfo(part.sound, part.poly);
@@ -438,7 +456,7 @@ function renderMeta() {
   $("resource-detail").textContent = r.detail;
   $("resource-actual").textContent =
     part.resources !== undefined
-      ? `本体確認済み 予約0x${part.resources.toString(16).padStart(4, "0")} / 出力0x${part.outputs.toString(16).padStart(4, "0")}`
+      ? describeOutputs(part.outputs, part.resources)
       : dirty
         ? "未反映 · 回路の適合は本体への反映時に検証します"
         : "オフラインの構成見積もり";
@@ -501,6 +519,7 @@ function render() {
   renderModels();
   renderControls();
   renderMeta();
+  renderPitch();
   drawWave();
   drawEnvelope();
   renderMotion();
@@ -535,7 +554,7 @@ for (const id of ["channel", "poly", "role", "enabled"])
 for (let i = 0; i < 14; i++)
   $("part").add(
     new Option(
-      `PART ${String.fromCharCode(65 + i)}${i < 4 ? [" · SAA", " · ENV", " · SN", " · SN NOISE"][i] : ""}`,
+      `PART ${String.fromCharCode(65 + i)}${i < 10 ? ` · 初期 CH${i + 1} ${i < 6 ? "SAA" : i < 9 ? "SN" : "NOISE"}` : " · 予備"}`,
       i,
     ),
   );
@@ -570,7 +589,7 @@ $("part").onchange = () =>
       dirty = cached.dirty;
       motionDirty = cached.motionDirty;
     } else {
-      part = freshPart(p, [3, 1, 7, 12][p] ?? 3);
+      part = freshPart(p);
       motion = newMotion(p);
       dirty = motionDirty = false;
     }
@@ -634,8 +653,8 @@ $("confirm-profile").onclick = () =>
         "全パートをプロファイルで置き換えました。保持するには保存してください。",
       );
     } else {
-      part = freshPart(0, profile === 2 ? 18 : 3);
-      part.poly = profile === 1 ? 6 : 2;
+      part = profile === 4 ? freshPart(0) : freshPart(0, profile === 2 ? 18 : 3);
+      part.poly = profile === 4 ? 1 : profile === 1 ? 6 : 2;
       if (profile === 2) part.sound.mode = 0;
       motion = newMotion(0);
       cache.clear();
@@ -681,7 +700,7 @@ function drawWave() {
             ? layerWaveform(
                 part.sound,
                 phase,
-                Number($("test-note").value) || 48,
+                Number($("test-note").value),
               )
             : waveform(part.sound, phase, mode);
       const y = 25 + (1 - v) * (c.height - 50);
