@@ -9,7 +9,7 @@
     <title>Chiptune Play — SAA1099 × SN76489 ウェブシンセ</title>
     <meta
       name="description"
-      content="Chiptune USB/CV（SAA1099 ×1 / SN76489AN ×2 / RP2040）をブラウザの鍵盤で演奏するページ。スマホ・タブレット・PC対応。Web MIDIで実機も演奏でき、音色設定はファームウェア v0.10.0-alpha（protocol 2 / schema 10）準拠。"
+      content="Chiptune USB/CV（SAA1099 ×1 / SN76489AN ×2 / RP2040）をWeb MIDI接続した実機で演奏するページ（未接続時は無音）。スマホ・タブレット・PC対応。音色設定はファームウェア v0.10.0-alpha（protocol 2 / schema 10）準拠。"
     />
     <link rel="stylesheet" href="style.css" />
   </head>
@@ -17,7 +17,7 @@
     <header>
       <a class="brand" href="#">CHIPTUNE PLAY <small>v0.10</small></a>
       <span class="chips-label">SAA1099 × SN76489 × 2</span>
-      <span id="connection-state">ブラウザ演奏モード</span>
+      <span id="connection-state">実機未接続（無音）</span>
       <button id="panic" title="全ノート停止（PANIC）">PANIC</button>
       <button id="connect" class="primary">実機に接続（USB MIDI）</button>
     </header>
@@ -39,7 +39,7 @@
         <div class="np-side">
           <div id="now-note" aria-live="off">—</div>
           <div id="message" role="status" aria-live="polite">
-            鍵盤をタップ／クリック、またはPCキーボード（A〜K列）で演奏できます。音はブラウザから出ます。
+            このページは実機専用です。USB MIDIで実機を接続すると、鍵盤（タップ／クリック／PCキーボード）で演奏できます。未接続時は鳴りません。
           </div>
         </div>
       </div>
@@ -62,10 +62,6 @@
         <label class="pb-item">
           ベロシティ
           <input id="velocity" type="range" min="1" max="127" value="100" />
-        </label>
-        <label class="pb-item">
-          音量
-          <input id="master-vol" type="range" min="0" max="100" value="80" />
         </label>
         <button id="sustain-btn" aria-pressed="false" title="サステイン（押している間ON）">
           SUSTAIN
@@ -228,9 +224,8 @@
       <footer>
         <span id="resource-cost"></span><span id="resource-actual"></span>
         <span class="hint">
-          ブラウザ内蔵音源はSAA1099 / SN76489の発音モデル（波形・ADSR・レイヤー・ノイズ）を
-          Web Audioで近似した試聴用です。実音とは異なります。正確な音は実機で確認してください。
-          iPhoneのSafariはWeb MIDI非対応のため、実機接続はAndroid / PCのChrome系ブラウザを使ってください（ブラウザ演奏はiPhoneでも可能です）。
+          このページに内蔵音源はありません。音が出るのはWeb MIDIで実機を接続したときだけです。
+          iPhoneのSafariはWeb MIDI非対応のため、実機接続はAndroid / PCのChrome系ブラウザを使ってください。
         </span>
       </footer>
     </main>

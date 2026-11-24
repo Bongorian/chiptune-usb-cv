@@ -95,7 +95,7 @@ function message(text, error = false) {
 function connected() {
   $("connection-state").textContent = ready
     ? "実機接続中 · v0.10"
-    : "ブラウザ演奏モード";
+    : "実機未接続（無音）";
   $("connection-state").classList.toggle("connected", ready);
   for (const id of [
     "poly-focus",
@@ -215,7 +215,7 @@ async function selectPorts() {
   output = access?.outputs.get($("midi-out").value);
   if (!input || !output) {
     message(
-      "実機のMIDI入出力を両方選択してください。ブラウザ演奏はそのまま使えます。",
+      "実機のMIDI入出力を両方選択してください。未接続の間、鍵盤を弾いても鳴りません。",
     );
     return;
   }
@@ -241,7 +241,7 @@ $("connect").onclick = () =>
   guard(async () => {
     if (!navigator.requestMIDIAccess)
       throw Error(
-        "このブラウザはWeb MIDI非対応です。ブラウザ内蔵音源での演奏はそのまま使えます。実機接続にはAndroid / PCのChrome系ブラウザを使ってください。",
+        "このブラウザはWeb MIDI非対応のため実機に接続できません。このページは実機専用で、未接続時は鳴りません。実機接続にはAndroid / PCのChrome系ブラウザを使ってください。",
       );
     access = await navigator.requestMIDIAccess({ sysex: true });
     for (const [id, ports] of [
@@ -898,7 +898,7 @@ $("load-factory").onclick = () => {
   entry().track.morph_target = entry().track.morph = 0;
   mark();
   render();
-  message("工場音色を読み込みました。鍵盤ですぐ演奏できます。実機へは「本体に反映」で送ります。");
+  message("工場音色を読み込みました。実機接続時は鍵盤で演奏できます。実機へは「本体に反映」で送ります。");
 };
 $("load-user").onclick = () =>
   guard(async () => {
@@ -1106,7 +1106,7 @@ $("import").onchange = () =>
   });
 
 /* ================================================================
-   演奏エンジン：Web Audio近似音源 + 実機へのMIDIノート送信
+   演奏：実機へのMIDIノート送信のみ（内蔵音源なし＝未接続時は無音）
    ================================================================ */
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const noteName = (n) => `${NOTE_NAMES[n % 12]}${Math.floor(n / 12) - 1}`;
@@ -1123,35 +1123,18 @@ let monoNote = null;
 const sustained = new Set();
 
 function ensureAudio() {
-  if (actx) {
-    if (actx.state === "suspended") actx.resume();
-    return true;
-  }
-  const AC = window.AudioContext || window.webkitAudioContext;
-  if (!AC) return false;
-  actx = new AC();
-  master = actx.createGain();
-  master.gain.value = (Number($("master-vol").value) / 100) * 0.5;
-  master.connect(actx.destination);
-  const len = actx.sampleRate * 2;
-  noiseBuffer = actx.createBuffer(1, len, actx.sampleRate);
-  const data = noiseBuffer.getChannelData(0);
-  let seed = 0x2f6e2b1;
-  for (let i = 0; i < len; i++) {
-    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-    data[i] = seed / 0x40000000 - 1;
-  }
-  const real = new Float32Array(65),
-    imag = new Float32Array(65),
-    duty = 1 / 15;
-  for (let n = 1; n < 65; n++)
-    imag[n] = (2 / (n * Math.PI)) * Math.sin(n * Math.PI * duty);
-  pulseWave = actx.createPeriodicWave(real, imag);
-  return true;
+  // 実機専用：ブラウザ内蔵音源は持たない。実機未接続時は発音しない。
+  return false;
 }
-$("master-vol").oninput = () => {
-  if (master) master.gain.value = (Number($("master-vol").value) / 100) * 0.5;
-};
+let unconnectedNotified = false;
+function notifyUnconnected() {
+  if (unconnectedNotified || output) return;
+  unconnectedNotified = true;
+  message(
+    "実機が未接続のため鳴りません。このページは実機専用です。USB MIDIで実機を接続してください（Android / PCのChrome系）。",
+    true,
+  );
+}
 
 function midiChannel() {
   const t = entry().track;
@@ -1164,7 +1147,7 @@ function midiSend(bytes) {
   try {
     output?.send(bytes);
   } catch {
-    /* ポート未選択時はブラウザ演奏のみ */
+    /* ポート未選択時は無音（実機専用） */
   }
 }
 function midiNoteOn(note, velocity) {
@@ -1359,12 +1342,12 @@ function updateNowNote() {
   });
 }
 function noteOn(note, velocity = null) {
-  ensureAudio();
   const vel = velocity ?? Number($("velocity").value);
   if (!heldNotes.includes(note)) heldNotes.push(note);
   sustained.delete(note);
   const t = entry().track;
   midiNoteOn(note, vel);
+  notifyUnconnected();
   if (t.mode === 1) {
     // POLY
     if (voices.has(note)) releaseVoice(voices.get(note), true);
