@@ -93,14 +93,14 @@ function message(text, error = false) {
   $("message").classList.toggle("error", error);
 }
 function connected() {
-  $("connection-state").textContent = ready ? "CONNECTED · v0.10" : "OFFLINE";
+  $("connection-state").textContent = ready
+    ? "実機接続中 · v0.10"
+    : "ブラウザ演奏モード";
   $("connection-state").classList.toggle("connected", ready);
   for (const id of [
     "poly-focus",
     "read",
     "send",
-    "audition",
-    "stop",
     "save-open",
     "live",
     "load-user",
@@ -159,9 +159,7 @@ function received(event) {
       text = String.fromCharCode(...r.data.slice(5, 5 + n));
       const k = 5 + n,
         m = r.data[k] || 0;
-      const alternative = String.fromCharCode(
-        ...r.data.slice(k + 1, k + 1 + m),
-      );
+      const alternative = String.fromCharCode(...r.data.slice(k + 1, k + 1 + m));
       if (alternative) text += `\n代替案: ${alternative}`;
     }
     const error = Error(text);
@@ -216,7 +214,9 @@ async function selectPorts() {
   input = access?.inputs.get($("midi-in").value);
   output = access?.outputs.get($("midi-out").value);
   if (!input || !output) {
-    message("MIDIの入出力を両方選択してください。");
+    message(
+      "実機のMIDI入出力を両方選択してください。ブラウザ演奏はそのまま使えます。",
+    );
     return;
   }
   await input.open();
@@ -229,7 +229,7 @@ async function selectPorts() {
     if (entry().dirty || entry().sequenceDirty) {
       render();
       message(
-        "接続しました。オフラインの編集を保持しています。反映か本体から読み出すを選べます。",
+        "接続しました。オフラインの編集を保持しています。反映か本体から読み出すを選べます。鍵盤は実機へも送ります。",
       );
     } else await readSelected();
   } catch (error) {
@@ -241,7 +241,7 @@ $("connect").onclick = () =>
   guard(async () => {
     if (!navigator.requestMIDIAccess)
       throw Error(
-        "Web MIDIに対応するブラウザーで開いてください。オフライン編集は利用できます。",
+        "このブラウザはWeb MIDI非対応です。ブラウザ内蔵音源での演奏はそのまま使えます。実機接続にはAndroid / PCのChrome系ブラウザを使ってください。",
       );
     access = await navigator.requestMIDIAccess({ sysex: true });
     for (const [id, ports] of [
@@ -249,8 +249,7 @@ $("connect").onclick = () =>
       ["midi-in", access.inputs],
     ]) {
       $(id).replaceChildren(new Option("ポートを選択", ""));
-      for (const p of ports.values())
-        $(id).add(new Option(p.name || p.id, p.id));
+      for (const p of ports.values()) $(id).add(new Option(p.name || p.id, p.id));
       const preferred = [...ports.values()].find((p) =>
         /chiptune|saa1099/i.test(p.name || ""),
       );
@@ -259,7 +258,7 @@ $("connect").onclick = () =>
     access.onstatechange = () => {
       if (input?.state === "disconnected" || output?.state === "disconnected") {
         invalidate("本体が切断されました");
-        message("切断しました。ローカルの編集は保持します。");
+        message("切断しました。ローカルの編集と演奏は保持します。");
       }
     };
     await selectPorts();
@@ -345,12 +344,13 @@ function renderTracks() {
     const info = document.createElement("span");
     info.textContent = e.track.name;
     const sub = document.createElement("small");
-    sub.textContent = `${e.track.patch.chip ? "SN" : "SAA"} · ${e.track.mode === 1 ? "POLY" : "DIRECT"}`;
+    sub.textContent = `${e.track.patch.chip ? "SN" : "SAA"} · CH${t < 10 ? t + 1 : "—"} · ${e.track.mode === 1 ? "POLY" : e.track.mode === 2 ? "LEGATO" : "DIRECT"}`;
     info.append(sub);
     b.append(num, info);
     b.onclick = () =>
       guard(async () => {
         clearTimeout(liveTimer);
+        allNotesOff();
         selected = t;
         render();
         if (ready && !e.dirty) await readSelected();
@@ -362,14 +362,7 @@ function control(
   parent,
   label,
   value,
-  {
-    min = 0,
-    max = 100,
-    step = 1,
-    options = null,
-    id = null,
-    disabledOptions = [],
-  } = {},
+  { min = 0, max = 100, step = 1, options = null, id = null, disabledOptions = [] } = {},
   change,
 ) {
   const box = document.createElement("div");
@@ -421,16 +414,7 @@ const optionsFor = {
   noise_type: ["Periodic", "White"],
   noise_rate: ["Fast", "Mid", "Slow", "Key Track"],
   lfo_shape: ["Sine", "Triangle", "Square", "Random"],
-  lfo_rate: [
-    "0.5 Hz",
-    "1 Hz",
-    "2 Hz",
-    "4 Hz",
-    "8 Hz",
-    "16 Hz",
-    "32 Hz",
-    "64 Hz",
-  ],
+  lfo_rate: ["0.5 Hz", "1 Hz", "2 Hz", "4 Hz", "8 Hz", "16 Hz", "32 Hz", "64 Hz"],
   layer_source: sources,
   env_invert: ["Same", "Inverse"],
   retrigger: ["Off", "On"],
@@ -532,21 +516,18 @@ function renderPerformance() {
   parent.replaceChildren();
   const t = entry().track;
   for (const [name, label, opts] of [
-    ["level", "音量", {}],
+    ["mode", "演奏モード", { options: ["DIRECT · 単音", "POLY · 複数音", "LEGATO · 単音"] }],
+    ["voices", "POLY声数", { min: 1, max: 6 }],
+    ["level", "トラック音量", {}],
     ["pan", "PAN · L ↔ R", {}],
     ["mute", "ミュート", { options: ["Off", "On"] }],
-    [
-      "mode",
-      "演奏モード",
-      { options: ["DIRECT · 単音", "POLY · 複数音", "LEGATO · 単音"] },
-    ],
-    ["voices", "POLY声数", { min: 1, max: 6 }],
     ["enabled", "Track", { options: ["Off", "On"] }],
   ]) {
     if (name === "pan" && t.patch.output !== 0) continue;
     control(parent, label, t[name], { ...opts, id: `track-${name}` }, (v) => {
       t[name] = v;
       mark();
+      if (name === "level" || name === "pan") sendPerformanceCc();
     });
   }
   const channel = !t.usb
@@ -556,7 +537,7 @@ function renderPerformance() {
       : 17;
   control(
     parent,
-    "受信MIDI ch",
+    "受信MIDI ch（鍵盤の送り先）",
     channel,
     {
       options: [
@@ -605,14 +586,7 @@ function renderPatch() {
     "SNのTone 3と連動Noiseを出力します。両成分は同じTone 3周波数に従い、Noise Mixで音量比を調整します。",
     "SAAのTone / NoiseをハードウェアENVで振幅変調します。ENV RATIOはENVクロックとノートの半音差です。",
   ];
-  let hint = $("wave-hint");
-  if (!hint) {
-    hint = document.createElement("p");
-    hint.id = "wave-hint";
-    hint.className = "hint";
-    normal.after(hint);
-  }
-  hint.textContent = tips[waveform(p)];
+  $("wave-hint").textContent = tips[waveform(p)];
   const advanced = $("advanced-controls");
   advanced.replaceChildren();
   for (const f of fields) patchControl(advanced, f.name, true);
@@ -623,13 +597,7 @@ function renderPatch() {
     morph,
     "B / USER patch",
     t.morph_target,
-    {
-      options: [
-        "Off",
-        ...Array.from({ length: 16 }, (_, i) => `USER ${i + 1}`),
-      ],
-      id: "morph-target",
-    },
+    { options: ["Off", ...Array.from({ length: 16 }, (_, i) => `USER ${i + 1}`)], id: "morph-target" },
     (v) => {
       t.morph_target = v;
       mark();
@@ -660,16 +628,10 @@ function renderPatch() {
         mark();
       },
     );
-    control(
-      macros,
-      `Macro ${i + 1}`,
-      t.macro[i],
-      { min: -100, max: 100 },
-      (v) => {
-        t.macro[i] = v;
-        mark();
-      },
-    );
+    control(macros, `Macro ${i + 1}`, t.macro[i], { min: -100, max: 100 }, (v) => {
+      t.macro[i] = v;
+      mark();
+    });
   }
   for (const [key, title] of [
     ["usb", "USB receive channels"],
@@ -763,11 +725,7 @@ function renderSequence() {
     ["length", "Length", { min: 1, max: 16 }],
     ["division", "MIDI clocks / step", { min: 1, max: 24 }],
     ["direction", "Direction", { options: ["Forward", "Reverse", "Random"] }],
-    [
-      "arp",
-      "Arpeggio",
-      { options: ["Off", "Up", "Down", "Up-down", "Random", "Chord"] },
-    ],
+    ["arp", "Arpeggio", { options: ["Off", "Up", "Down", "Up-down", "Random", "Chord"] }],
     ["arp_octaves", "Octaves", { min: 1, max: 4 }],
   ])
     control(parent, label, q[k], opts, (v) => {
@@ -810,48 +768,13 @@ function renderGlobal() {
   parent.replaceChildren();
   const specs = [
     ["Reference", ["4 MHz", "2 MHz", "1 MHz"]],
-    [
-      "FX",
-      [
-        "Off",
-        "Manual",
-        "Rise",
-        "Triangle",
-        "Square",
-        "Random",
-        "Sequence",
-        "Dive",
-      ],
-    ],
+    ["FX", ["Off", "Manual", "Rise", "Triangle", "Square", "Random", "Sequence", "Dive"]],
     ["Base drop · 半音", 0, 48],
     ["Depth · 半音", 0, 48],
-    [
-      "Rate · Hz",
-      [
-        "0.25",
-        "0.5",
-        "1",
-        "2",
-        "4",
-        "8",
-        "16",
-        "32",
-        "50",
-        "80",
-        "100",
-        "160",
-        "250",
-        "400",
-        "600",
-        "800",
-      ],
-    ],
+    ["Rate · Hz", ["0.25", "0.5", "1", "2", "4", "8", "16", "32", "50", "80", "100", "160", "250", "400", "600", "800"]],
     ["MIDI sync", 0, 8],
     ["Note retrigger", ["Off", "On"]],
-    [
-      "Trigger source",
-      ["Any SN", "MIDI SN", "CV1", "CV2", "CH10", "Tone", "Noise", "Melody/CV"],
-    ],
+    ["Trigger source", ["Any SN", "MIDI SN", "CV1", "CV2", "CH10", "Tone", "Noise", "Melody/CV"]],
     ["Clock input", ["USB", "TRS"]],
     ["Clock policy", ["Auto", "External", "Internal", "Gate"]],
     ["Tempo · BPM", 0, 210],
@@ -868,9 +791,7 @@ function renderGlobal() {
       parent,
       label,
       i === 10 ? global[i] + 30 : global[i],
-      Array.isArray(lo)
-        ? { options: lo }
-        : { min: i === 10 ? 30 : lo, max: i === 10 ? 240 : hi },
+      Array.isArray(lo) ? { options: lo } : { min: i === 10 ? 30 : lo, max: i === 10 ? 240 : hi },
       (v) => {
         global[i] = i === 10 ? v - 30 : v;
         globalDirty = true;
@@ -895,11 +816,7 @@ function renderMatrix() {
     row.className = "matrix-row";
     for (const [k, label, opts] of [
       ["source", `Source ${i + 1}`, { options: sources }],
-      [
-        "track",
-        "Track",
-        { options: Array.from({ length: 14 }, (_, i) => `Track ${i + 1}`) },
-      ],
+      ["track", "Track", { options: Array.from({ length: 14 }, (_, i) => `Track ${i + 1}`) }],
       [
         "parameter",
         "Parameter",
@@ -934,41 +851,14 @@ function renderCv() {
     grid.className = "controls";
     for (const [k, label, opts] of [
       ["mode", "CV mode", { options: ["Off", "1V/oct note", "Modulation"] }],
-      [
-        "track",
-        "CV track",
-        { options: Array.from({ length: 14 }, (_, i) => `Track ${i + 1}`) },
-      ],
+      ["track", "CV track", { options: Array.from({ length: 14 }, (_, i) => `Track ${i + 1}`) }],
       ["base_note", "0V NOTE", { max: 127 }],
-      [
-        "scale",
-        "Scale",
-        {
-          options: [
-            "Off",
-            "Chromatic",
-            "Major",
-            "Minor",
-            "Dorian",
-            "Minor pentatonic",
-            "Major pentatonic",
-            "Whole tone",
-          ],
-        },
-      ],
+      ["scale", "Scale", { options: ["Off", "Chromatic", "Major", "Minor", "Dorian", "Minor pentatonic", "Major pentatonic", "Whole tone"] }],
       ["root", "Root", { max: 11 }],
       ["glide", "Glide", { max: 7 }],
       ["range", "Input range", { options: ["0–5V", "0–10V"] }],
-      [
-        "gate",
-        "Gate mode",
-        { options: ["Off", "Note", "Retrigger", "Step", "Clock FX trigger"] },
-      ],
-      [
-        "gate_track",
-        "Gate track",
-        { options: Array.from({ length: 14 }, (_, i) => `Track ${i + 1}`) },
-      ],
+      ["gate", "Gate mode", { options: ["Off", "Note", "Retrigger", "Step", "Clock FX trigger"] }],
+      ["gate_track", "Gate track", { options: Array.from({ length: 14 }, (_, i) => `Track ${i + 1}`) }],
       ["gate_note", "Gate NOTE", { max: 127 }],
       ["parameter", "Mod parameter", { options: destinations }],
       ["amount", "Mod amount", { min: -100, max: 100 }],
@@ -989,7 +879,6 @@ function render() {
   renderMeta();
   renderSequence();
   drawEnvelope();
-  renderPitch();
 }
 $("name").oninput = () => {
   entry().track.name = cleanName($("name").value).trim();
@@ -997,16 +886,11 @@ $("name").oninput = () => {
 };
 for (let i = 0; i < factory.length; i++)
   $("factory").add(
-    new Option(
-      `F${String(i + 1).padStart(2, "0")} · ${factory[i].name.trim()}`,
-      i,
-    ),
+    new Option(`F${String(i + 1).padStart(2, "0")} · ${factory[i].name.trim()}`, i),
   );
 $("factory").value = 20;
-for (let i = 0; i < 16; i++)
-  $("user-patch").add(new Option(`USER ${i + 1}`, i));
-for (let i = 0; i < 4; i++)
-  $("project-slot").add(new Option(`PROJECT ${i + 1}`, i));
+for (let i = 0; i < 16; i++) $("user-patch").add(new Option(`USER ${i + 1}`, i));
+for (let i = 0; i < 4; i++) $("project-slot").add(new Option(`PROJECT ${i + 1}`, i));
 $("load-factory").onclick = () => {
   const f = factory[Number($("factory").value)];
   entry().track.patch = structuredClone(f.patch);
@@ -1014,9 +898,7 @@ $("load-factory").onclick = () => {
   entry().track.morph_target = entry().track.morph = 0;
   mark();
   render();
-  message(
-    "工場音色をローカルへ読み込みました。Trackのモード・PAN・声数は保持します。",
-  );
+  message("工場音色を読み込みました。鍵盤ですぐ演奏できます。実機へは「本体に反映」で送ります。");
 };
 $("load-user").onclick = () =>
   guard(async () => {
@@ -1026,21 +908,8 @@ $("load-user").onclick = () =>
     entry().track.morph_target = entry().track.morph = 0;
     mark();
     render();
-    message(
-      "USER音色をローカルへ読み込みました。反映ボタンで本体へ送信します。",
-    );
+    message("USER音色をローカルへ読み込みました。反映ボタンで本体へ送信します。");
   });
-function renderPitch() {
-  const n = Number($("test-note").value);
-  $("test-frequency").textContent =
-    Number.isInteger(n) && n >= 0 && n <= 127
-      ? `${["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"][n % 12]}${Math.floor(n / 12) - 1} · ${(440 * 2 ** ((n - 69) / 12)).toFixed(2)} Hz`
-      : "NOTE 0–127";
-}
-$("test-note").oninput = renderPitch;
-$("audition").onclick = () =>
-  guard(() => request(7, [selected, Number($("test-note").value), 1]));
-$("stop").onclick = () => guard(() => request(19));
 $("read-sequence").onclick = () =>
   guard(async () => {
     entry().sequence = decodeSequence(await request(8, [selected]));
@@ -1049,9 +918,7 @@ $("read-sequence").onclick = () =>
   });
 $("send-sequence").onclick = () =>
   guard(async () => {
-    entry().sequence = decodeSequence(
-      await request(9, encodeSequence(entry().sequence)),
-    );
+    entry().sequence = decodeSequence(await request(9, encodeSequence(entry().sequence)));
     entry().sequenceDirty = false;
     message("SequenceをRAMへ反映しました。");
   });
@@ -1101,12 +968,7 @@ $("send-matrix").onclick = () =>
   guard(async () => {
     await request(
       16,
-      matrix.flatMap((m) => [
-        m.source,
-        m.track,
-        m.parameter,
-        ...signed(m.amount),
-      ]),
+      matrix.flatMap((m) => [m.source, m.track, m.parameter, ...signed(m.amount)]),
     );
     matrixDirty = false;
     message("変調ルーティングを反映しました。");
@@ -1114,15 +976,12 @@ $("send-matrix").onclick = () =>
 $("send-system").onclick = () =>
   guard(async () => {
     await request(18, [Number($("brightness").value)]);
-    message(
-      "Systemの明るさをRAMへ反映しました。永続化はSystem保存を選択してください。",
-    );
+    message("Systemの明るさをRAMへ反映しました。永続化はSystem保存を選択してください。");
   });
 $("diagnostics").onclick = () =>
   guard(async () => {
     const d = await request(21),
-      wide = (i) =>
-        d.slice(i, i + 5).reduce((n, v, k) => n + v * 2 ** (7 * k), 0);
+      wide = (i) => d.slice(i, i + 5).reduce((n, v, k) => n + v * 2 ** (7 * k), 0);
     $("diagnostic-result").textContent = JSON.stringify(
       {
         voices: d[0],
@@ -1152,9 +1011,7 @@ function saveScope() {
   ][kind];
 }
 $("save-kind").onchange = saveScope;
-$("save-open").onclick = () => {
-  $("save-dialog").showModal();
-};
+$("save-open").onclick = () => $("save-dialog").showModal();
 $("save-cancel").onclick = () => $("save-dialog").close();
 $("save").onclick = () =>
   guard(async () => {
@@ -1162,14 +1019,9 @@ $("save").onclick = () =>
     if (
       (kind !== 3 && [...cache.values()].some((e) => e.dirty)) ||
       (kind === 2 &&
-        ([...cache.values()].some((e) => e.sequenceDirty) ||
-          globalDirty ||
-          cvDirty ||
-          matrixDirty))
+        ([...cache.values()].some((e) => e.sequenceDirty) || globalDirty || cvDirty || matrixDirty))
     )
-      throw Error(
-        "未反映の編集があります。先に必要な項目を本体へ反映してください。",
-      );
+      throw Error("未反映の編集があります。先に必要な項目を本体へ反映してください。");
     await request(3, [kind, selected, Number($("save-slot").value)]);
     $("save-dialog").close();
     message(
@@ -1181,12 +1033,9 @@ $("save").onclick = () =>
       ][kind],
     );
   });
-function replace(
-  action,
-  text = "現在の全トラックを置き換え、演奏を停止します。フラッシュ保存は別操作です。",
-) {
+function replace(action, text) {
   replaceAction = action;
-  $("replace-dialog").querySelector("p").textContent = text;
+  if (text) $("replace-dialog").querySelector("p").textContent = text;
   $("replace-dialog").showModal();
 }
 $("poly-focus").onclick = () =>
@@ -1196,9 +1045,7 @@ $("poly-focus").onclick = () =>
     entry().sequenceDirty = false;
     await readProjectTracks();
     await readSelected();
-    message(
-      "選択TrackをPOLY化しました。同じチップの他TrackはOFF、別チップの演奏は保持します。",
-    );
+    message("選択TrackをPOLY化しました。同じチップの他TrackはOFF、別チップの演奏は保持します。");
   }, "同じチップのほかのTrackをOFFにして、選択Trackへ声数を集めます。別チップの演奏と他Trackの未反映編集は保持します。選択Trackの未反映編集は破棄します。");
 $("apply-template").onclick = () =>
   replace(async () => {
@@ -1229,9 +1076,7 @@ $("replace-confirm").onclick = () =>
     $("replace-dialog").close();
   });
 function download(name, text) {
-  const url = URL.createObjectURL(
-      new Blob([text], { type: "application/json" }),
-    ),
+  const url = URL.createObjectURL(new Blob([text], { type: "application/json" })),
     a = document.createElement("a");
   a.href = url;
   a.download = name;
@@ -1259,9 +1104,529 @@ $("import").onchange = () =>
     render();
     message("v0.10 JSONをローカルへ読み込みました。");
   });
+
+/* ================================================================
+   演奏エンジン：Web Audio近似音源 + 実機へのMIDIノート送信
+   ================================================================ */
+const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const noteName = (n) => `${NOTE_NAMES[n % 12]}${Math.floor(n / 12) - 1}`;
+const LFO_HZ = [0.5, 1, 2, 4, 8, 16, 32, 64];
+let actx = null,
+  master = null,
+  noiseBuffer = null,
+  pulseWave = null;
+let bendValue = 0; // -8192..8191
+let sustainOn = false;
+const heldNotes = []; // 押下順（モノ時の復帰用）
+const voices = new Map(); // note -> voice（POLY）/ モノは単一音のみ保持
+let monoNote = null;
+const sustained = new Set();
+
+function ensureAudio() {
+  if (actx) {
+    if (actx.state === "suspended") actx.resume();
+    return true;
+  }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return false;
+  actx = new AC();
+  master = actx.createGain();
+  master.gain.value = (Number($("master-vol").value) / 100) * 0.5;
+  master.connect(actx.destination);
+  const len = actx.sampleRate * 2;
+  noiseBuffer = actx.createBuffer(1, len, actx.sampleRate);
+  const data = noiseBuffer.getChannelData(0);
+  let seed = 0x2f6e2b1;
+  for (let i = 0; i < len; i++) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    data[i] = seed / 0x40000000 - 1;
+  }
+  const real = new Float32Array(65),
+    imag = new Float32Array(65),
+    duty = 1 / 15;
+  for (let n = 1; n < 65; n++)
+    imag[n] = (2 / (n * Math.PI)) * Math.sin(n * Math.PI * duty);
+  pulseWave = actx.createPeriodicWave(real, imag);
+  return true;
+}
+$("master-vol").oninput = () => {
+  if (master) master.gain.value = (Number($("master-vol").value) / 100) * 0.5;
+};
+
+function midiChannel() {
+  const t = entry().track;
+  if (t.usb) {
+    for (let i = 0; i < 16; i++) if (t.usb & (1 << i)) return i;
+  }
+  return selected < 10 ? selected : 0;
+}
+function midiSend(bytes) {
+  try {
+    output?.send(bytes);
+  } catch {
+    /* ポート未選択時はブラウザ演奏のみ */
+  }
+}
+function midiNoteOn(note, velocity) {
+  midiSend([0x90 | midiChannel(), note, velocity]);
+}
+function midiNoteOff(note) {
+  midiSend([0x80 | midiChannel(), note, 0]);
+}
+function sendPerformanceCc() {
+  const t = entry().track,
+    ch = midiChannel();
+  midiSend([0xb0 | ch, 7, Math.round((t.level / 100) * 127)]);
+  if (t.patch.output === 0) midiSend([0xb0 | ch, 10, Math.round((t.pan / 100) * 127)]);
+}
+function sendBend() {
+  const v = bendValue + 8192,
+    ch = midiChannel();
+  midiSend([0xe0 | ch, v & 127, (v >> 7) & 127]);
+  for (const voice of voices.values())
+    for (const o of voice.oscs)
+      o.detune.setTargetAtTime(
+        voice.baseDetune + (bendValue / 8192) * 200,
+        actx.currentTime,
+        0.01,
+      );
+}
+
+function patchFreq(note, p) {
+  const bendSemis = (bendValue / 8192) * 2;
+  return (
+    440 *
+    2 ** ((note + p.transpose + bendSemis - 69) / 12) *
+    2 ** (p.fine / 1200)
+  );
+}
+function oscFor(wave, p) {
+  const osc = actx.createOscillator();
+  if (wave === Wave.PULSE) osc.setPeriodicWave(pulseWave);
+  else if (wave === Wave.ENV || wave === Wave.AM)
+    osc.type = p.shape === 5 || p.shape === 4 ? "triangle" : p.shape === 3 || p.shape === 7 ? "sawtooth" : "square";
+  else osc.type = "square";
+  return osc;
+}
+function startVoice(note, velocity) {
+  if (!ensureAudio()) return null;
+  const t = entry().track,
+    p = t.patch,
+    wave = waveform(p),
+    now = actx.currentTime;
+  const gainNode = actx.createGain();
+  const peak =
+    (t.level / 100) * (p.level / 100) * (velocity / 127) * (t.mute ? 0 : 1);
+  const a = Math.max(p.attack / 1000, 0.003),
+    d = Math.max(p.decay / 1000, 0.003);
+  gainNode.gain.setValueAtTime(0, now);
+  gainNode.gain.linearRampToValueAtTime(Math.max(peak, 0.0001), now + a);
+  gainNode.gain.linearRampToValueAtTime(
+    Math.max(peak * (p.sustain / 100), 0.0001),
+    now + a + d,
+  );
+  const panNode = actx.createStereoPanner ? actx.createStereoPanner() : null;
+  if (panNode) {
+    panNode.pan.value =
+      p.output === 1 ? -0.8 : p.output === 2 ? 0.8 : (t.pan - 50) / 50;
+    gainNode.connect(panNode).connect(master);
+  } else gainNode.connect(master);
+  const voice = { oscs: [], sources: [], gain: gainNode, baseDetune: 0, note };
+  const freq = patchFreq(note, p);
+  const addOsc = (semis, detuneCents, levelScale, pan) => {
+    const osc = oscFor(wave, p);
+    const target = freq * 2 ** (semis / 12);
+    const startF =
+      p.pitch_amount && p.pitch_decay > 0
+        ? target * 2 ** (p.pitch_amount / 12)
+        : target;
+    if (p.glide > 0 && voice.lastFreq) {
+      osc.frequency.setValueAtTime(voice.lastFreq, now);
+      osc.frequency.linearRampToValueAtTime(startF, now + 0.02);
+    } else osc.frequency.setValueAtTime(startF, now);
+    if (p.pitch_amount && p.pitch_decay > 0)
+      osc.frequency.exponentialRampToValueAtTime(target, now + p.pitch_decay / 1000);
+    else if (p.glide > 0 && voice.lastFreq)
+      osc.frequency.linearRampToValueAtTime(target, now + p.glide / 1000);
+    osc.detune.value = detuneCents + (bendValue / 8192) * 200;
+    const og = actx.createGain();
+    og.gain.value = levelScale;
+    let dest = gainNode;
+    if (pan !== null && actx.createStereoPanner) {
+      const sp = actx.createStereoPanner();
+      sp.pan.value = pan;
+      osc.connect(og).connect(sp).connect(gainNode);
+      dest = null;
+    }
+    if (dest) osc.connect(og).connect(dest);
+    // LFO：ビブラート / トレモロ（近似）
+    let lfo = null;
+    if (p.vibrato > 0 || p.tremolo > 0) {
+      lfo = actx.createOscillator();
+      lfo.type = ["sine", "triangle", "square", "sawtooth"][p.lfo_shape] || "sine";
+      lfo.frequency.value = LFO_HZ[p.lfo_rate] || 4;
+      if (p.vibrato > 0) {
+        const lg = actx.createGain();
+        lg.gain.value = p.vibrato;
+        lfo.connect(lg).connect(osc.detune);
+      }
+      if (p.tremolo > 0) {
+        const tg = actx.createGain();
+        tg.gain.value = (p.tremolo / 100) * 0.3 * Math.max(peak, 0.05);
+        lfo.connect(tg).connect(gainNode.gain);
+      }
+      lfo.start();
+      voice.oscs.push(lfo);
+    }
+    osc.start();
+    voice.oscs.push(osc);
+    voice.lastFreq = target;
+    return osc;
+  };
+  const addNoise = (levelScale) => {
+    const src = actx.createBufferSource();
+    src.buffer = noiseBuffer;
+    src.loop = true;
+    src.playbackRate.value =
+      p.noise_rate === 3 ? Math.max(freq / 220, 0.2) : [2.2, 1.4, 0.8][p.noise_rate] || 1;
+    const nf = actx.createBiquadFilter();
+    nf.type = "lowpass";
+    nf.frequency.value = p.noise_type === 0 ? 3500 : 7000;
+    const ng = actx.createGain();
+    ng.gain.value = levelScale;
+    src.connect(nf).connect(ng).connect(gainNode);
+    src.start();
+    voice.sources.push(src);
+  };
+  if (wave === Wave.NOISE) addNoise(1);
+  else if (wave === Wave.TONE_NOISE) {
+    addOsc(0, 0, 0.7, null);
+    addNoise(0.5);
+  } else if (wave === Wave.METAL) {
+    addOsc(0, 0, 1 - p.noise_mix / 100, null);
+    addNoise(p.noise_mix / 100);
+  } else {
+    const stereoDetune = p.chip === 1 && p.output === 0 && p.detune > 0;
+    if (stereoDetune) {
+      addOsc(0, -p.detune / 2, 0.6, -0.65);
+      addOsc(0, p.detune / 2, 0.6, 0.65);
+    } else addOsc(0, 0, 1, null);
+    if (p.chip === 1 && p.source === 0 && p.layers >= 2) {
+      addOsc(p.layer_interval, 0, (p.layer_level / 100) * 0.7, null);
+      if (p.layers >= 3) addOsc(p.stack_interval, 0, (p.layer_level / 100) * 0.6, null);
+    }
+    if (p.chip === 0 && p.layers > 1)
+      addOsc(p.layer_interval, 0, (p.layer_level / 100) * 0.8, null);
+  }
+  voice.baseDetune = 0;
+  return voice;
+}
+function releaseVoice(voice, fast = false) {
+  if (!voice || !actx) return;
+  const p = entry().track.patch,
+    now = actx.currentTime,
+    r = fast ? 0.03 : Math.max(p.release / 1000, 0.03);
+  try {
+    voice.gain.gain.cancelScheduledValues(now);
+    voice.gain.gain.setTargetAtTime(0, now, r / 3);
+    const stopAt = now + r + 0.15;
+    for (const o of voice.oscs) o.stop(stopAt);
+    for (const s of voice.sources) s.stop(stopAt);
+  } catch {
+    /* 停止済み */
+  }
+}
+function retargetVoice(voice, note) {
+  // LEGATO：エンベロープを継続したまま音程だけ移す
+  const p = entry().track.patch,
+    now = actx.currentTime,
+    freq = patchFreq(note, p),
+    g = Math.max(p.glide / 1000, 0.01);
+  for (const o of voice.oscs) {
+    if (o.frequency)
+      o.frequency.setTargetAtTime(freq, now, g / 3);
+  }
+  voice.note = note;
+}
+function updateNowNote() {
+  const active = [...heldNotes, ...sustained];
+  $("now-note").textContent = active.length
+    ? [...new Set(active)].map(noteName).join(" ")
+    : "—";
+  document.querySelectorAll("#keyboard .key").forEach((k) => {
+    const n = Number(k.dataset.note);
+    k.classList.toggle("active", heldNotes.includes(n) || sustained.has(n));
+  });
+}
+function noteOn(note, velocity = null) {
+  ensureAudio();
+  const vel = velocity ?? Number($("velocity").value);
+  if (!heldNotes.includes(note)) heldNotes.push(note);
+  sustained.delete(note);
+  const t = entry().track;
+  midiNoteOn(note, vel);
+  if (t.mode === 1) {
+    // POLY
+    if (voices.has(note)) releaseVoice(voices.get(note), true);
+    while (voices.size >= Math.max(t.voices, 1)) {
+      const oldest = voices.keys().next().value;
+      releaseVoice(voices.get(oldest), true);
+      voices.delete(oldest);
+    }
+    const v = startVoice(note, vel);
+    if (v) voices.set(note, v);
+  } else {
+    // DIRECT / LEGATO（単音）
+    if (monoNote !== null && voices.has(monoNote)) {
+      if (t.mode === 2 && voices.get(monoNote)) {
+        retargetVoice(voices.get(monoNote), note);
+        voices.set(note, voices.get(monoNote));
+        voices.delete(monoNote);
+      } else {
+        releaseVoice(voices.get(monoNote), true);
+        voices.delete(monoNote);
+        const v = startVoice(note, vel);
+        if (v) voices.set(note, v);
+      }
+    } else {
+      const v = startVoice(note, vel);
+      if (v) voices.set(note, v);
+    }
+    monoNote = note;
+  }
+  updateNowNote();
+}
+function noteOff(note) {
+  const i = heldNotes.indexOf(note);
+  if (i >= 0) heldNotes.splice(i, 1);
+  midiNoteOff(note);
+  if (sustainOn) {
+    sustained.add(note);
+    updateNowNote();
+    return;
+  }
+  finishNoteOff(note);
+}
+function finishNoteOff(note) {
+  sustained.delete(note);
+  const t = entry().track;
+  if (t.mode !== 1 && monoNote === note) {
+    const prev = heldNotes[heldNotes.length - 1];
+    if (prev !== undefined && voices.has(note)) {
+      if (t.mode === 2) {
+        retargetVoice(voices.get(note), prev);
+        voices.set(prev, voices.get(note));
+        voices.delete(note);
+      } else {
+        releaseVoice(voices.get(note), true);
+        voices.delete(note);
+        const v = startVoice(prev, Number($("velocity").value));
+        if (v) voices.set(prev, v);
+      }
+      monoNote = prev;
+      updateNowNote();
+      return;
+    }
+    monoNote = null;
+  }
+  if (voices.has(note)) {
+    releaseVoice(voices.get(note));
+    voices.delete(note);
+  }
+  updateNowNote();
+}
+function allNotesOff() {
+  heldNotes.length = 0;
+  sustained.clear();
+  for (const v of voices.values()) releaseVoice(v, true);
+  voices.clear();
+  monoNote = null;
+  for (let ch = 0; ch < 16; ch++) {
+    midiSend([0xb0 | ch, 120, 0]);
+    midiSend([0xb0 | ch, 123, 0]);
+  }
+  updateNowNote();
+}
+function setSustain(on) {
+  sustainOn = on;
+  $("sustain-btn").classList.toggle("on", on);
+  $("sustain-btn").setAttribute("aria-pressed", String(on));
+  midiSend([0xb0 | midiChannel(), 64, on ? 127 : 0]);
+  if (!on) for (const n of [...sustained]) if (!heldNotes.includes(n)) finishNoteOff(n);
+}
+$("sustain-btn").addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  setSustain(true);
+});
+addEventListener("pointerup", () => {
+  if (sustainOn && !spaceHeld) setSustain(false);
+});
+let spaceHeld = false;
+
+/* ---------- 鍵盤（レスポンシブ） ---------- */
+let baseNote = 48; // C3
+const PC_KEYS_LOWER = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14 };
+function buildKeyboard() {
+  const kb = $("keyboard");
+  const width = kb.clientWidth || innerWidth;
+  const whiteTarget = width < 600 ? 42 : 48;
+  let whites = Math.max(7, Math.min(36, Math.floor(width / whiteTarget)));
+  // Cから始めて白鍵whites個ぶんの音域を作る
+  const notes = [];
+  let n = baseNote,
+    w = 0;
+  while (w < whites) {
+    notes.push(n);
+    if (![1, 3, 6, 8, 10].includes(n % 12)) w++;
+    n++;
+  }
+  const last = notes[notes.length - 1];
+  $("oct-label").textContent = `${noteName(baseNote)} – ${noteName(last)}`;
+  kb.replaceChildren();
+  const whiteW = 100 / whites;
+  let wi = 0;
+  for (const note of notes) {
+    const black = [1, 3, 6, 8, 10].includes(note % 12);
+    const el = document.createElement("button");
+    el.className = "key" + (black ? " black" : "");
+    el.dataset.note = note;
+    el.setAttribute("aria-label", noteName(note));
+    if (black) {
+      el.style.left = `calc(${(wi - 0.32) * whiteW}% )`;
+      el.style.width = `calc(${whiteW * 0.64}%)`;
+      el.style.height = "62%";
+    } else {
+      el.style.left = `${wi * whiteW}%`;
+      el.style.width = `${whiteW}%`;
+      el.style.height = "100%";
+      wi++;
+    }
+    const label = document.createElement("span");
+    label.className = "klabel";
+    label.textContent = note % 12 === 0 ? noteName(note) : "";
+    const pc = Object.entries(PC_KEYS_LOWER).find(([, v]) => baseNote + v === note);
+    if (pc && !black) {
+      const s = document.createElement("span");
+      s.className = "pckey";
+      s.textContent = pc[0].toUpperCase();
+      label.append(s);
+    }
+    el.append(label);
+    kb.append(el);
+  }
+  updateNowNote();
+}
+const pointerNotes = new Map();
+function keyVelocity(event, el) {
+  const r = el.getBoundingClientRect();
+  const ratio = Math.min(1, Math.max(0, (event.clientY - r.top) / r.height));
+  return Math.round(55 + ratio * 72);
+}
+$("keyboard").addEventListener("pointerdown", (event) => {
+  const el = event.target.closest(".key");
+  if (!el) return;
+  event.preventDefault();
+  ensureAudio();
+  const note = Number(el.dataset.note);
+  pointerNotes.set(event.pointerId, note);
+  noteOn(note, keyVelocity(event, el));
+});
+$("keyboard").addEventListener("pointermove", (event) => {
+  if (!pointerNotes.has(event.pointerId)) return;
+  const el = document.elementFromPoint(event.clientX, event.clientY)?.closest?.(".key");
+  if (!el) return;
+  const note = Number(el.dataset.note),
+    prev = pointerNotes.get(event.pointerId);
+  if (note !== prev) {
+    pointerNotes.set(event.pointerId, note);
+    noteOff(prev);
+    noteOn(note, keyVelocity(event, el));
+  }
+});
+for (const type of ["pointerup", "pointercancel"]) {
+  $("keyboard").addEventListener(type, (event) => {
+    const note = pointerNotes.get(event.pointerId);
+    if (note !== undefined) {
+      pointerNotes.delete(event.pointerId);
+      noteOff(note);
+    }
+  });
+}
+$("keyboard").addEventListener("contextmenu", (e) => e.preventDefault());
+$("oct-down").onclick = () => {
+  baseNote = Math.max(12, baseNote - 12);
+  buildKeyboard();
+};
+$("oct-up").onclick = () => {
+  baseNote = Math.min(96, baseNote + 12);
+  buildKeyboard();
+};
+let resizeTimer = null;
+addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(buildKeyboard, 150);
+});
+addEventListener("keydown", (event) => {
+  const tag = document.activeElement?.tagName;
+  if (["INPUT", "SELECT", "TEXTAREA"].includes(tag) && event.key !== "Escape") return;
+  if (event.repeat) return;
+  const key = event.key.toLowerCase();
+  if (key === " ") {
+    event.preventDefault();
+    spaceHeld = true;
+    setSustain(true);
+    return;
+  }
+  if (key === "z") {
+    baseNote = Math.max(12, baseNote - 12);
+    buildKeyboard();
+    return;
+  }
+  if (key === "x") {
+    baseNote = Math.min(96, baseNote + 12);
+    buildKeyboard();
+    return;
+  }
+  const semis = PC_KEYS_LOWER[key];
+  if (semis === undefined) return;
+  event.preventDefault();
+  noteOn(baseNote + semis);
+});
+addEventListener("keyup", (event) => {
+  const key = event.key.toLowerCase();
+  if (key === " ") {
+    spaceHeld = false;
+    setSustain(false);
+    return;
+  }
+  const semis = PC_KEYS_LOWER[key];
+  if (semis === undefined) return;
+  noteOff(baseNote + semis);
+});
+$("bend").addEventListener("input", () => {
+  bendValue = Number($("bend").value);
+  sendBend();
+});
+$("bend").addEventListener("change", () => {
+  $("bend").value = 0;
+  bendValue = 0;
+  sendBend();
+});
+$("panic").onclick = () => {
+  allNotesOff();
+  if (ready) guard(() => request(19));
+  message("PANIC：全ノートを停止しました。");
+};
+addEventListener("blur", allNotesOff);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) allNotesOff();
+});
+
+/* ---------- 初期化 ---------- */
 connected();
 render();
 renderGlobal();
 renderCv();
 renderMatrix();
 saveScope();
+buildKeyboard();
