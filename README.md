@@ -12,9 +12,9 @@ USB MIDI、TRS MIDI、2系統のCV／ゲート入力と、OLED・3ボタンに�
 
 ![PCB配線図](outputs/review/routing-traces-all.png)
 
-[**Wave Lab — Web MIDI音色エディタ**](https://bongorian.github.io/chiptune-usb-cv/)
+[**Chiptune Play — 演奏できるWebシンセ＋音色エディタ**](https://bongorian.github.io/chiptune-usb-cv/)
 
-Wave Labのソースは`editor/`にあります。公開版のほか、ローカルHTTPサーバーでも実行できます。[音作り](firmware/SOUND_DESIGN.md)と[エディタの使い方](editor/README.md)を参照してください。
+Chiptune Playのソースは`editor/`にあります。公開版のほか、ローカルHTTPサーバーでも実行できます。ブラウザの鍵盤で演奏でき（ブラウザ内蔵音源／Web MIDIで実機も可）、音色設定は最新ファーム準拠です。[音作り](firmware/SOUND_DESIGN.md)と[エディタの使い方](editor/README.md)を参照してください。
 
 ## 仕様
 
@@ -36,7 +36,7 @@ Wave Labのソースは`editor/`にあります。公開版のほか、ローカ
 |---|---|
 | `routed/` | 配線済みKiCadプロジェクト、シンボル、フットプリント |
 | `hardware/` | 回路・配置生成用の未配線プロジェクト |
-| `editor/` | GitHub Pages向けWeb MIDI音色エディタ、波形・ADSR・16ステップ・クロック・CV設定 |
+| `editor/` | GitHub Pages向け演奏ページ（Chiptune Play）。レスポンシブ鍵盤、Web Audio試聴、Web MIDI実機演奏、音色編集（波形・ADSR・16ステップ・クロック・CV設定） |
 | `firmware/` | RP2040音源エンジン、USB／TRS MIDI、CV／ゲート、OLED UI、プリセット、UF2 |
 | `mechanical/` | 3Dプリント用ケース、STL・STEP、寸法図・組み立て手順 |
 | `docs/` | 回路仕様、操作設計、配線ルール |
