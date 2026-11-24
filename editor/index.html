@@ -88,6 +88,7 @@
           <button id="oct-down" aria-label="オクターブを下げる">◀ OCT</button>
           <span id="oct-label">C3 – B4</span>
           <button id="oct-up" aria-label="オクターブを上げる">OCT ▶</button>
+          <button id="kb-toggle" aria-expanded="true">鍵盤を隠す</button>
           <label class="bend-label">
             BEND
             <input
@@ -99,7 +100,7 @@
               step="1"
             />
           </label>
-          <span class="kb-hint">タッチ位置（上下）でベロシティが変わります · 横へなぞるとグリッサンド</span>
+          <span class="kb-hint">上下でベロシティ · 横なぞりでグリッサンド</span>
         </div>
         <div
           id="keyboard"
@@ -107,9 +108,7 @@
           aria-label="演奏鍵盤"
         ></div>
         <p class="kb-legend">
-          PCキーボード：A=C / W=C# / S=D / E=D# / D=E / F=F / T=F# / G=G / Y=G# / H=A /
-          U=A# / J=B / K=次のC / O / L
-          まで。Z=オクターブ−、X=オクターブ＋、Space長押し = サステイン
+          PC鍵盤：下段はA〜K列 · Z/X オクターブ · Space サステイン
         </p>
       </div>
     </section>

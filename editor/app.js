@@ -1452,53 +1452,74 @@ const PC_KEYS_LOWER = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h:
 function buildKeyboard() {
   const kb = $("keyboard");
   const width = kb.clientWidth || innerWidth;
-  const whiteTarget = width < 600 ? 42 : 48;
-  let whites = Math.max(7, Math.min(36, Math.floor(width / whiteTarget)));
-  // Cから始めて白鍵whites個ぶんの音域を作る
-  const notes = [];
+  // 2段鍵盤：1段あたり白鍵 perRow 個（鍵は小さめに約40px幅）
+  const perRow = Math.max(10, Math.min(24, Math.floor(width / 40)));
+  const rows = [[], []];
   let n = baseNote,
-    w = 0;
-  while (w < whites) {
-    notes.push(n);
+    w = 0,
+    row = 0;
+  while (row < 2) {
+    rows[row].push(n);
     if (![1, 3, 6, 8, 10].includes(n % 12)) w++;
     n++;
+    if (w >= perRow) {
+      row++;
+      w = 0;
+    }
   }
-  const last = notes[notes.length - 1];
+  const last = rows[1][rows[1].length - 1];
   $("oct-label").textContent = `${noteName(baseNote)} – ${noteName(last)}`;
   kb.replaceChildren();
-  const whiteW = 100 / whites;
-  let wi = 0;
-  for (const note of notes) {
-    const black = [1, 3, 6, 8, 10].includes(note % 12);
-    const el = document.createElement("button");
-    el.className = "key" + (black ? " black" : "");
-    el.dataset.note = note;
-    el.setAttribute("aria-label", noteName(note));
-    if (black) {
-      el.style.left = `calc(${(wi - 0.32) * whiteW}% )`;
-      el.style.width = `calc(${whiteW * 0.64}%)`;
-      el.style.height = "62%";
-    } else {
-      el.style.left = `${wi * whiteW}%`;
-      el.style.width = `${whiteW}%`;
-      el.style.height = "100%";
-      wi++;
+  const whiteW = 100 / perRow;
+  // 上段＝高い方、下段＝低い方
+  for (const r of [1, 0]) {
+    const rowEl = document.createElement("div");
+    rowEl.className = "kb-row";
+    let wi = 0;
+    for (const note of rows[r]) {
+      const black = [1, 3, 6, 8, 10].includes(note % 12);
+      const el = document.createElement("button");
+      el.className = "key" + (black ? " black" : "");
+      el.dataset.note = note;
+      el.setAttribute("aria-label", noteName(note));
+      if (black) {
+        el.style.left = `calc(${(wi - 0.32) * whiteW}% )`;
+        el.style.width = `calc(${whiteW * 0.64}%)`;
+        el.style.height = "62%";
+      } else {
+        el.style.left = `${wi * whiteW}%`;
+        el.style.width = `${whiteW}%`;
+        el.style.height = "100%";
+        wi++;
+      }
+      const label = document.createElement("span");
+      label.className = "klabel";
+      label.textContent = note % 12 === 0 ? noteName(note) : "";
+      if (r === 0) {
+        const pc = Object.entries(PC_KEYS_LOWER).find(
+          ([, v]) => baseNote + v === note,
+        );
+        if (pc && !black) {
+          const s = document.createElement("span");
+          s.className = "pckey";
+          s.textContent = pc[0].toUpperCase();
+          label.append(s);
+        }
+      }
+      el.append(label);
+      rowEl.append(el);
     }
-    const label = document.createElement("span");
-    label.className = "klabel";
-    label.textContent = note % 12 === 0 ? noteName(note) : "";
-    const pc = Object.entries(PC_KEYS_LOWER).find(([, v]) => baseNote + v === note);
-    if (pc && !black) {
-      const s = document.createElement("span");
-      s.className = "pckey";
-      s.textContent = pc[0].toUpperCase();
-      label.append(s);
-    }
-    el.append(label);
-    kb.append(el);
+    kb.append(rowEl);
   }
   updateNowNote();
 }
+$("kb-toggle").onclick = () => {
+  const wrap = $("keyboard-wrap");
+  const hidden = wrap.classList.toggle("kb-hidden");
+  $("kb-toggle").textContent = hidden ? "鍵盤を表示" : "鍵盤を隠す";
+  $("kb-toggle").setAttribute("aria-expanded", String(!hidden));
+  if (!hidden) buildKeyboard();
+};
 const pointerNotes = new Map();
 function keyVelocity(event, el) {
   const r = el.getBoundingClientRect();
