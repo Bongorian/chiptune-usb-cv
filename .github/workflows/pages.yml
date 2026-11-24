@@ -1,4 +1,4 @@
-name: Wave Lab Pages
+name: Chiptune Play Pages
 on:
   push:
     branches: [main]
