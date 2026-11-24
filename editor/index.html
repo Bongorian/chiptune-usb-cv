@@ -2,192 +2,279 @@
 <html lang="ja">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Wave Lab v0.10</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <title>Chiptune Play — SAA1099 × SN76489 ウェブシンセ</title>
+    <meta
+      name="description"
+      content="Chiptune USB/CV（SAA1099 ×1 / SN76489AN ×2 / RP2040）をブラウザの鍵盤で演奏するページ。スマホ・タブレット・PC対応。Web MIDIで実機も演奏でき、音色設定はファームウェア v0.10.0-alpha（protocol 2 / schema 10）準拠。"
+    />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <header>
-      <a class="brand" href="#">WAVE LAB <small>v0.10</small></a
-      ><span>SAA1099 × SN76489 × 2</span
-      ><span id="connection-state">OFFLINE</span
-      ><button id="connect">USB MIDI接続</button>
+      <a class="brand" href="#">CHIPTUNE PLAY <small>v0.10</small></a>
+      <span class="chips-label">SAA1099 × SN76489 × 2</span>
+      <span id="connection-state">ブラウザ演奏モード</span>
+      <button id="panic" title="全ノート停止（PANIC）">PANIC</button>
+      <button id="connect" class="primary">実機に接続（USB MIDI）</button>
     </header>
-    <div class="layout">
-      <aside>
-        <h2>TRACKS</h2>
-        <nav id="tracks" aria-label="編集するトラック"></nav>
-        <p class="hint">
-          初期配置：1–6 SAA / 7–9 SN / 10
-          Noise。各ch単音。SNは左右同音程、PANでL/Rへ振ります。
-        </p>
-        <button id="read" class="full" disabled>本体から読み出す</button
-        ><label
-          >本体へ送信<select id="midi-out">
-            <option value="">MIDI output</option>
-          </select></label
-        ><label
-          >本体から受信<select id="midi-in">
-            <option value="">MIDI input</option>
-          </select></label
-        >
-        <details>
-          <summary>配置・プロジェクト</summary>
-          <select id="template">
-            <option value="0">MIDI 10 / DIRECT</option>
-            <option value="1">SAA 6声 / POLY</option>
-            <option value="2">SAA Tone + ENV / POLY</option></select
-          ><button id="apply-template" disabled>配置を置き換える…</button
-          ><label>Project slot<select id="project-slot"></select></label
-          ><button id="load-project" disabled>Projectを読み込む…</button>
-        </details>
-      </aside>
-      <main>
-        <div class="heading">
-          <div>
-            <p class="eyebrow" id="track-label">TRACK 1 · CH1</p>
-            <h1>
-              <input
-                id="name"
-                aria-label="音色名"
-                maxlength="8"
-                value="SAA TONE"
-              />
-            </h1>
-          </div>
+
+    <!-- ============ 演奏ステージ ============ -->
+    <section id="stage">
+      <div class="stage-top">
+        <nav id="tracks" aria-label="演奏するトラック"></nav>
+      </div>
+
+      <div class="now-playing">
+        <div class="np-main">
+          <p class="eyebrow" id="track-label">TRACK 1 · CH1</p>
+          <h1>
+            <input id="name" aria-label="音色名" maxlength="8" value="SAA TONE" />
+          </h1>
           <span id="patch-description"></span>
         </div>
-        <div id="message" role="status" aria-live="polite">
-          オフライン編集。接続するまで本体は変更しません。
-        </div>
-        <section class="card">
-          <h2>演奏</h2>
-          <div class="controls" id="performance-controls"></div>
-          <div class="toolbar">
-            <button id="poly-focus" disabled>POLYにまとめる…</button
-            ><label>工場音色<select id="factory"></select></label
-            ><button id="load-factory">音色を読み込む</button
-            ><label>USER音色<select id="user-patch"></select></label
-            ><button id="load-user" disabled>USERを読む</button>
+        <div class="np-side">
+          <div id="now-note" aria-live="off">—</div>
+          <div id="message" role="status" aria-live="polite">
+            鍵盤をタップ／クリック、またはPCキーボード（A〜K列）で演奏できます。音はブラウザから出ます。
           </div>
-        </section>
-        <section class="card">
-          <h2>音色</h2>
-          <div class="controls" id="musical-controls"></div>
-          <p id="wave-hint" class="hint"></p>
-          <canvas
-            id="envelope"
-            width="900"
-            height="150"
-            aria-label="音量エンベロープの模式図"
-          ></canvas>
+        </div>
+      </div>
+
+      <div class="play-bar">
+        <label class="pb-item grow">
+          工場音色（23種）
+          <span class="pb-row">
+            <select id="factory"></select>
+            <button id="load-factory">読み込む</button>
+          </span>
+        </label>
+        <label class="pb-item grow">
+          USER音色（実機）
+          <span class="pb-row">
+            <select id="user-patch"></select>
+            <button id="load-user" disabled>USERを読む</button>
+          </span>
+        </label>
+        <label class="pb-item">
+          ベロシティ
+          <input id="velocity" type="range" min="1" max="127" value="100" />
+        </label>
+        <label class="pb-item">
+          音量
+          <input id="master-vol" type="range" min="0" max="100" value="80" />
+        </label>
+        <button id="sustain-btn" aria-pressed="false" title="サステイン（押している間ON）">
+          SUSTAIN
+        </button>
+      </div>
+
+      <div class="play-controls" id="performance-controls"></div>
+
+      <div id="keyboard-wrap">
+        <div class="kb-tools">
+          <button id="oct-down" aria-label="オクターブを下げる">◀ OCT</button>
+          <span id="oct-label">C3 – B4</span>
+          <button id="oct-up" aria-label="オクターブを上げる">OCT ▶</button>
+          <label class="bend-label">
+            BEND
+            <input
+              id="bend"
+              type="range"
+              min="-8192"
+              max="8191"
+              value="0"
+              step="1"
+            />
+          </label>
+          <span class="kb-hint">タッチ位置（上下）でベロシティが変わります · 横へなぞるとグリッサンド</span>
+        </div>
+        <div
+          id="keyboard"
+          role="group"
+          aria-label="演奏鍵盤"
+        ></div>
+        <p class="kb-legend">
+          PCキーボード：A=C / W=C# / S=D / E=D# / D=E / F=F / T=F# / G=G / Y=G# / H=A /
+          U=A# / J=B / K=次のC / O / L
+          まで。Z=オクターブ−、X=オクターブ＋、Space長押し = サステイン
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ 設定エリア ============ -->
+    <main>
+      <section class="card">
+        <h2>接続とトラック管理</h2>
+        <div class="connect-grid">
+          <button id="read" class="full" disabled>本体から読み出す</button>
+          <label>
+            本体へ送信（SysEx / ノート出力）
+            <select id="midi-out">
+              <option value="">MIDI output</option>
+            </select>
+          </label>
+          <label>
+            本体から受信（SysEx応答）
+            <select id="midi-in">
+              <option value="">MIDI input</option>
+            </select>
+          </label>
+        </div>
+        <details>
+          <summary>配置・プロジェクト</summary>
+          <div class="connect-grid">
+            <label>
+              配置テンプレート
+              <select id="template">
+                <option value="0">MIDI 10 / DIRECT</option>
+                <option value="1">SAA 6声 / POLY</option>
+                <option value="2">SAA Tone + ENV / POLY</option>
+              </select>
+            </label>
+            <button id="apply-template" disabled>配置を置き換える…</button>
+            <label>
+              Project slot
+              <select id="project-slot"></select>
+            </label>
+            <button id="load-project" disabled>Projectを読み込む…</button>
+            <button id="poly-focus" disabled>POLY FOCUS（声を集める）…</button>
+          </div>
           <p class="hint">
-            音量エンベロープの模式図。実機の測定波形ではありません。
+            初期配置はMIDI 10：ch1–6 = SAA、ch7–9 = SN左右トーン、ch10 =
+            SN左右ノイズ。Track 11–14は初期OFF（全14 Track）。
           </p>
-        </section>
-        <details class="card" id="advanced">
-          <summary>Advanced · 発音構造と詳細パラメータ</summary>
-          <p id="resource-detail" class="hint"></p>
-          <div id="advanced-controls" class="controls"></div>
-          <h3>モーフィング</h3>
-          <p class="hint">
-            同じチップ・発音構造のUSER音色をBに指定します。連続パラメータを補間し、回路の取り合いを起こしません。
-          </p>
-          <div id="morph-controls" class="controls"></div>
-          <h3>マクロ / 受信設定</h3>
-          <div id="macro-controls" class="controls"></div>
         </details>
-        <details class="card" id="motion-panel">
-          <summary>Sequence / Arpeggio</summary>
-          <div id="sequence-controls" class="controls"></div>
-          <div id="steps" class="steps"></div>
-          <button id="read-sequence" disabled>本体から取得</button
-          ><button id="send-sequence" disabled>Sequenceを反映</button>
-        </details>
-        <details class="card" id="clock-panel">
-          <summary>SN共通クロック</summary>
-          <p class="hint">
-            SNの全トーン・ノイズに作用します。実クロックを下げると音程も下がります。SAAは独立8
-            MHzです。
-          </p>
-          <div id="clock-controls" class="controls"></div>
-          <button id="read-global" disabled>本体から取得</button
-          ><button id="send-global" disabled>共通設定を反映</button>
-        </details>
-        <details class="card" id="mod-panel">
-          <summary>Advanced · 変調ルーティング</summary>
-          <div id="matrix-controls"></div>
-          <button id="read-matrix" disabled>本体から取得</button
-          ><button id="send-matrix" disabled>変調を反映</button>
-        </details>
-        <details class="card" id="cv-panel">
-          <summary>CV / Gate</summary>
-          <div id="cv-controls" class="two"></div>
-          <button id="read-cv" disabled>本体から取得</button
-          ><button id="send-cv" disabled>2系統を反映</button>
-        </details>
-        <details class="card">
-          <summary>System / 診断</summary>
-          <label
-            >OLED brightness<input
-              id="brightness"
-              type="number"
-              min="10"
-              max="100"
-              value="70" /></label
-          ><button id="send-system" disabled>Systemを反映</button
-          ><button id="diagnostics" disabled>診断値を取得</button>
-          <pre id="diagnostic-result"></pre>
-        </details>
-        <footer>
-          <span id="resource-cost"></span><span id="resource-actual"></span>
-        </footer>
-      </main>
-    </div>
+      </section>
+
+      <section class="card">
+        <h2>音色設定 — ファームウェア v0.10.0-alpha 準拠</h2>
+        <div class="controls" id="musical-controls"></div>
+        <p id="wave-hint" class="hint"></p>
+        <canvas
+          id="envelope"
+          width="900"
+          height="150"
+          aria-label="音量エンベロープの模式図"
+        ></canvas>
+        <p class="hint">音量エンベロープの模式図。実機の測定波形ではありません。</p>
+        <p class="hint">
+          パラメータ定義は firmware/protocol/parameters.json（全35項目）そのままです。保存形式
+          version 10 / Web MIDI protocol 2 / schema
+          10。実機へはバージョンが完全一致した場合だけ書き込みます。
+        </p>
+      </section>
+
+      <details class="card" id="advanced">
+        <summary>Advanced · 発音構造と詳細パラメータ</summary>
+        <p id="resource-detail" class="hint"></p>
+        <div id="advanced-controls" class="controls"></div>
+        <h3>モーフィング</h3>
+        <p class="hint">
+          同じチップ・発音構造のUSER音色をBに指定します。連続パラメータを補間し、回路の取り合いを起こしません。
+        </p>
+        <div id="morph-controls" class="controls"></div>
+        <h3>マクロ / 受信設定</h3>
+        <div id="macro-controls" class="controls"></div>
+      </details>
+
+      <details class="card" id="motion-panel">
+        <summary>Sequence / Arpeggio（16ステップ）</summary>
+        <div id="sequence-controls" class="controls"></div>
+        <div id="steps" class="steps"></div>
+        <button id="read-sequence" disabled>本体から取得</button>
+        <button id="send-sequence" disabled>Sequenceを反映</button>
+      </details>
+
+      <details class="card" id="clock-panel">
+        <summary>SN共通クロック</summary>
+        <p class="hint">
+          SNの全トーン・ノイズに作用します。実クロックを下げると音程も下がります。SAAは独立8
+          MHzです。
+        </p>
+        <div id="clock-controls" class="controls"></div>
+        <button id="read-global" disabled>本体から取得</button>
+        <button id="send-global" disabled>共通設定を反映</button>
+      </details>
+
+      <details class="card" id="mod-panel">
+        <summary>Advanced · 変調ルーティング（8ルート）</summary>
+        <div id="matrix-controls"></div>
+        <button id="read-matrix" disabled>本体から取得</button>
+        <button id="send-matrix" disabled>変調を反映</button>
+      </details>
+
+      <details class="card" id="cv-panel">
+        <summary>CV / Gate（2系統）</summary>
+        <div id="cv-controls" class="two"></div>
+        <button id="read-cv" disabled>本体から取得</button>
+        <button id="send-cv" disabled>2系統を反映</button>
+      </details>
+
+      <details class="card">
+        <summary>System / 診断</summary>
+        <label>
+          OLED brightness
+          <input id="brightness" type="number" min="10" max="100" value="70" />
+        </label>
+        <button id="send-system" disabled>Systemを反映</button>
+        <button id="diagnostics" disabled>診断値を取得</button>
+        <pre id="diagnostic-result"></pre>
+      </details>
+
+      <footer>
+        <span id="resource-cost"></span><span id="resource-actual"></span>
+        <span class="hint">
+          ブラウザ内蔵音源はSAA1099 / SN76489の発音モデル（波形・ADSR・レイヤー・ノイズ）を
+          Web Audioで近似した試聴用です。実音とは異なります。正確な音は実機で確認してください。
+          iPhoneのSafariはWeb MIDI非対応のため、実機接続はAndroid / PCのChrome系ブラウザを使ってください（ブラウザ演奏はiPhoneでも可能です）。
+        </span>
+      </footer>
+    </main>
+
     <div class="actionbar">
-      <label
-        >NOTE<input
-          id="test-note"
-          type="number"
-          min="0"
-          max="127"
-          value="45" /></label
-      ><span id="test-frequency">A2 · 110.00 Hz</span
-      ><button id="audition" disabled>▶ 試聴</button
-      ><button id="stop" disabled>停止</button
-      ><button id="send" class="primary" disabled>本体に反映</button
-      ><label class="live"
-        ><input type="checkbox" id="live" disabled />LIVE</label
-      ><button id="save-open" disabled>保存…</button
-      ><button id="export">JSON ↓</button
-      ><button id="import-open">JSON ↑</button
-      ><input id="import" type="file" accept=".json" hidden />
+      <button id="send" class="primary" disabled>本体に反映</button>
+      <label class="live">
+        <input type="checkbox" id="live" disabled />LIVE（自動反映）
+      </label>
+      <button id="save-open" disabled>保存…</button>
+      <button id="export">JSON ↓</button>
+      <button id="import-open">JSON ↑</button>
+      <input id="import" type="file" accept=".json" hidden />
     </div>
+
     <dialog id="save-dialog">
       <h2>独立して保存</h2>
       <p>
         Patchは音色のみ、Trackは演奏設定込み、Projectは全体を保存します。保存時は演奏を停止します。
       </p>
-      <label
-        >保存するもの<select id="save-kind">
+      <label>
+        保存するもの
+        <select id="save-kind">
           <option value="0">Patchのみ</option>
           <option value="1">Trackのみ</option>
           <option value="2">Project</option>
           <option value="3">Systemのみ</option>
-        </select></label
-      ><label>保存先<select id="save-slot"></select></label>
+        </select>
+      </label>
+      <label>保存先<select id="save-slot"></select></label>
       <p id="save-scope">ProjectとSystemは変更しません。</p>
-      <button id="save" class="primary">保存する</button
-      ><button id="save-cancel">キャンセル</button>
+      <button id="save" class="primary">保存する</button>
+      <button id="save-cancel">キャンセル</button>
     </dialog>
+
     <dialog id="replace-dialog">
       <h2>配置の変更</h2>
       <p>
         現在の全トラックを置き換え、演奏を停止します。フラッシュ保存は別操作です。
       </p>
-      <button id="replace-confirm">置き換える</button
-      ><button id="replace-cancel">キャンセル</button>
+      <button id="replace-confirm">置き換える</button>
+      <button id="replace-cancel">キャンセル</button>
     </dialog>
+
     <script type="module" src="app.js"></script>
   </body>
 </html>
