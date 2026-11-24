@@ -242,6 +242,14 @@ h1 input {
 .pb-row select {
   flex: 1;
 }
+.pb-row input[type="file"] {
+  flex: 1;
+  min-width: 0;
+}
+.pb-note {
+  color: var(--muted);
+  font-size: 11px;
+}
 .pb-item input[type="range"] {
   width: 130px;
   accent-color: var(--accent);

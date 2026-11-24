@@ -59,6 +59,19 @@
             <button id="load-user" disabled>USERを読む</button>
           </span>
         </label>
+        <label class="pb-item grow">
+          MIDIファイル（実機で再生）
+          <span class="pb-row">
+            <input
+              id="midi-file"
+              type="file"
+              accept=".mid,.midi,audio/midi"
+            />
+            <button id="midi-play" disabled>▶ 再生</button>
+            <button id="midi-stop" disabled>■ 停止</button>
+          </span>
+          <span id="midi-status" class="pb-note">未読み込み</span>
+        </label>
         <label class="pb-item">
           ベロシティ
           <input id="velocity" type="range" min="1" max="127" value="100" />

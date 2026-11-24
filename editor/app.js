@@ -1596,6 +1596,7 @@ $("bend").addEventListener("change", () => {
   sendBend();
 });
 $("panic").onclick = () => {
+  stopPlayback();
   allNotesOff();
   if (ready) guard(() => request(19));
   message("PANIC：全ノートを停止しました。");
@@ -1604,6 +1605,188 @@ addEventListener("blur", allNotesOff);
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) allNotesOff();
 });
+
+/* ================= MIDIファイル再生（実機へ送出） =================
+   SMF format 0/1 を読み、テンポマップに従ってファイルのチャンネル
+   そのままで実機へ送る。未接続時は再生しない（実機専用の方針どおり）。 */
+let midiSong = null;
+let playback = null;
+
+function parseMidiFile(buffer) {
+  const view = new DataView(buffer);
+  let pos = 0;
+  const readStr = (n) => {
+    let s = "";
+    for (let i = 0; i < n; i++) s += String.fromCharCode(view.getUint8(pos++));
+    return s;
+  };
+  const readU32 = () => {
+    const v = view.getUint32(pos);
+    pos += 4;
+    return v;
+  };
+  const readU16 = () => {
+    const v = view.getUint16(pos);
+    pos += 2;
+    return v;
+  };
+  const readVar = () => {
+    let v = 0;
+    for (;;) {
+      const b = view.getUint8(pos++);
+      v = (v << 7) | (b & 0x7f);
+      if (!(b & 0x80)) return v;
+    }
+  };
+  if (readStr(4) !== "MThd") throw Error("MIDIファイルではありません。");
+  const headerLen = readU32();
+  readU16(); // format
+  const trackCount = readU16();
+  const division = readU16();
+  pos += headerLen - 6;
+  const rawEvents = [];
+  const tempos = [];
+  for (let t = 0; t < trackCount; t++) {
+    if (readStr(4) !== "MTrk") throw Error("MIDIファイルが壊れています。");
+    const len = readU32();
+    const end = pos + len;
+    let tick = 0,
+      running = 0;
+    while (pos < end) {
+      tick += readVar();
+      let status = view.getUint8(pos);
+      if (status & 0x80) {
+        pos++;
+        running = status;
+      } else status = running;
+      if (status === 0xff) {
+        const type = view.getUint8(pos++);
+        const mlen = readVar();
+        if (type === 0x51 && mlen === 3) {
+          const us =
+            (view.getUint8(pos) << 16) |
+            (view.getUint8(pos + 1) << 8) |
+            view.getUint8(pos + 2);
+          tempos.push({ tick, usPerQuarter: us });
+        }
+        pos += mlen;
+      } else if (status === 0xf0 || status === 0xf7) {
+        const slen = readVar();
+        const data = [0xf0];
+        for (let i = 0; i < slen; i++) data.push(view.getUint8(pos++));
+        if (status === 0xf0) data.push(0xf7);
+        rawEvents.push({ tick, data });
+      } else {
+        const hi = status & 0xf0;
+        const d1 = view.getUint8(pos++);
+        const d2 = hi === 0xc0 || hi === 0xd0 ? null : view.getUint8(pos++);
+        rawEvents.push({
+          tick,
+          data: d2 === null ? [status, d1] : [status, d1, d2],
+        });
+      }
+    }
+    pos = end;
+  }
+  const tickToSec = (tick) => {
+    if (division & 0x8000) {
+      const frames = 256 - ((division >> 8) & 0xff);
+      const fps = frames === 29 ? 29.97 : frames;
+      return tick / (fps * (division & 0xff));
+    }
+    let sec = 0,
+      lastTick = 0,
+      us = 500000;
+    for (const tp of [...tempos].sort((a, b) => a.tick - b.tick)) {
+      if (tp.tick > tick) break;
+      sec += ((tp.tick - lastTick) / division) * (us / 1e6);
+      lastTick = tp.tick;
+      us = tp.usPerQuarter;
+    }
+    return sec + ((tick - lastTick) / division) * (us / 1e6);
+  };
+  const events = rawEvents
+    .map((e) => ({ time: tickToSec(e.tick), data: e.data }))
+    .sort((a, b) => a.time - b.time);
+  return {
+    events,
+    duration: events.length ? events[events.length - 1].time : 0,
+  };
+}
+
+function stopPlayback(sendOff = true) {
+  if (!playback) return;
+  clearInterval(playback.timer);
+  playback = null;
+  if (sendOff && output) {
+    for (let ch = 0; ch < 16; ch++) {
+      output.send([0xb0 | ch, 123, 0]);
+      output.send([0xb0 | ch, 120, 0]);
+    }
+  }
+  $("midi-play").disabled = !midiSong;
+  $("midi-stop").disabled = true;
+  if (midiSong) $("midi-status").textContent = "停止";
+}
+
+function startPlayback() {
+  if (!midiSong) return;
+  if (!output) {
+    message(
+      "実機が未接続です。MIDIファイル再生も実機接続時のみです。",
+      true,
+    );
+    return;
+  }
+  stopPlayback(false);
+  const startAt = performance.now() / 1000 + 0.15;
+  playback = { startAt, index: 0, timer: null };
+  playback.timer = setInterval(() => {
+    if (!playback) return;
+    const elapsed = performance.now() / 1000 - playback.startAt;
+    while (
+      playback.index < midiSong.events.length &&
+      midiSong.events[playback.index].time <= elapsed + 0.25
+    ) {
+      const ev = midiSong.events[playback.index++];
+      try {
+        output.send(ev.data, (playback.startAt + ev.time) * 1000);
+      } catch {
+        /* ポート切断時は無視 */
+      }
+    }
+    $("midi-status").textContent =
+      `再生中 ${Math.max(0, elapsed).toFixed(1)} / ${midiSong.duration.toFixed(1)} 秒`;
+    if (
+      playback.index >= midiSong.events.length &&
+      elapsed > midiSong.duration + 0.3
+    ) {
+      stopPlayback();
+      $("midi-status").textContent = "再生終了";
+    }
+  }, 40);
+  $("midi-play").disabled = true;
+  $("midi-stop").disabled = false;
+}
+
+$("midi-file").onchange = async () => {
+  const file = $("midi-file").files[0];
+  if (!file) return;
+  stopPlayback(false);
+  try {
+    midiSong = parseMidiFile(await file.arrayBuffer());
+    $("midi-status").textContent =
+      `${file.name} · ${midiSong.events.length}イベント · ${midiSong.duration.toFixed(1)}秒`;
+    $("midi-play").disabled = false;
+    message("MIDIファイルを読み込みました。実機接続時に再生できます。");
+  } catch (error) {
+    midiSong = null;
+    $("midi-play").disabled = true;
+    message(error.message || "MIDIファイルを読み込めませんでした。", true);
+  }
+};
+$("midi-play").onclick = () => startPlayback();
+$("midi-stop").onclick = () => stopPlayback();
 
 /* ---------- 初期化 ---------- */
 connected();
