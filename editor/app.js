@@ -1458,7 +1458,7 @@ function buildKeyboard() {
   let n = baseNote,
     w = 0,
     row = 0;
-  while (row < 2) {
+  while (row < 2 && n <= 127) {
     rows[row].push(n);
     if (![1, 3, 6, 8, 10].includes(n % 12)) w++;
     n++;
@@ -1467,7 +1467,8 @@ function buildKeyboard() {
       w = 0;
     }
   }
-  const last = rows[1][rows[1].length - 1];
+  const lastRow = rows[1].length ? rows[1] : rows[0];
+  const last = lastRow[lastRow.length - 1];
   $("oct-label").textContent = `${noteName(baseNote)} – ${noteName(last)}`;
   kb.replaceChildren();
   const whiteW = 100 / perRow;
