@@ -166,7 +166,7 @@ summary:focus-visible {
   justify-content: space-between;
   align-items: flex-start;
   gap: 18px;
-  margin-top: 8px;
+  margin-top: 2px;
 }
 .eyebrow {
   font-size: 11px;
@@ -178,7 +178,7 @@ h1 {
   margin: 0;
 }
 h1 input {
-  font-size: 26px;
+  font-size: 22px;
   letter-spacing: 1px;
   font-weight: 650;
   border: 0;
@@ -199,10 +199,10 @@ h1 input {
 }
 #now-note {
   font:
-    700 22px ui-monospace,
+    700 18px ui-monospace,
     monospace;
   color: var(--accent2);
-  min-height: 32px;
+  min-height: 24px;
   text-align: right;
 }
 #message {
@@ -222,7 +222,9 @@ h1 input {
   flex-wrap: wrap;
   gap: 8px 12px;
   align-items: end;
-  margin-top: 8px;
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
 }
 .pb-item {
   display: flex;
@@ -255,10 +257,13 @@ h1 input {
   accent-color: var(--accent);
 }
 #sustain-btn {
-  min-height: 40px;
-  padding: 8px 18px;
+  min-height: 32px;
+  padding: 4px 14px;
   font-weight: 700;
   letter-spacing: 1px;
+}
+.vel-label input {
+  width: 90px;
 }
 #sustain-btn.on {
   background: var(--accent2);
@@ -280,7 +285,7 @@ h1 input {
   border-radius: 12px;
   padding: 8px 8px 4px;
   position: sticky;
-  bottom: 64px;
+  bottom: 10px;
   z-index: 4;
   box-shadow: 0 -6px 24px #0007;
 }
@@ -387,7 +392,7 @@ h1 input {
 main {
   max-width: 1600px;
   margin: auto;
-  padding: 6px 16px 120px;
+  padding: 6px 16px 32px;
 }
 .card {
   margin-top: 16px;
@@ -509,28 +514,31 @@ footer {
   gap: 6px;
   margin-top: 20px;
 }
-.actionbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+header .live {
   display: flex;
-  gap: 10px;
   align-items: center;
-  justify-content: center;
-  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
-  background: #17293e;
-  border-top: 1px solid var(--line);
-  z-index: 6;
-  flex-wrap: wrap;
-}
-.actionbar label {
-  flex-direction: row;
-  align-items: center;
+  gap: 5px;
+  color: var(--muted);
   font-size: 11px;
 }
-.actionbar input[type="checkbox"] {
+header .live input[type="checkbox"] {
   accent-color: var(--accent);
+}
+#connect-row {
+  display: flex;
+  align-items: end;
+  gap: 10px 14px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+#connect-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  flex: 1;
+  min-width: 150px;
 }
 dialog {
   width: min(480px, 92vw);
@@ -594,7 +602,7 @@ pre {
     height: clamp(190px, 40vh, 300px);
   }
   #keyboard-wrap {
-    bottom: 104px;
+    bottom: 10px;
   }
   .kb-hint {
     display: none;

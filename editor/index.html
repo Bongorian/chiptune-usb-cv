@@ -20,10 +20,29 @@
       <span id="connection-state">実機未接続（無音）</span>
       <button id="panic" title="全ノート停止（PANIC）">PANIC</button>
       <button id="connect" class="primary">実機に接続（USB MIDI）</button>
+      <button id="send" class="primary" disabled>本体に反映</button>
+      <label class="live head-live">
+        <input type="checkbox" id="live" disabled />LIVE
+      </label>
     </header>
 
     <!-- ============ 演奏ステージ ============ -->
     <section id="stage">
+      <div id="connect-row">
+        <button id="read" disabled>本体から読み出す</button>
+        <label>
+          送信
+          <select id="midi-out">
+            <option value="">MIDI output</option>
+          </select>
+        </label>
+        <label>
+          受信
+          <select id="midi-in">
+            <option value="">MIDI input</option>
+          </select>
+        </label>
+      </div>
       <div class="stage-top">
         <nav id="tracks" aria-label="演奏するトラック"></nav>
       </div>
@@ -44,6 +63,8 @@
         </div>
       </div>
 
+
+      <div class="play-controls" id="performance-controls"></div>
       <div class="play-bar">
         <label class="pb-item grow">
           工場音色（23種）
@@ -72,16 +93,7 @@
           </span>
           <span id="midi-status" class="pb-note">未読み込み</span>
         </label>
-        <label class="pb-item">
-          ベロシティ
-          <input id="velocity" type="range" min="1" max="127" value="100" />
-        </label>
-        <button id="sustain-btn" aria-pressed="false" title="サステイン（押している間ON）">
-          SUSTAIN
-        </button>
       </div>
-
-      <div class="play-controls" id="performance-controls"></div>
 
       <div id="keyboard-wrap">
         <div class="kb-tools">
@@ -100,6 +112,13 @@
               step="1"
             />
           </label>
+          <label class="bend-label vel-label">
+            VEL
+            <input id="velocity" type="range" min="1" max="127" value="100" />
+          </label>
+          <button id="sustain-btn" aria-pressed="false" title="サステイン（押している間ON）">
+            SUSTAIN
+          </button>
           <span class="kb-hint">上下でベロシティ · 横なぞりでグリッサンド</span>
         </div>
         <div
@@ -116,21 +135,12 @@
     <!-- ============ 設定エリア ============ -->
     <main>
       <section class="card">
-        <h2>接続とトラック管理</h2>
+        <h2>保存・配置・プロジェクト</h2>
         <div class="connect-grid">
-          <button id="read" class="full" disabled>本体から読み出す</button>
-          <label>
-            本体へ送信（SysEx / ノート出力）
-            <select id="midi-out">
-              <option value="">MIDI output</option>
-            </select>
-          </label>
-          <label>
-            本体から受信（SysEx応答）
-            <select id="midi-in">
-              <option value="">MIDI input</option>
-            </select>
-          </label>
+          <button id="save-open" disabled>本体内に保存…</button>
+          <button id="export">Track JSON ↓</button>
+          <button id="import-open">Track JSON ↑</button>
+          <input id="import" type="file" accept=".json" hidden />
         </div>
         <details>
           <summary>配置・プロジェクト</summary>
@@ -242,16 +252,6 @@
       </footer>
     </main>
 
-    <div class="actionbar">
-      <button id="send" class="primary" disabled>本体に反映</button>
-      <label class="live">
-        <input type="checkbox" id="live" disabled />LIVE（自動反映）
-      </label>
-      <button id="save-open" disabled>保存…</button>
-      <button id="export">JSON ↓</button>
-      <button id="import-open">JSON ↑</button>
-      <input id="import" type="file" accept=".json" hidden />
-    </div>
 
     <dialog id="save-dialog">
       <h2>独立して保存</h2>
